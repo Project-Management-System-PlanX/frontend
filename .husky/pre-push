@@ -1,0 +1,29 @@
+# Pre-push hook: Run checks before pushing to remote
+
+echo "🔍 Running pre-push checks..."
+
+# Run type checking
+echo "📝 Running TypeScript type check..."
+npx tsc --noEmit
+if [ $? -ne 0 ]; then
+  echo "❌ TypeScript type check failed! Please fix the errors before pushing."
+  exit 1
+fi
+
+# Run full lint check
+echo "🧹 Running Biome lint check..."
+npx biome check .
+if [ $? -ne 0 ]; then
+  echo "❌ Lint check failed! Please fix the errors before pushing."
+  exit 1
+fi
+
+# Run build to ensure no build errors
+echo "🏗️ Running build check..."
+pnpm run build
+if [ $? -ne 0 ]; then
+  echo "❌ Build failed! Please fix the errors before pushing."
+  exit 1
+fi
+
+echo "✅ All pre-push checks passed! Pushing..."

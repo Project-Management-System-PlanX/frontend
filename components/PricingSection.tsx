@@ -159,7 +159,7 @@ export function PricingSection() {
 				</div>
 
 				{/* Features Table */}
-				<div className="border border-border rounded-2xl overflow-hidden bg-card">
+				<div id="features" className="border border-border rounded-2xl overflow-hidden bg-card">
 					<div className="overflow-x-auto">
 						<div className="min-w-[768px]">
 							{/* Table Header */}

@@ -21,8 +21,8 @@ export const ProductTeaserCard = (props: ProductTeaserCardProps) => {
 	const {
 		dailyVolume = "1,430,992,688",
 		dailyVolumeLabel = "DAILY ANALYZED MESSAGES",
-		headline = "The Intelligence Layer for Modern Communication",
-		subheadline = "TeamUp connects every call, chat, and meeting into a unified AI layer — delivering real-time insights, tone analysis, and team alignment across your favorite tools.",
+		headline = "The Intelligence Layer for Modern Management",
+		subheadline = "TeamUp centralizes communication and project management  giving teams a single platform to collaborate, track work, and stay aligned.",
 		description = "Trusted by fast-growing teams and enterprises, TeamUp powers smarter communication across 1,000+ organizations — with enterprise-grade security, multilingual analysis, and instant emotional detection.",
 		videoSrc = "https://cdn.sanity.io/files/1t8iva7t/production/a2cbbed7c998cf93e7ecb6dae75bab42b13139c2.mp4",
 		posterSrc = "/images/design-mode/9ad78a5534a46e77bafe116ce1c38172c60dc21a-1069x1068.png",

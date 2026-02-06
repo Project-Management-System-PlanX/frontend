@@ -161,7 +161,7 @@ export const BankingScaleHero = () => {
 								fontFamily: "var(--font-figtree), Figtree",
 							}}
 						>
-							As the intelligence layer for modern communication, we provide real-time insights and
+							As The Intelligence Layer for Modern Management, we provide real-time insights and
 							emotional detection through our advanced AI-powered platform.
 						</p>
 

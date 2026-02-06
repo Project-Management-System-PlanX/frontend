@@ -70,7 +70,7 @@ const defaultSections: FooterSection[] = [
 
 export const Footer = ({
 	companyName = "TeamUp",
-	tagline = "The Intelligence Layer for Modern Communication",
+	tagline = "The Intelligence Layer for Modern Management",
 	sections = defaultSections,
 	socialLinks = {
 		twitter: "https://twitter.com",

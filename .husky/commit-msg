@@ -1,0 +1,35 @@
+# Commit-msg hook: Validate commit message format
+# Requires conventional commit format: type(scope): message
+
+commit_msg=$(cat "$1")
+
+# Allow merge commits
+if echo "$commit_msg" | grep -qE "^Merge"; then
+  exit 0
+fi
+
+# Check for conventional commit format
+if ! echo "$commit_msg" | grep -qE "^(feat|fix|docs|style|refactor|perf|test|chore|build|ci|revert)(\(.+\))?: .{1,}"; then
+  echo "❌ Invalid commit message format!"
+  echo ""
+  echo "Expected format: type(scope): message"
+  echo ""
+  echo "Allowed types:"
+  echo "  feat     - A new feature"
+  echo "  fix      - A bug fix"
+  echo "  docs     - Documentation changes"
+  echo "  style    - Code style changes (formatting, etc)"
+  echo "  refactor - Code refactoring"
+  echo "  perf     - Performance improvements"
+  echo "  test     - Adding or updating tests"
+  echo "  chore    - Maintenance tasks"
+  echo "  build    - Build system changes"
+  echo "  ci       - CI/CD changes"
+  echo "  revert   - Reverting changes"
+  echo ""
+  echo "Example: feat(auth): add login functionality"
+  echo "Example: fix: resolve navigation issue"
+  exit 1
+fi
+
+echo "✅ Commit message is valid!"

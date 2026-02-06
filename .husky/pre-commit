@@ -1,1 +1,2 @@
+# Pre-commit hook: Run linting on staged files before commit
 npx lint-staged
