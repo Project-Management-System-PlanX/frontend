@@ -57,14 +57,14 @@ export function TeamSidebar({ activeChannel, onChannelSelect }: TeamSidebarProps
 	return (
 		<div className="flex h-full" style={{ fontFamily: "var(--font-figtree), Figtree" }}>
 			{/* Icon Rail */}
-			<div className="w-14 bg-[#1a1d21] border-r border-[#2a2d31] flex flex-col items-center py-4 gap-3">
+			<div className="w-14 bg-slate-50 border-r border-slate-200 flex flex-col items-center py-4 gap-3">
 				<TooltipProvider delayDuration={0}>
 					<Tooltip>
 						<TooltipTrigger asChild>
 							<Button
 								variant="ghost"
 								size="icon"
-								className="w-9 h-9 rounded-lg bg-[#156d95] text-white hover:bg-[#156d95]/90"
+								className="w-9 h-9 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200"
 							>
 								<Home className="w-5 h-5" />
 							</Button>
@@ -77,7 +77,7 @@ export function TeamSidebar({ activeChannel, onChannelSelect }: TeamSidebarProps
 							<Button
 								variant="ghost"
 								size="icon"
-								className="w-9 h-9 rounded-lg text-[#949ba4] hover:text-white hover:bg-[#2a2d31]"
+								className="w-9 h-9 rounded-lg bg-[#156d95] text-white hover:bg-[#156d95]/90"
 							>
 								<MessageSquare className="w-5 h-5" />
 							</Button>
@@ -90,7 +90,7 @@ export function TeamSidebar({ activeChannel, onChannelSelect }: TeamSidebarProps
 							<Button
 								variant="ghost"
 								size="icon"
-								className="w-9 h-9 rounded-lg text-[#949ba4] hover:text-white hover:bg-[#2a2d31]"
+								className="w-9 h-9 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200"
 							>
 								<CheckSquare className="w-5 h-5" />
 							</Button>
@@ -103,7 +103,7 @@ export function TeamSidebar({ activeChannel, onChannelSelect }: TeamSidebarProps
 							<Button
 								variant="ghost"
 								size="icon"
-								className="w-9 h-9 rounded-lg text-[#949ba4] hover:text-white hover:bg-[#2a2d31]"
+								className="w-9 h-9 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200"
 							>
 								<FolderOpen className="w-5 h-5" />
 							</Button>
@@ -120,7 +120,7 @@ export function TeamSidebar({ activeChannel, onChannelSelect }: TeamSidebarProps
 							<Button
 								variant="ghost"
 								size="icon"
-								className="w-9 h-9 rounded-lg text-[#949ba4] hover:text-white hover:bg-[#2a2d31]"
+								className="w-9 h-9 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200"
 							>
 								<Settings className="w-5 h-5" />
 							</Button>
@@ -138,11 +138,15 @@ export function TeamSidebar({ activeChannel, onChannelSelect }: TeamSidebarProps
 			</div>
 
 			{/* Channel List */}
-			<div className="w-56 bg-[#222529] flex flex-col border-r border-[#2a2d31]">
+			<div className="w-56 bg-white flex flex-col border-r border-slate-200">
 				{/* Team Header */}
-				<div className="p-4 flex items-center justify-between border-b border-[#2a2d31]">
-					<span className="font-semibold text-white text-base">Team UP</span>
-					<Button variant="ghost" size="icon" className="w-7 h-7 text-[#949ba4] hover:text-white">
+				<div className="p-4 flex items-center justify-between border-b border-slate-200">
+					<span className="font-semibold text-slate-900 text-base">Team UP</span>
+					<Button
+						variant="ghost"
+						size="icon"
+						className="w-7 h-7 text-slate-500 hover:text-slate-900"
+					>
 						<ExternalLink className="w-4 h-4" />
 					</Button>
 				</div>
@@ -154,7 +158,7 @@ export function TeamSidebar({ activeChannel, onChannelSelect }: TeamSidebarProps
 							<button
 								type="button"
 								onClick={() => setChannelsExpanded(!channelsExpanded)}
-								className="flex items-center justify-between w-full px-2 py-1.5 text-[11px] font-semibold text-[#949ba4] uppercase tracking-wider hover:text-white"
+								className="flex items-center justify-between w-full px-2 py-1.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider hover:text-slate-900"
 							>
 								<span>Channels</span>
 								<div className="flex items-center gap-1">
@@ -179,7 +183,7 @@ export function TeamSidebar({ activeChannel, onChannelSelect }: TeamSidebarProps
 												"flex items-center gap-2 w-full px-2 py-1.5 rounded-md text-sm transition-colors",
 												activeChannel === channel.id
 													? "bg-[#156d95] text-white"
-													: "text-[#949ba4] hover:bg-[#2a2d31] hover:text-white",
+													: "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
 											)}
 										>
 											<Hash className="w-4 h-4 shrink-0" />
@@ -195,7 +199,7 @@ export function TeamSidebar({ activeChannel, onChannelSelect }: TeamSidebarProps
 							<button
 								type="button"
 								onClick={() => setDmsExpanded(!dmsExpanded)}
-								className="flex items-center justify-between w-full px-2 py-1.5 text-[11px] font-semibold text-[#949ba4] uppercase tracking-wider hover:text-white"
+								className="flex items-center justify-between w-full px-2 py-1.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider hover:text-slate-900"
 							>
 								<span>Direct Messages</span>
 								<div className="flex items-center gap-1">
@@ -212,12 +216,12 @@ export function TeamSidebar({ activeChannel, onChannelSelect }: TeamSidebarProps
 										<button
 											type="button"
 											key={dm.id}
-											className="flex items-center gap-2 w-full px-2 py-1.5 rounded-md text-sm text-[#949ba4] hover:bg-[#2a2d31] hover:text-white transition-colors"
+											className="flex items-center gap-2 w-full px-2 py-1.5 rounded-md text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
 										>
 											<div className="relative">
 												<Avatar className="w-5 h-5">
 													<AvatarImage src={dm.avatar} />
-													<AvatarFallback className="text-[10px] bg-[#2a2d31] text-[#949ba4]">
+													<AvatarFallback className="text-[10px] bg-slate-200 text-slate-600">
 														{dm.name
 															.split(" ")
 															.map((n) => n[0])
@@ -241,10 +245,10 @@ export function TeamSidebar({ activeChannel, onChannelSelect }: TeamSidebarProps
 				</ScrollArea>
 
 				{/* Invite Teammates */}
-				<div className="p-3 border-t border-[#2a2d31]">
+				<div className="p-3 border-t border-slate-200">
 					<Button
 						variant="ghost"
-						className="w-full justify-start gap-2 text-[#949ba4] hover:text-white hover:bg-[#2a2d31]"
+						className="w-full justify-start gap-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100"
 					>
 						<UserPlus className="w-4 h-4" />
 						<span className="text-sm">Invite Teammates</span>
