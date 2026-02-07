@@ -22,7 +22,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-	title: "TeamUp",
+	title: "TeamUp - The Intelligence Layer for Modern Management",
 	description:
 		"Real-time insights, tone analysis, and team alignment across your favorite collaboration tools.",
 	icons: {

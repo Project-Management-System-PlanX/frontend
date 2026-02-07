@@ -245,7 +245,7 @@ const LeftPanel = memo(function LeftPanel({
 				initial={{ opacity: 0, x: 100 }}
 				animate={{ opacity: 1, x: 0 }}
 				transition={{ delay: 0.6, duration: 0.8, ease: "easeOut" }}
-				className="relative z-10 mt-auto pl-8 -mr-0 flex-1 min-h-0 ml-12"
+				className="relative z-10 mt-auto pl-4 -mr-0 flex-1 min-h-0 ml-8"
 			>
 				<motion.div
 					animate={{
@@ -263,7 +263,8 @@ const LeftPanel = memo(function LeftPanel({
 						alt="Dashboard preview"
 						fill
 						priority
-						className="object-cover object-left-top"
+						className="object-cover object-top"
+						style={{ objectPosition: "2% top" }}
 					/>
 				</motion.div>
 			</motion.div>
