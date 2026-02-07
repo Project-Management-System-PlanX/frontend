@@ -14,6 +14,7 @@ import {
 	Users,
 	Zap,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { memo, useCallback, useMemo, useState } from "react";
 
@@ -163,270 +164,108 @@ const LeftPanel = memo(function LeftPanel({
 	currentStepIndex: number;
 }) {
 	const content = leftPanelContent[currentStep];
-	const IconComponent = content.icon;
+	const _IconComponent = content.icon;
 
 	return (
-		<div className="hidden lg:flex lg:w-1/2 bg-[#0a0f2e] p-12 flex-col justify-between relative overflow-hidden">
-			{/* Animated Gradient Orbs */}
-			<div className="absolute inset-0 overflow-hidden">
+		<div className="hidden lg:flex lg:w-1/2 h-screen bg-[#E0F7F5] flex-col relative overflow-hidden">
+			{/* Top section: Logo + Text content */}
+			<div className="relative z-10 flex flex-col px-12 pt-6 shrink-0">
+				{/* Logo */}
 				<motion.div
-					className={`absolute w-[600px] h-[600px] rounded-full bg-gradient-to-br ${content.gradient} opacity-20 blur-[120px]`}
-					animate={{
-						x: [0, 50, 0],
-						y: [0, 30, 0],
-						scale: [1, 1.1, 1],
-					}}
-					transition={{
-						duration: 8,
-						repeat: Number.POSITIVE_INFINITY,
-						ease: "easeInOut",
-					}}
-					style={{ top: "-20%", left: "-10%" }}
-				/>
-				<motion.div
-					className="absolute w-[400px] h-[400px] rounded-full bg-gradient-to-br from-[#156d95] to-[#167E6C] opacity-15 blur-[100px]"
-					animate={{
-						x: [0, -30, 0],
-						y: [0, 50, 0],
-						scale: [1, 1.2, 1],
-					}}
-					transition={{
-						duration: 10,
-						repeat: Number.POSITIVE_INFINITY,
-						ease: "easeInOut",
-						delay: 1,
-					}}
-					style={{ bottom: "-10%", right: "-5%" }}
-				/>
-				{/* Floating particles */}
-				{[...Array(5)].map((_, i) => (
-					<motion.div
-						// biome-ignore lint/suspicious/noArrayIndexKey: stable array for decorative particles
-						key={`particle-${currentStep}-${i}`}
-						className="absolute w-2 h-2 rounded-full bg-white/20"
-						animate={{
-							y: [0, -100, 0],
-							opacity: [0, 1, 0],
-						}}
-						transition={{
-							duration: 4 + i,
-							repeat: Number.POSITIVE_INFINITY,
-							delay: i * 0.8,
-							ease: "easeInOut",
-						}}
-						style={{
-							left: `${15 + i * 18}%`,
-							bottom: "10%",
-						}}
-					/>
-				))}
-			</div>
-
-			{/* Grid pattern overlay */}
-			<div
-				className="absolute inset-0 opacity-[0.03]"
-				style={{
-					backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-                           linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-					backgroundSize: "60px 60px",
-				}}
-			/>
-
-			{/* Logo */}
-			<motion.div
-				className="relative z-10"
-				initial={{ opacity: 0, y: -20 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.5 }}
-			>
-				<Link
-					href="/"
-					className="text-3xl font-bold text-white inline-flex items-center gap-2"
-					style={{ fontFamily: "Figtree", fontWeight: 800 }}
+					initial={{ opacity: 0, y: -10 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ duration: 0.5 }}
 				>
-					<motion.div
-						className={`w-10 h-10 rounded-xl bg-gradient-to-br ${content.gradient} flex items-center justify-center`}
-						animate={{ rotate: [0, 5, -5, 0] }}
-						transition={{ duration: 4, repeat: Number.POSITIVE_INFINITY }}
+					<Link
+						href="/"
+						className="text-3xl font-bold text-[#111A4A] inline-flex items-center gap-2"
+						style={{ fontFamily: "Figtree", fontWeight: 800 }}
 					>
-						<span className="text-white font-bold text-lg">T</span>
-					</motion.div>
-					TeamUp
-				</Link>
-			</motion.div>
+						<motion.div
+							className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#156d95] to-[#167E6C] flex items-center justify-center"
+							animate={{ rotate: [0, 5, -5, 0] }}
+							transition={{ duration: 4, repeat: Number.POSITIVE_INFINITY }}
+						>
+							<span className="text-white font-bold text-lg">T</span>
+						</motion.div>
+						TeamUp
+					</Link>
+				</motion.div>
 
-			{/* Dynamic Content */}
-			<div className="relative z-10 flex-1 flex flex-col justify-center py-12">
-				<AnimatePresence mode="wait">
-					<motion.div
-						key={currentStep}
-						variants={staggerContainer}
-						initial="initial"
-						animate="animate"
-						exit="exit"
-						className="space-y-8"
-					>
-						{/* Icon Badge */}
-						<motion.div variants={staggerItem} className="flex items-center gap-3">
-							<motion.div
-								className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${content.gradient} flex items-center justify-center shadow-lg shadow-white/10`}
-								whileHover={{ scale: 1.05, rotate: 5 }}
-								transition={{ type: "spring", stiffness: 300 }}
-							>
-								<IconComponent className="w-8 h-8 text-white" />
-							</motion.div>
-							<div className="flex flex-col">
+				{/* Dynamic Content */}
+				<div className="mt-8">
+					<AnimatePresence mode="wait">
+						<motion.div
+							key={currentStep}
+							variants={staggerContainer}
+							initial="initial"
+							animate="animate"
+							exit="exit"
+							className="space-y-6"
+						>
+							{/* Step Label */}
+							<motion.div variants={staggerItem} className="flex items-center gap-2">
 								<span
-									className="text-white/50 text-sm uppercase tracking-wider"
-									style={{ fontFamily: "Figtree" }}
+									className="text-[#5A7F78] text-xs uppercase tracking-wider font-mono"
+									style={{
+										fontFamily: "var(--font-geist-mono), 'Geist Mono', ui-monospace, monospace",
+									}}
 								>
 									Step {currentStepIndex + 1} of {steps.length - 1}
 								</span>
-							</div>
-						</motion.div>
-
-						{/* Main Headline with gradient text */}
-						<motion.h1
-							variants={staggerItem}
-							className="text-5xl font-bold text-white leading-tight"
-							style={{ fontFamily: "Figtree" }}
-						>
-							{content.headline.split(" ").map((word, i) => (
-								<motion.span
-									// biome-ignore lint/suspicious/noArrayIndexKey: stable word order for headline animation
-									key={`word-${currentStep}-${i}`}
-									initial={{ opacity: 0, y: 20 }}
-									animate={{ opacity: 1, y: 0 }}
-									transition={{ delay: 0.1 + i * 0.05 }}
-									className={
-										i === content.headline.split(" ").length - 1
-											? `bg-gradient-to-r ${content.gradient} bg-clip-text text-transparent`
-											: ""
-									}
-								>
-									{word}{" "}
-								</motion.span>
-							))}
-						</motion.h1>
-
-						{/* Description */}
-						<motion.p
-							variants={staggerItem}
-							className="text-xl text-white/60 leading-relaxed max-w-md"
-							style={{ fontFamily: "Figtree" }}
-						>
-							{content.description}
-						</motion.p>
-
-						{/* Stats Card */}
-						{"stat" in content && content.stat && (
-							<motion.div variants={staggerItem} className="flex gap-4">
-								<motion.div
-									className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl px-8 py-5 group"
-									whileHover={{ scale: 1.02, backgroundColor: "rgba(255,255,255,0.1)" }}
-									transition={{ type: "spring", stiffness: 300 }}
-								>
-									<motion.p
-										className={`text-4xl font-bold bg-gradient-to-r ${content.gradient} bg-clip-text text-transparent`}
-										style={{ fontFamily: "Figtree" }}
-										initial={{ scale: 0.5 }}
-										animate={{ scale: 1 }}
-										transition={{ type: "spring", delay: 0.3 }}
-									>
-										{content.stat}
-									</motion.p>
-									<p className="text-sm text-white/50 mt-1" style={{ fontFamily: "Figtree" }}>
-										{content.statLabel}
-									</p>
-								</motion.div>
 							</motion.div>
-						)}
 
-						{/* Feature Tags */}
-						<motion.div variants={staggerItem} className="flex flex-wrap gap-3">
-							{content.features.map((feature, i) => (
-								<motion.div
-									key={feature}
-									initial={{ opacity: 0, scale: 0.8 }}
-									animate={{ opacity: 1, scale: 1 }}
-									transition={{ delay: 0.4 + i * 0.1 }}
-									className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-white/70 text-sm backdrop-blur-sm"
-									style={{ fontFamily: "Figtree" }}
-									whileHover={{ backgroundColor: "rgba(255,255,255,0.15)", scale: 1.05 }}
-								>
-									{feature}
-								</motion.div>
-							))}
-						</motion.div>
+							{/* Main Headline */}
+							<motion.h1
+								variants={staggerItem}
+								className="text-4xl font-bold leading-snug text-[#111A4A] max-w-"
+								style={{
+									fontFamily: "var(--font-figtree), Figtree",
+									fontWeight: "900",
+								}}
+							>
+								{content.headline}
+							</motion.h1>
 
-						{/* Social Proof */}
-						<motion.div variants={staggerItem} className="flex items-center gap-4 pt-4">
-							<div className="flex -space-x-3">
-								{[...Array(4)].map((_, i) => (
-									<motion.div
-										// biome-ignore lint/suspicious/noArrayIndexKey: stable array for avatar decorations
-										key={`avatar-${i}`}
-										initial={{ opacity: 0, scale: 0, x: -20 }}
-										animate={{ opacity: 1, scale: 1, x: 0 }}
-										transition={{ delay: 0.5 + i * 0.1, type: "spring" }}
-										className={`w-10 h-10 rounded-full bg-gradient-to-br ${
-											i === 0
-												? "from-blue-400 to-blue-600"
-												: i === 1
-													? "from-purple-400 to-purple-600"
-													: i === 2
-														? "from-pink-400 to-pink-600"
-														: "from-orange-400 to-orange-600"
-										} border-2 border-[#0a0f2e] flex items-center justify-center text-white text-xs font-bold shadow-lg`}
-									>
-										{["JD", "SK", "AR", "MK"][i]}
-									</motion.div>
-								))}
-								<motion.div
-									initial={{ opacity: 0, scale: 0 }}
-									animate={{ opacity: 1, scale: 1 }}
-									transition={{ delay: 0.9, type: "spring" }}
-									className="w-10 h-10 rounded-full bg-white/10 border-2 border-[#0a0f2e] flex items-center justify-center text-white/60 text-xs backdrop-blur-sm"
-								>
-									+99
-								</motion.div>
-							</div>
-							<p className="text-white/50 text-sm" style={{ fontFamily: "Figtree" }}>
-								{content.highlight}
-							</p>
+							{/* Description */}
+							<motion.p
+								variants={staggerItem}
+								className="text-lg leading-7 text-[#5A7F78] mb-10"
+								style={{ fontFamily: "var(--font-figtree), Figtree" }}
+							>
+								{content.description}
+							</motion.p>
 						</motion.div>
-					</motion.div>
-				</AnimatePresence>
+					</AnimatePresence>
+				</div>
 			</div>
 
-			{/* Step Indicator */}
+			{/* Dashboard Image - fills remaining space, flush to bottom and right */}
 			<motion.div
-				className="relative z-10 space-y-4"
-				initial={{ opacity: 0 }}
-				animate={{ opacity: 1 }}
-				transition={{ delay: 0.5 }}
+				initial={{ opacity: 0, x: 100 }}
+				animate={{ opacity: 1, x: 0 }}
+				transition={{ delay: 0.6, duration: 0.8, ease: "easeOut" }}
+				className="relative z-10 mt-auto pl-8 -mr-0 flex-1 min-h-0 ml-12"
 			>
-				<div className="flex gap-2">
-					{steps.slice(0, -1).map((step, index) => (
-						<motion.div
-							key={step}
-							className="h-1 rounded-full overflow-hidden bg-white/10"
-							style={{ width: index === currentStepIndex ? 48 : 16 }}
-							animate={{ width: index === currentStepIndex ? 48 : 16 }}
-							transition={{ duration: 0.3 }}
-						>
-							<motion.div
-								className={`h-full bg-gradient-to-r ${content.gradient}`}
-								initial={{ width: "0%" }}
-								animate={{ width: index <= currentStepIndex ? "100%" : "0%" }}
-								transition={{ duration: 0.5, delay: 0.2 }}
-							/>
-						</motion.div>
-					))}
-				</div>
-				<p className="text-white/30 text-sm" style={{ fontFamily: "Figtree" }}>
-					© 2024 TeamUp. All rights reserved.
-				</p>
+				<motion.div
+					animate={{
+						boxShadow: [
+							"0 0 20px rgba(22, 126, 108, 0.4), 0 0 40px rgba(22, 126, 108, 0.3), 0 0 60px rgba(22, 126, 108, 0.2)",
+							"0 0 40px rgba(22, 126, 108, 0.8), 0 0 80px rgba(22, 126, 108, 0.6), 0 0 120px rgba(22, 126, 108, 0.4)",
+							"0 0 20px rgba(22, 126, 108, 0.4), 0 0 40px rgba(22, 126, 108, 0.3), 0 0 60px rgba(22, 126, 108, 0.2)",
+						],
+					}}
+					transition={{ duration: 2.5, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
+					className="rounded-tl-2xl overflow-hidden shadow-2xl shadow-black/10 ring-2 ring-[#167E6C]/80 h-full w-full relative"
+				>
+					<Image
+						src="/thumbnail.png"
+						alt="Dashboard preview"
+						fill
+						priority
+						className="object-cover object-left-top"
+					/>
+				</motion.div>
 			</motion.div>
 		</div>
 	);
@@ -506,7 +345,7 @@ export default function OnboardingPage() {
 	const StepIcon = stepInfo[currentStep].icon;
 
 	return (
-		<div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex">
+		<div className="h-screen overflow-hidden bg-gradient-to-br from-gray-50 via-white to-gray-100 flex">
 			{/* Left Panel */}
 			<LeftPanel currentStep={currentStep} currentStepIndex={currentStepIndex} />
 
