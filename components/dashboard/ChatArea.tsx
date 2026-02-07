@@ -151,12 +151,15 @@ export function ChatArea({ channelName, detailsOpen, onToggleDetails }: ChatArea
 					<div className="flex items-center -space-x-2 ml-4">
 						{[1, 2, 3].map((i) => (
 							<Avatar key={i} className="w-7 h-7 border-2 border-white">
-								<AvatarFallback className="text-[10px] bg-[#202020] text-white">
+								<AvatarFallback
+									className="text-[10px] bg-[#F57799] text-black
+								"
+								>
 									U{i}
 								</AvatarFallback>
 							</Avatar>
 						))}
-						<div className="w-7 h-7 rounded-full bg-[#202020] flex items-center justify-center text-[10px] text-white font-medium border-2 border-white">
+						<div className="w-7 h-7 rounded-full bg-[#FDC3A1] flex items-center justify-center text-[10px] text-black font-medium border-2 border-white">
 							+12
 						</div>
 					</div>

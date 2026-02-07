@@ -105,8 +105,6 @@ export function ChannelDetails({ channelName, isOpen, onClose }: ChannelDetailsP
 					</div>
 
 					<div className="h-px bg-[#e5e7eb]" />
-
-					{/* Integrations */}
 					<div>
 						<h3 className="text-[11px] font-semibold text-[#9a9a9a] uppercase tracking-wider mb-3">
 							Integrations
