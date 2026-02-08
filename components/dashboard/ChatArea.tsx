@@ -218,7 +218,7 @@ export function ChatArea({ channelName, detailsOpen, onToggleDetails }: ChatArea
 									<AvatarImage src={message.user.avatar} />
 									<AvatarFallback
 										className={
-											message.user.isBot ? "bg-[#156d95] text-white" : "bg-[#e5e7eb] text-[#404040]"
+											message.user.isBot ? "bg-[#156d97] text-white" : "bg-[#e5e7eb] text-[#404040]"
 										}
 									>
 										{message.user.isBot
@@ -234,7 +234,7 @@ export function ChatArea({ channelName, detailsOpen, onToggleDetails }: ChatArea
 									<div className="flex items-center gap-2">
 										<span className="font-medium text-[#202020]">{message.user.name}</span>
 										{message.user.appLabel && (
-											<span className="px-1.5 py-0.5 text-[10px] font-semibold bg-[#156d95] text-white rounded">
+											<span className="px-1.5 py-0.5 text-[10px] font-semibold bg-[#156d97] text-white rounded">
 												{message.user.appLabel}
 											</span>
 										)}
@@ -411,7 +411,7 @@ export function ChatArea({ channelName, detailsOpen, onToggleDetails }: ChatArea
 
 						<Button
 							size="icon"
-							className="w-9 h-9 rounded-lg bg-[#156d95] hover:bg-[#156d95]/90 text-white"
+							className="w-9 h-9 rounded-lg bg-[#156d97] hover:bg-[#156d97]/90 text-white"
 							disabled={!messageInput.trim()}
 						>
 							<Send className="w-4 h-4" />

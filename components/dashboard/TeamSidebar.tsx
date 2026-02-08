@@ -36,6 +36,7 @@ interface DirectMessage {
 interface TeamSidebarProps {
 	activeChannel: string;
 	onChannelSelect: (channelId: string) => void;
+	onDirectorySelect?: (directory: string) => void;
 }
 
 const channels: Channel[] = [
@@ -50,9 +51,25 @@ const directMessages: DirectMessage[] = [
 	{ id: "user-3", name: "Alex Morgan", online: false },
 ];
 
-export function TeamSidebar({ activeChannel, onChannelSelect }: TeamSidebarProps) {
+export function TeamSidebar({
+	activeChannel,
+	onChannelSelect,
+	onDirectorySelect,
+}: TeamSidebarProps) {
 	const [channelsExpanded, setChannelsExpanded] = useState(true);
 	const [dmsExpanded, setDmsExpanded] = useState(true);
+	const [activeDirectory, setActiveDirectory] = useState<string | undefined>("channels");
+
+	const handleDirectorySelect = (directory: string) => {
+		setActiveDirectory(directory);
+		onChannelSelect(""); // Clear active channel
+		onDirectorySelect?.(directory);
+	};
+
+	const handleChannelSelect = (channelId: string) => {
+		setActiveDirectory(undefined); // Clear active directory
+		onChannelSelect(channelId);
+	};
 
 	return (
 		<div className="flex h-full" style={{ fontFamily: "var(--font-figtree), Figtree" }}>
@@ -77,7 +94,7 @@ export function TeamSidebar({ activeChannel, onChannelSelect }: TeamSidebarProps
 							<Button
 								variant="ghost"
 								size="icon"
-								className="w-9 h-9 rounded-lg bg-[#156d95] text-white hover:bg-[#156d95]/90"
+								className="w-9 h-9 rounded-lg bg-[#156d97] text-white hover:bg-[#156d97]/90"
 							>
 								<MessageSquare className="w-5 h-5" />
 							</Button>
@@ -129,9 +146,9 @@ export function TeamSidebar({ activeChannel, onChannelSelect }: TeamSidebarProps
 					</Tooltip>
 				</TooltipProvider>
 
-				<Avatar className="w-9 h-9 ring-2 ring-[#156d95]/20">
+				<Avatar className="w-9 h-9 ring-2 ring-[#156d97]/20">
 					<AvatarImage src="/avatars/user.png" />
-					<AvatarFallback className="bg-gradient-to-br from-[#156d95] to-[#167E6C] text-white text-sm font-medium">
+					<AvatarFallback className="bg-[#156d97] text-white text-sm font-medium">
 						RJ
 					</AvatarFallback>
 				</Avatar>
@@ -178,11 +195,11 @@ export function TeamSidebar({ activeChannel, onChannelSelect }: TeamSidebarProps
 										<button
 											type="button"
 											key={channel.id}
-											onClick={() => onChannelSelect(channel.id)}
+											onClick={() => handleChannelSelect(channel.id)}
 											className={cn(
 												"flex items-center gap-2 w-full px-2 py-1.5 rounded-md text-sm transition-colors",
 												activeChannel === channel.id
-													? "bg-[#156d95] text-white"
+													? "bg-[#156d97] text-white"
 													: "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
 											)}
 										>
@@ -240,7 +257,10 @@ export function TeamSidebar({ activeChannel, onChannelSelect }: TeamSidebarProps
 							)}
 						</div>
 
-						<DirectoriesSection />
+						<DirectoriesSection
+							onDirectorySelect={handleDirectorySelect}
+							activeDirectory={activeDirectory}
+						/>
 					</div>
 				</ScrollArea>
 
