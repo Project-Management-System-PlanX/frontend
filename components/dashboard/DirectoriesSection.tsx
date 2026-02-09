@@ -43,7 +43,7 @@ export function DirectoriesSection({
 							<div
 								className={cn(
 									"flex w-7 h-7 items-center justify-center rounded-md",
-									isActive ? "bg-[#156d97]" : "bg-slate-100 text-slate-500",
+									isActive ? "bg-[#0B6E4F]" : "bg-slate-100 text-slate-500",
 								)}
 							>
 								<Icon className={cn("h-3.5 w-3.5", isActive ? "text-white" : "")} />
@@ -71,7 +71,7 @@ export function DirectoriesSection({
 								<div
 									className={cn(
 										"flex w-7 h-7 items-center justify-center rounded-md",
-										isActive ? "bg-[#156d97]" : "bg-slate-100 text-slate-500",
+										isActive ? "bg-[#0B6E4F]" : "bg-slate-100 text-slate-500",
 									)}
 								>
 									<UserCheck className={cn("h-3.5 w-3.5", isActive ? "text-white" : "")} />

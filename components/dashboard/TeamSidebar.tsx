@@ -94,7 +94,7 @@ export function TeamSidebar({
 							<Button
 								variant="ghost"
 								size="icon"
-								className="w-9 h-9 rounded-lg bg-[#156d97] text-white hover:bg-[#156d97]/90"
+								className="w-9 h-9 rounded-lg bg-[#0B6E4F] text-white hover:bg-[#0B6E4F]/90"
 							>
 								<MessageSquare className="w-5 h-5" />
 							</Button>
@@ -146,9 +146,9 @@ export function TeamSidebar({
 					</Tooltip>
 				</TooltipProvider>
 
-				<Avatar className="w-9 h-9 ring-2 ring-[#156d97]/20">
+				<Avatar className="w-9 h-9 ring-2 ring-[#0B6E4F]/20">
 					<AvatarImage src="/avatars/user.png" />
-					<AvatarFallback className="bg-[#156d97] text-white text-sm font-medium">
+					<AvatarFallback className="bg-[#0B6E4F] text-white text-sm font-medium">
 						RJ
 					</AvatarFallback>
 				</Avatar>
@@ -199,7 +199,7 @@ export function TeamSidebar({
 											className={cn(
 												"flex items-center gap-2 w-full px-2 py-1.5 rounded-md text-sm transition-colors",
 												activeChannel === channel.id
-													? "bg-[#156d97] text-white"
+													? "bg-[#0B6E4F] text-white"
 													: "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
 											)}
 										>

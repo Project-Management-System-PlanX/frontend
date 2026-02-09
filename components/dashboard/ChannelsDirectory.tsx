@@ -78,7 +78,7 @@ export function ChannelsDirectory() {
 				<h1 className="text-2xl font-semibold text-slate-900">Channels</h1>
 				<Button
 					onClick={() => setShowBanner(true)}
-					className="gap-2 bg-[#156d97] hover:bg-[#156d97]/90 text-white"
+					className="gap-2 bg-[#0B6E4F] hover:bg-[#0B6E4F]/90 text-white"
 				>
 					<Plus className="w-4 h-4" />
 					Create Channel
@@ -160,7 +160,7 @@ export function ChannelsDirectory() {
 					<div className="w-px h-6 bg-slate-200 mx-2" />
 					<Button
 						size="sm"
-						className="text-[#156d97] bg-transparent hover:bg-slate-100 text-xs font-semibold flex items-center gap-1 px-3 py-1.5"
+						className="text-[#0B6E4F] bg-transparent hover:bg-slate-100 text-xs font-semibold flex items-center gap-1 px-3 py-1.5"
 					>
 						<Search className="w-4 h-4" />
 						Filters
@@ -206,7 +206,7 @@ export function ChannelsDirectory() {
 										{hoveredChannelId === channel.id && channel.isJoined && (
 											<Button
 												size="sm"
-												className="bg-[#156d97] hover:bg-[#156d97]/90 text-white text-xs shrink-0"
+												className="bg-[#0B6E4F] hover:bg-[#0B6E4F]/90 text-white text-xs shrink-0"
 												onClick={(e) => e.stopPropagation()}
 											>
 												Leave

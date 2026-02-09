@@ -60,7 +60,7 @@ const messages: Message[] = [
 		id: "1",
 		user: { name: "Alex Morgan", avatar: "/avatars/alex.png" },
 		content:
-			"Hey team! I've just updated the Figma board for the new Dashboard interface. Check out the dark mode variants in the 'V2-Final' page. The gradients now use the #156d95 to #167E6C range we discussed.",
+			"Hey team! I've just updated the Figma board for the new Dashboard interface. Check out the dark mode variants in the 'V2-Final' page. The gradients now use the #0B6E4F to #50C878 range we discussed.",
 		timestamp: "10:31 AM",
 		reactions: [
 			{ emoji: "🚀", count: 4 },
@@ -186,7 +186,7 @@ export function ChatArea({ channelName, detailsOpen, onToggleDetails }: ChatArea
 									variant="ghost"
 									size="icon"
 									onClick={onToggleDetails}
-									className={`w-8 h-8 hover:bg-[#f5f5f5] ${detailsOpen ? "text-[#156d95]" : "text-[#9a9a9a] hover:text-[#202020]"}`}
+									className={`w-8 h-8 hover:bg-[#f5f5f5] ${detailsOpen ? "text-[#0B6E4F]" : "text-[#9a9a9a] hover:text-[#202020]"}`}
 								>
 									<Info className="w-4 h-4" />
 								</Button>
@@ -218,7 +218,7 @@ export function ChatArea({ channelName, detailsOpen, onToggleDetails }: ChatArea
 									<AvatarImage src={message.user.avatar} />
 									<AvatarFallback
 										className={
-											message.user.isBot ? "bg-[#156d97] text-white" : "bg-[#e5e7eb] text-[#404040]"
+											message.user.isBot ? "bg-[#0B6E4F] text-white" : "bg-[#e5e7eb] text-[#404040]"
 										}
 									>
 										{message.user.isBot
@@ -234,7 +234,7 @@ export function ChatArea({ channelName, detailsOpen, onToggleDetails }: ChatArea
 									<div className="flex items-center gap-2">
 										<span className="font-medium text-[#202020]">{message.user.name}</span>
 										{message.user.appLabel && (
-											<span className="px-1.5 py-0.5 text-[10px] font-semibold bg-[#156d97] text-white rounded">
+											<span className="px-1.5 py-0.5 text-[10px] font-semibold bg-[#0B6E4F] text-white rounded">
 												{message.user.appLabel}
 											</span>
 										)}
@@ -250,7 +250,7 @@ export function ChatArea({ channelName, detailsOpen, onToggleDetails }: ChatArea
 									{message.user.isBot && (
 										<p className="text-[#404040] mt-1 leading-relaxed text-[15px]">
 											New task created in{" "}
-											<span className="text-[#156d95] hover:underline cursor-pointer">
+											<span className="text-[#0B6E4F] hover:underline cursor-pointer">
 												#product-roadmap
 											</span>
 											:{" "}
@@ -311,7 +311,7 @@ export function ChatArea({ channelName, detailsOpen, onToggleDetails }: ChatArea
 													</Avatar>
 												))}
 											</div>
-											<span className="text-[#156d95] text-sm font-medium group-hover/reply:underline">
+											<span className="text-[#0B6E4F] text-sm font-medium group-hover/reply:underline">
 												{message.replies.count} replies
 											</span>
 											<span className="text-xs text-[#9a9a9a]">{message.replies.lastReply}</span>
@@ -411,7 +411,7 @@ export function ChatArea({ channelName, detailsOpen, onToggleDetails }: ChatArea
 
 						<Button
 							size="icon"
-							className="w-9 h-9 rounded-lg bg-[#156d97] hover:bg-[#156d97]/90 text-white"
+							className="w-9 h-9 rounded-lg bg-[#0B6E4F] hover:bg-[#0B6E4F]/90 text-white"
 							disabled={!messageInput.trim()}
 						>
 							<Send className="w-4 h-4" />
