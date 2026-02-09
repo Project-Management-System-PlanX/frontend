@@ -17,7 +17,7 @@ export default function DashboardPage() {
 	};
 
 	return (
-		<div className="h-screen flex overflow-hidden bg-[#f8f9fa]">
+		<div className="h-screen flex overflow-hidden bg-[#D1F2EB]">
 			{/* Left Sidebar - Icon Rail + Channel List */}
 			<TeamSidebar
 				activeChannel={activeChannel}

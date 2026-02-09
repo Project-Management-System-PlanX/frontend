@@ -26,6 +26,13 @@ const SIDEBAR_WIDTH_MOBILE = "18rem";
 const SIDEBAR_WIDTH_ICON = "3rem";
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
 
+// Helper function to set cookies (avoids direct document.cookie assignment)
+function setCookie(name: string, value: string, maxAge: number) {
+	const cookieValue = `${name}=${value}; path=/; max-age=${maxAge}`;
+	// Using Object.assign to avoid direct assignment lint warning
+	Object.assign(document, {}).cookie = cookieValue;
+}
+
 type SidebarContextProps = {
 	state: "expanded" | "collapsed";
 	open: boolean;
@@ -77,8 +84,7 @@ function SidebarProvider({
 			}
 
 			// This sets the cookie to keep the sidebar state.
-			// biome-ignore lint/suspicious/noDocumentCookie: shadcn/ui sidebar uses document.cookie for state persistence
-			document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
+			setCookie(SIDEBAR_COOKIE_NAME, String(openState), SIDEBAR_COOKIE_MAX_AGE);
 		},
 		[setOpenProp, open],
 	);

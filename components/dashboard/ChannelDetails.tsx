@@ -74,7 +74,7 @@ export function ChannelDetails({ channelName, isOpen, onClose }: ChannelDetailsP
 							<Button
 								variant="ghost"
 								size="icon"
-								className="w-5 h-5 text-[#9a9a9a] hover:text-[#156d95]"
+								className="w-5 h-5 text-[#9a9a9a] hover:text-[#50C878]"
 							>
 								<Edit3 className="w-3 h-3" />
 							</Button>

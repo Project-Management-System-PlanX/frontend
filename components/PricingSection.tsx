@@ -78,8 +78,8 @@ export function PricingSection() {
 						Choose Your Plan
 					</h2>
 					<p className="font-figtree text-lg text-muted-foreground max-w-2xl mx-auto">
-						Get started with TeamUp's communication intelligence platform. All plans include API
-						access and team collaboration.
+						with TeamUp's communication intelligence platform. All plans include API access and team
+						collaboration.
 					</p>
 				</div>
 
@@ -109,7 +109,7 @@ export function PricingSection() {
 							)}
 						>
 							Yearly
-							<span className="ml-2 text-sm text-[#156d95]">Save 17%</span>
+							<span className="ml-2 text-sm text-primary">Save 17%</span>
 						</button>
 					</div>
 				</div>
@@ -124,12 +124,12 @@ export function PricingSection() {
 							className={cn(
 								"relative p-8 rounded-2xl text-left transition-all border-2",
 								selectedPlan === plan.level
-									? "border-[#156d95] bg-[#156d95]/5"
-									: "border-border hover:border-[#156d95]/50",
+									? "border-primary bg-primary/5"
+									: "border-border hover:border-primary/50",
 							)}
 						>
 							{plan.popular && (
-								<span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#156d95] text-white px-4 py-1 rounded-full text-sm font-figtree">
+								<span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-figtree">
 									Most Popular
 								</span>
 							)}
@@ -148,7 +148,7 @@ export function PricingSection() {
 								className={cn(
 									"w-full py-3 px-6 rounded-full font-figtree text-lg transition-all text-center",
 									selectedPlan === plan.level
-										? "bg-[#156d95] text-white"
+										? "bg-primary text-primary-foreground"
 										: "bg-secondary text-foreground",
 								)}
 							>
@@ -186,7 +186,7 @@ export function PricingSection() {
 									className={cn(
 										"flex items-center p-6 transition-colors",
 										index % 2 === 0 ? "bg-background" : "bg-secondary/30",
-										feature.included === selectedPlan && "bg-[#156d95]/5",
+										feature.included === selectedPlan && "bg-primary/5",
 									)}
 								>
 									<div className="flex-1">
@@ -196,8 +196,8 @@ export function PricingSection() {
 										{plans.map((plan) => (
 											<div key={plan.level} className="w-24 flex justify-center">
 												{shouldShowCheck(feature.included, plan.level) ? (
-													<div className="w-6 h-6 rounded-full bg-[#156d95] flex items-center justify-center">
-														<CheckIcon className="w-4 h-4 text-white" />
+													<div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+														<CheckIcon className="w-4 h-4 text-primary-foreground" />
 													</div>
 												) : (
 													<span className="text-muted-foreground">-</span>
@@ -215,7 +215,7 @@ export function PricingSection() {
 				<div className="mt-12 text-center">
 					<button
 						type="button"
-						className="bg-[#156d95] text-white px-[18px] py-[15px] rounded-full font-figtree text-lg hover:rounded-2xl transition-all"
+						className="bg-primary text-primary-foreground px-[18px] py-[15px] rounded-full font-figtree text-lg hover:rounded-2xl transition-all hover:bg-primary/90"
 					>
 						Get started with {plans.find((p) => p.level === selectedPlan)?.name}
 					</button>

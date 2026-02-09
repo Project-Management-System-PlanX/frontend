@@ -97,7 +97,7 @@ const leftPanelContent = {
 			"Real-time insights, tone analysis, and team alignment across your favorite tools.",
 		highlight: "Join 1000+ organizations",
 		icon: Zap,
-		gradient: "from-[#156d95] via-[#1a7ba8] to-[#167E6C]",
+		gradient: "from-[#50C878] via-[#0B6E4F] to-[#013220]",
 		features: ["Real-time Analytics", "AI-Powered Insights", "Team Collaboration"],
 	},
 	otp: {
@@ -108,7 +108,7 @@ const leftPanelContent = {
 		stat: "99.9%",
 		statLabel: "Uptime guarantee",
 		icon: Lock,
-		gradient: "from-[#167E6C] via-[#1a8f7a] to-[#156d95]",
+		gradient: "from-[#0B6E4F] via-[#50C878] to-[#013220]",
 		features: ["End-to-end Encryption", "Two-Factor Auth", "SOC 2 Compliant"],
 	},
 	workspace: {
@@ -119,7 +119,7 @@ const leftPanelContent = {
 		stat: "50%",
 		statLabel: "Faster decisions",
 		icon: Building2,
-		gradient: "from-[#6366f1] via-[#8b5cf6] to-[#a855f7]",
+		gradient: "from-[#50C878] via-[#0B6E4F] to-[#D1F2EB]",
 		features: ["Custom Workflows", "Shared Dashboards", "Role Management"],
 	},
 	name: {
@@ -130,7 +130,7 @@ const leftPanelContent = {
 		stat: "3x",
 		statLabel: "Productivity boost",
 		icon: Sparkles,
-		gradient: "from-[#f59e0b] via-[#f97316] to-[#ef4444]",
+		gradient: "from-[#013220] via-[#0B6E4F] to-[#50C878]",
 		features: ["Smart Suggestions", "Adaptive UI", "Personal Dashboard"],
 	},
 	invite: {
@@ -141,7 +141,7 @@ const leftPanelContent = {
 		stat: "40%",
 		statLabel: "Less meetings needed",
 		icon: Users,
-		gradient: "from-[#ec4899] via-[#d946ef] to-[#a855f7]",
+		gradient: "from-[#D1F2EB] via-[#50C878] to-[#0B6E4F]",
 		features: ["Easy Invites", "Team Channels", "Shared Goals"],
 	},
 	complete: {
@@ -150,7 +150,7 @@ const leftPanelContent = {
 			"You're all set to experience the future of team management. Let's make great things happen.",
 		highlight: "Welcome aboard!",
 		icon: Check,
-		gradient: "from-[#10b981] via-[#14b8a6] to-[#06b6d4]",
+		gradient: "from-[#50C878] via-[#0B6E4F] to-[#013220]",
 		features: ["Dashboard Access", "Quick Start Guide", "24/7 Support"],
 	},
 } as const;
@@ -167,7 +167,7 @@ const LeftPanel = memo(function LeftPanel({
 	const _IconComponent = content.icon;
 
 	return (
-		<div className="hidden lg:flex lg:w-1/2 h-screen bg-[#E0F7F5] flex-col relative overflow-hidden">
+		<div className="hidden lg:flex lg:w-1/2 h-screen bg-[#D1F2EB] flex-col relative overflow-hidden">
 			{/* Top section: Logo + Text content */}
 			<div className="relative z-10 flex flex-col px-12 pt-6 shrink-0">
 				{/* Logo */}
@@ -178,11 +178,11 @@ const LeftPanel = memo(function LeftPanel({
 				>
 					<Link
 						href="/"
-						className="text-3xl font-bold text-[#111A4A] inline-flex items-center gap-2"
+						className="text-3xl font-bold text-[#013220] inline-flex items-center gap-2"
 						style={{ fontFamily: "Figtree", fontWeight: 800 }}
 					>
 						<motion.div
-							className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#156d95] to-[#167E6C] flex items-center justify-center"
+							className="w-10 h-10 rounded-xl bg-[#50C878] flex items-center justify-center"
 							animate={{ rotate: [0, 5, -5, 0] }}
 							transition={{ duration: 4, repeat: Number.POSITIVE_INFINITY }}
 						>
@@ -206,7 +206,7 @@ const LeftPanel = memo(function LeftPanel({
 							{/* Step Label */}
 							<motion.div variants={staggerItem} className="flex items-center gap-2">
 								<span
-									className="text-[#5A7F78] text-xs uppercase tracking-wider font-mono"
+									className="text-[#0B6E4F] text-xs uppercase tracking-wider font-mono"
 									style={{
 										fontFamily: "var(--font-geist-mono), 'Geist Mono', ui-monospace, monospace",
 									}}
@@ -218,7 +218,7 @@ const LeftPanel = memo(function LeftPanel({
 							{/* Main Headline */}
 							<motion.h1
 								variants={staggerItem}
-								className="text-4xl font-bold leading-snug text-[#111A4A] max-w-"
+								className="text-4xl font-bold leading-snug text-[#013220] max-w-"
 								style={{
 									fontFamily: "var(--font-figtree), Figtree",
 									fontWeight: "900",
@@ -230,7 +230,7 @@ const LeftPanel = memo(function LeftPanel({
 							{/* Description */}
 							<motion.p
 								variants={staggerItem}
-								className="text-lg leading-7 text-[#5A7F78] mb-10"
+								className="text-lg leading-7 text-[#0B6E4F] mb-10"
 								style={{ fontFamily: "var(--font-figtree), Figtree" }}
 							>
 								{content.description}
@@ -256,7 +256,7 @@ const LeftPanel = memo(function LeftPanel({
 						],
 					}}
 					transition={{ duration: 2.5, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
-					className="rounded-tl-2xl overflow-hidden shadow-2xl shadow-black/10 ring-2 ring-[#167E6C]/80 h-full w-full relative"
+					className="rounded-tl-2xl overflow-hidden shadow-2xl shadow-black/10 ring-2 ring-[#50C878] h-full w-full relative"
 				>
 					<Image
 						src="/thumbnail.png"
@@ -360,7 +360,7 @@ export default function OnboardingPage() {
 				>
 					<Link
 						href="/"
-						className="lg:hidden text-2xl font-bold text-[#111A4A]"
+						className="lg:hidden text-2xl font-bold text-[#013220]"
 						style={{ fontFamily: "Figtree", fontWeight: 800 }}
 					>
 						TeamUp
@@ -369,7 +369,7 @@ export default function OnboardingPage() {
 						<motion.button
 							type="button"
 							onClick={handleBack}
-							className="flex items-center gap-2 text-gray-600 hover:text-[#111A4A] transition-colors"
+							className="flex items-center gap-2 text-gray-600 hover:text-[#013220] transition-colors"
 							style={{ fontFamily: "Figtree" }}
 							whileHover={{ x: -4 }}
 							whileTap={{ scale: 0.95 }}
@@ -391,7 +391,7 @@ export default function OnboardingPage() {
 					<div className="px-6">
 						<div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
 							<motion.div
-								className="h-full bg-gradient-to-r from-[#156d95] to-[#167E6C] rounded-full"
+								className="h-full bg-[#0B6E4F] rounded-full"
 								initial={{ width: 0 }}
 								animate={{ width: `${progress}%` }}
 								transition={{ duration: 0.5, ease: "easeOut" }}
@@ -417,13 +417,13 @@ export default function OnboardingPage() {
 								{currentStep !== "complete" && (
 									<motion.div className="text-center space-y-3" variants={scaleIn}>
 										<motion.div
-											className="w-16 h-16 mx-auto bg-gradient-to-br from-[#156d95]/10 to-[#167E6C]/10 rounded-2xl flex items-center justify-center"
+											className="w-16 h-16 mx-auto bg-[#D1F2EB] rounded-2xl flex items-center justify-center"
 											whileHover={{ scale: 1.1, rotate: 5 }}
 										>
-											<StepIcon className="w-7 h-7 text-[#156d95]" />
+											<StepIcon className="w-7 h-7 text-[#50C878]" />
 										</motion.div>
 										<h2
-											className="text-2xl font-bold text-[#111A4A]"
+											className="text-2xl font-bold text-[#013220]"
 											style={{ fontFamily: "Figtree" }}
 										>
 											{stepInfo[currentStep].title}
@@ -439,7 +439,7 @@ export default function OnboardingPage() {
 									<div className="space-y-6">
 										<div className="space-y-2">
 											<p
-												className="text-sm font-medium text-[#111A4A]"
+												className="text-sm font-medium text-[#013220]"
 												style={{ fontFamily: "Figtree" }}
 											>
 												Email address
@@ -449,7 +449,7 @@ export default function OnboardingPage() {
 												value={data.email}
 												onChange={(e) => setData({ ...data, email: e.target.value })}
 												placeholder="you@company.com"
-												className="w-full px-4 py-3.5 rounded-xl border border-gray-200 focus:border-[#156d95] focus:ring-2 focus:ring-[#156d95]/20 outline-none transition-all text-[#111A4A]"
+												className="w-full px-4 py-3.5 rounded-xl border border-gray-200 focus:border-[#50C878] focus:ring-2 focus:ring-[#50C878]/20 outline-none transition-all text-[#013220]"
 												style={{ fontFamily: "Figtree" }}
 											/>
 										</div>
@@ -499,7 +499,7 @@ export default function OnboardingPage() {
 												/>
 											</svg>
 											<span
-												className="text-[#111A4A] font-medium"
+												className="text-[#013220] font-medium"
 												style={{ fontFamily: "Figtree" }}
 											>
 												Continue with Google
@@ -512,7 +512,7 @@ export default function OnboardingPage() {
 									<div className="space-y-6">
 										<p className="text-center text-gray-600" style={{ fontFamily: "Figtree" }}>
 											We sent a 6-digit code to{" "}
-											<span className="font-medium text-[#111A4A]">{data.email}</span>
+											<span className="font-medium text-[#013220]">{data.email}</span>
 										</p>
 										<div className="flex justify-center gap-3">
 											{data.otp.map((digit, index) => (
@@ -524,7 +524,7 @@ export default function OnboardingPage() {
 													maxLength={1}
 													value={digit}
 													onChange={(e) => handleOtpChange(index, e.target.value)}
-													className="w-12 h-14 text-center text-xl font-semibold rounded-xl border border-gray-200 focus:border-[#156d95] focus:ring-2 focus:ring-[#156d95]/20 outline-none transition-all text-[#111A4A]"
+													className="w-12 h-14 text-center text-xl font-semibold rounded-xl border border-gray-200 focus:border-[#50C878] focus:ring-2 focus:ring-[#50C878]/20 outline-none transition-all text-[#013220]"
 													style={{ fontFamily: "Figtree" }}
 													whileFocus={{ scale: 1.05 }}
 												/>
@@ -532,7 +532,7 @@ export default function OnboardingPage() {
 										</div>
 										<button
 											type="button"
-											className="w-full text-center text-[#156d95] text-sm hover:underline"
+											className="w-full text-center text-[#50C878] text-sm hover:underline"
 											style={{ fontFamily: "Figtree" }}
 										>
 											Didn't receive the code? Resend
@@ -544,7 +544,7 @@ export default function OnboardingPage() {
 									<div className="space-y-6">
 										<div className="space-y-2">
 											<p
-												className="text-sm font-medium text-[#111A4A]"
+												className="text-sm font-medium text-[#013220]"
 												style={{ fontFamily: "Figtree" }}
 											>
 												Workspace name
@@ -554,7 +554,7 @@ export default function OnboardingPage() {
 												value={data.workspaceName}
 												onChange={(e) => setData({ ...data, workspaceName: e.target.value })}
 												placeholder="Acme Inc."
-												className="w-full px-4 py-3.5 rounded-xl border border-gray-200 focus:border-[#156d95] focus:ring-2 focus:ring-[#156d95]/20 outline-none transition-all text-[#111A4A]"
+												className="w-full px-4 py-3.5 rounded-xl border border-gray-200 focus:border-[#50C878] focus:ring-2 focus:ring-[#50C878]/20 outline-none transition-all text-[#013220]"
 												style={{ fontFamily: "Figtree" }}
 											/>
 											<p className="text-sm text-gray-500" style={{ fontFamily: "Figtree" }}>
@@ -568,7 +568,7 @@ export default function OnboardingPage() {
 									<div className="space-y-6">
 										<div className="space-y-2">
 											<p
-												className="text-sm font-medium text-[#111A4A]"
+												className="text-sm font-medium text-[#013220]"
 												style={{ fontFamily: "Figtree" }}
 											>
 												Your full name
@@ -578,7 +578,7 @@ export default function OnboardingPage() {
 												value={data.userName}
 												onChange={(e) => setData({ ...data, userName: e.target.value })}
 												placeholder="John Doe"
-												className="w-full px-4 py-3.5 rounded-xl border border-gray-200 focus:border-[#156d95] focus:ring-2 focus:ring-[#156d95]/20 outline-none transition-all text-[#111A4A]"
+												className="w-full px-4 py-3.5 rounded-xl border border-gray-200 focus:border-[#50C878] focus:ring-2 focus:ring-[#50C878]/20 outline-none transition-all text-[#013220]"
 												style={{ fontFamily: "Figtree" }}
 											/>
 										</div>
@@ -589,7 +589,7 @@ export default function OnboardingPage() {
 									<div className="space-y-6">
 										<div className="space-y-3">
 											<p
-												className="text-sm font-medium text-[#111A4A]"
+												className="text-sm font-medium text-[#013220]"
 												style={{ fontFamily: "Figtree" }}
 											>
 												Invite teammates by email
@@ -602,7 +602,7 @@ export default function OnboardingPage() {
 													value={email}
 													onChange={(e) => handleInviteEmailChange(index, e.target.value)}
 													placeholder={`teammate${index + 1}@company.com`}
-													className="w-full px-4 py-3.5 rounded-xl border border-gray-200 focus:border-[#156d95] focus:ring-2 focus:ring-[#156d95]/20 outline-none transition-all text-[#111A4A]"
+													className="w-full px-4 py-3.5 rounded-xl border border-gray-200 focus:border-[#50C878] focus:ring-2 focus:ring-[#50C878]/20 outline-none transition-all text-[#013220]"
 													style={{ fontFamily: "Figtree" }}
 													initial={{ opacity: 0, y: 10 }}
 													animate={{ opacity: 1, y: 0 }}
@@ -614,7 +614,7 @@ export default function OnboardingPage() {
 												onClick={() =>
 													setData({ ...data, inviteEmails: [...data.inviteEmails, ""] })
 												}
-												className="text-[#156d95] text-sm font-medium hover:underline"
+												className="text-[#50C878] text-sm font-medium hover:underline"
 												style={{ fontFamily: "Figtree" }}
 												whileHover={{ scale: 1.02 }}
 											>
@@ -638,7 +638,7 @@ export default function OnboardingPage() {
 										animate="animate"
 									>
 										<motion.div
-											className="w-24 h-24 mx-auto bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-lg shadow-green-500/30"
+											className="w-24 h-24 mx-auto bg-gradient-to-br bg-[#50C878] rounded-full flex items-center justify-center shadow-lg shadow-lg"
 											initial={{ scale: 0 }}
 											animate={{ scale: 1 }}
 											transition={{ type: "spring", delay: 0.2 }}
@@ -647,21 +647,21 @@ export default function OnboardingPage() {
 										</motion.div>
 										<div>
 											<h3
-												className="text-2xl font-bold text-[#111A4A] mb-2"
+												className="text-2xl font-bold text-[#013220] mb-2"
 												style={{ fontFamily: "Figtree" }}
 											>
 												Welcome, {data.userName}!
 											</h3>
 											<p className="text-gray-600" style={{ fontFamily: "Figtree" }}>
 												Your workspace{" "}
-												<span className="font-semibold text-[#156d95]">{data.workspaceName}</span>{" "}
+												<span className="font-semibold text-[#50C878]">{data.workspaceName}</span>{" "}
 												is ready.
 											</p>
 										</div>
 										<motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
 											<Link
 												href="/dashboard"
-												className="inline-flex items-center justify-center gap-2 w-full bg-gradient-to-r from-[#156d95] to-[#167E6C] text-white px-6 py-4 rounded-xl font-medium hover:shadow-lg hover:shadow-[#156d95]/30 transition-all"
+												className="inline-flex items-center justify-center gap-2 w-full bg-[#0B6E4F] text-white px-6 py-4 rounded-xl font-medium hover:shadow-lg hover:shadow-lg transition-all"
 												style={{ fontFamily: "Figtree" }}
 											>
 												Go to Dashboard
@@ -677,7 +677,7 @@ export default function OnboardingPage() {
 										type="button"
 										onClick={handleNext}
 										disabled={!canProceed || isLoading}
-										className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#156d95] to-[#167E6C] text-white px-6 py-4 rounded-xl font-medium hover:shadow-lg hover:shadow-[#156d95]/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+										className="w-full flex items-center justify-center gap-2 bg-[#0B6E4F] text-white px-6 py-4 rounded-xl font-medium hover:bg-[#013220] hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
 										style={{ fontFamily: "Figtree" }}
 										whileHover={canProceed ? { scale: 1.01 } : {}}
 										whileTap={canProceed ? { scale: 0.99 } : {}}
