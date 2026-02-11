@@ -18,6 +18,14 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+# Run unit tests
+echo "🧪 Running unit tests..."
+pnpm run test:run
+if [ $? -ne 0 ]; then
+  echo "❌ Unit tests failed! Please fix the failing tests before pushing."
+  exit 1
+fi
+
 # Run build to ensure no build errors
 echo "🏗️ Running build check..."
 pnpm run build
