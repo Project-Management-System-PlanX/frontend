@@ -1,16 +1,20 @@
 "use client";
 
-import { TeamSidebar } from "@/components/dashboard/TeamSidebar";
-import { TasksArea } from "../../../components/dashboard/TasksArea";
+import { useState } from "react";
+import { ForYouView } from "@/components/dashboard/ForYouView";
+import { TaskSidebar } from "@/components/dashboard/TaskSidebar";
+import { TasksArea } from "@/components/dashboard/TasksArea";
 
 export default function TaskPage() {
+	const [showForYou, setShowForYou] = useState(false);
+
 	return (
 		<div className="h-screen flex overflow-hidden bg-[#D1F2EB]">
-			{/* Left Sidebar - Shared across all dashboard pages */}
-			<TeamSidebar activeChannel="" onChannelSelect={() => {}} onDirectorySelect={() => {}} />
+			{/* Left Sidebar - Task-specific sidebar */}
+			<TaskSidebar onForYouClick={() => setShowForYou(true)} forYouActive={showForYou} />
 
-			{/* Main Task Area */}
-			<TasksArea />
+			{/* Main Content Area */}
+			{showForYou ? <ForYouView /> : <TasksArea />}
 		</div>
 	);
 }

@@ -15,55 +15,75 @@
 
 :root {
 	/* Background & Foreground */
-	--background: oklch(0.99 0.005 168); /* Soft white with mint tint */
-	--foreground: oklch(0.22 0.05 165); /* Dark Evergreen for text */
+	--background: oklch(0.99 0.005 168);
+	/* Soft white with mint tint */
+	--foreground: oklch(0.22 0.05 165);
+	/* Dark Evergreen for text */
 
 	/* Cards & Popovers */
-	--card: oklch(1 0 0); /* Pure white cards */
+	--card: oklch(1 0 0);
+	/* Pure white cards */
 	--card-foreground: oklch(0.22 0.05 165);
 	--popover: oklch(1 0 0);
 	--popover-foreground: oklch(0.22 0.05 165);
 
 	/* Primary - Emerald Green */
-	--primary: oklch(0.72 0.14 155); /* Emerald Green */
-	--primary-foreground: oklch(0.99 0.01 168); /* Near white */
+	--primary: oklch(0.72 0.14 155);
+	/* Emerald Green */
+	--primary-foreground: oklch(0.99 0.01 168);
+	/* Near white */
 
 	/* Secondary - Royal Amethyst */
-	--secondary: oklch(0.93 0.04 168); /* Mint Whisper */
-	--secondary-foreground: oklch(0.44 0.09 162); /* Royal Amethyst */
+	--secondary: oklch(0.93 0.04 168);
+	/* Mint Whisper */
+	--secondary-foreground: oklch(0.44 0.09 162);
+	/* Royal Amethyst */
 
 	/* Muted */
-	--muted: oklch(0.93 0.04 168); /* Mint Whisper */
+	--muted: oklch(0.93 0.04 168);
+	/* Mint Whisper */
 	--muted-foreground: oklch(0.5 0.04 165);
 
 	/* Accent */
-	--accent: oklch(0.93 0.04 168); /* Mint Whisper */
-	--accent-foreground: oklch(0.44 0.09 162); /* Royal Amethyst */
+	--accent: oklch(0.93 0.04 168);
+	/* Mint Whisper */
+	--accent-foreground: oklch(0.44 0.09 162);
+	/* Royal Amethyst */
 
 	/* Destructive */
 	--destructive: oklch(0.58 0.22 27);
 	--destructive-foreground: oklch(0.98 0.01 27);
 
 	/* Borders & Inputs */
-	--border: oklch(0.88 0.03 168); /* Soft mint border */
+	--border: oklch(0.88 0.03 168);
+	/* Soft mint border */
 	--input: oklch(0.88 0.03 168);
-	--ring: oklch(0.72 0.14 155); /* Emerald Green ring */
+	--ring: oklch(0.72 0.14 155);
+	/* Emerald Green ring */
 
 	/* Charts - Gradient from Mint to Dark Evergreen */
-	--chart-1: oklch(0.93 0.04 168); /* Mint Whisper */
-	--chart-2: oklch(0.8 0.1 160); /* Light emerald */
-	--chart-3: oklch(0.72 0.14 155); /* Emerald Green */
-	--chart-4: oklch(0.55 0.1 158); /* Mid green */
-	--chart-5: oklch(0.44 0.09 162); /* Royal Amethyst */
+	--chart-1: oklch(0.93 0.04 168);
+	/* Mint Whisper */
+	--chart-2: oklch(0.8 0.1 160);
+	/* Light emerald */
+	--chart-3: oklch(0.72 0.14 155);
+	/* Emerald Green */
+	--chart-4: oklch(0.55 0.1 158);
+	/* Mid green */
+	--chart-5: oklch(0.44 0.09 162);
+	/* Royal Amethyst */
 
 	--radius: 0.625rem;
 
 	/* Sidebar */
-	--sidebar: oklch(0.99 0.005 168); /* Soft mint tinted white */
+	--sidebar: oklch(0.99 0.005 168);
+	/* Soft mint tinted white */
 	--sidebar-foreground: oklch(0.22 0.05 165);
-	--sidebar-primary: oklch(0.72 0.14 155); /* Emerald Green */
+	--sidebar-primary: oklch(0.72 0.14 155);
+	/* Emerald Green */
 	--sidebar-primary-foreground: oklch(0.99 0.01 168);
-	--sidebar-accent: oklch(0.93 0.04 168); /* Mint Whisper */
+	--sidebar-accent: oklch(0.93 0.04 168);
+	/* Mint Whisper */
 	--sidebar-accent-foreground: oklch(0.44 0.09 162);
 	--sidebar-border: oklch(0.88 0.03 168);
 	--sidebar-ring: oklch(0.72 0.14 155);
@@ -71,21 +91,26 @@
 
 .dark {
 	/* Background & Foreground */
-	--background: oklch(0.22 0.05 165); /* Dark Evergreen */
-	--foreground: oklch(0.93 0.04 168); /* Mint Whisper for text */
+	--background: oklch(0.22 0.05 165);
+	/* Dark Evergreen */
+	--foreground: oklch(0.93 0.04 168);
+	/* Mint Whisper for text */
 
 	/* Cards & Popovers */
-	--card: oklch(0.28 0.05 165); /* Slightly lighter than BG */
+	--card: oklch(0.28 0.05 165);
+	/* Slightly lighter than BG */
 	--card-foreground: oklch(0.93 0.04 168);
 	--popover: oklch(0.28 0.05 165);
 	--popover-foreground: oklch(0.93 0.04 168);
 
 	/* Primary - Emerald Green (brighter in dark mode) */
-	--primary: oklch(0.75 0.15 155); /* Slightly brighter Emerald */
+	--primary: oklch(0.75 0.15 155);
+	/* Slightly brighter Emerald */
 	--primary-foreground: oklch(0.22 0.05 165);
 
 	/* Secondary */
-	--secondary: oklch(0.35 0.06 162); /* Muted Royal Amethyst */
+	--secondary: oklch(0.35 0.06 162);
+	/* Muted Royal Amethyst */
 	--secondary-foreground: oklch(0.93 0.04 168);
 
 	/* Muted */
@@ -101,7 +126,8 @@
 	--destructive-foreground: oklch(0.2 0.02 25);
 
 	/* Borders & Inputs */
-	--border: oklch(0.93 0.04 168 / 15%); /* Translucent Mint */
+	--border: oklch(0.93 0.04 168 / 15%);
+	/* Translucent Mint */
 	--input: oklch(0.93 0.04 168 / 20%);
 	--ring: oklch(0.72 0.14 155);
 
@@ -175,6 +201,7 @@
 		@apply border-border outline-ring/50;
 		@apply border-border outline-ring/50;
 	}
+
 	body {
 		/* Set body text to Figtree 18px */
 		@apply bg-background text-foreground text-lg;
@@ -187,7 +214,77 @@
 	* {
 		@apply border-border outline-ring/50;
 	}
+
 	body {
 		@apply bg-background text-foreground;
+	}
+}
+
+/* ─── For You page animations ─── */
+@keyframes fadeInUp {
+	from {
+		opacity: 0;
+		transform: translateY(16px);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes bounceIn {
+	0% {
+		opacity: 0;
+		transform: translateX(-50%) scale(0.3);
+	}
+
+	50% {
+		opacity: 1;
+		transform: translateX(-50%) scale(1.08);
+	}
+
+	70% {
+		transform: translateX(-50%) scale(0.95);
+	}
+
+	100% {
+		transform: translateX(-50%) scale(1);
+	}
+}
+
+@keyframes gentleFloat {
+	0%,
+	100% {
+		transform: translateY(0);
+	}
+
+	50% {
+		transform: translateY(-8px);
+	}
+}
+
+@keyframes checkPulse {
+	0%,
+	100% {
+		transform: translateX(-50%) scale(1);
+	}
+
+	50% {
+		transform: translateX(-50%) scale(1.08);
+	}
+}
+
+@keyframes shimmer {
+	0% {
+		opacity: 0.5;
+	}
+
+	50% {
+		opacity: 1;
+	}
+
+	100% {
+		opacity: 0.5;
 	}
 }

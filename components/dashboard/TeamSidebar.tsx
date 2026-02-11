@@ -1,26 +1,13 @@
 "use client";
 
-import {
-	CheckSquare,
-	ChevronDown,
-	ExternalLink,
-	FolderOpen,
-	Hash,
-	Home,
-	MessageSquare,
-	Plus,
-	Settings,
-	UserPlus,
-} from "lucide-react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { ChevronDown, ExternalLink, Hash, Plus, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { DirectoriesSection } from "./DirectoriesSection";
+import { IconRail } from "./IconRail";
 
 interface Channel {
 	id: string;
@@ -61,7 +48,6 @@ export function TeamSidebar({
 	const [channelsExpanded, setChannelsExpanded] = useState(true);
 	const [dmsExpanded, setDmsExpanded] = useState(true);
 	const [activeDirectory, setActiveDirectory] = useState<string | undefined>("channels");
-	const pathname = usePathname();
 
 	const handleDirectorySelect = (directory: string) => {
 		setActiveDirectory(directory);
@@ -76,114 +62,8 @@ export function TeamSidebar({
 
 	return (
 		<div className="flex h-full" style={{ fontFamily: "var(--font-figtree), Figtree" }}>
-			{/* Icon Rail */}
-			<div className="w-14 bg-slate-50 border-r border-slate-200 flex flex-col items-center py-4 gap-3">
-				<TooltipProvider delayDuration={0}>
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Link href="/dashboard">
-								<Button
-									variant="ghost"
-									size="icon"
-									className={cn(
-										"w-9 h-9 rounded-lg transition-colors",
-										pathname === "/dashboard"
-											? "bg-[#0B6E4F] text-white hover:bg-[#0B6E4F]/90"
-											: "text-slate-500 hover:text-slate-900 hover:bg-slate-200",
-									)}
-								>
-									<Home className="w-5 h-5" />
-								</Button>
-							</Link>
-						</TooltipTrigger>
-						<TooltipContent side="right">Dashboard</TooltipContent>
-					</Tooltip>
-
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Link href="/dashboard/chat">
-								<Button
-									variant="ghost"
-									size="icon"
-									className={cn(
-										"w-9 h-9 rounded-lg transition-colors",
-										pathname === "/dashboard/chat"
-											? "bg-[#0B6E4F] text-white hover:bg-[#0B6E4F]/90"
-											: "text-slate-500 hover:text-slate-900 hover:bg-slate-200",
-									)}
-								>
-									<MessageSquare className="w-5 h-5" />
-								</Button>
-							</Link>
-						</TooltipTrigger>
-						<TooltipContent side="right">Chat</TooltipContent>
-					</Tooltip>
-
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Link href="/dashboard/task">
-								<Button
-									variant="ghost"
-									size="icon"
-									className={cn(
-										"w-9 h-9 rounded-lg transition-colors",
-										pathname === "/dashboard/task"
-											? "bg-[#0B6E4F] text-white hover:bg-[#0B6E4F]/90"
-											: "text-slate-500 hover:text-slate-900 hover:bg-slate-200",
-									)}
-								>
-									<CheckSquare className="w-5 h-5" />
-								</Button>
-							</Link>
-						</TooltipTrigger>
-						<TooltipContent side="right">Tasks</TooltipContent>
-					</Tooltip>
-
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Link href="/dashboard/files">
-								<Button
-									variant="ghost"
-									size="icon"
-									className={cn(
-										"w-9 h-9 rounded-lg transition-colors",
-										pathname === "/dashboard/files"
-											? "bg-[#0B6E4F] text-white hover:bg-[#0B6E4F]/90"
-											: "text-slate-500 hover:text-slate-900 hover:bg-slate-200",
-									)}
-								>
-									<FolderOpen className="w-5 h-5" />
-								</Button>
-							</Link>
-						</TooltipTrigger>
-						<TooltipContent side="right">Files</TooltipContent>
-					</Tooltip>
-				</TooltipProvider>
-
-				<div className="flex-1" />
-
-				<TooltipProvider delayDuration={0}>
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								variant="ghost"
-								size="icon"
-								className="w-9 h-9 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200"
-							>
-								<Settings className="w-5 h-5" />
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent side="right">Settings</TooltipContent>
-					</Tooltip>
-				</TooltipProvider>
-
-				<Avatar className="w-9 h-9 ring-2 ring-[#0B6E4F]/20">
-					<AvatarImage src="/avatars/user.png" />
-					<AvatarFallback className="bg-[#0B6E4F] text-white text-sm font-medium">
-						RJ
-					</AvatarFallback>
-				</Avatar>
-			</div>
+			{/* Shared Icon Rail */}
+			<IconRail />
 
 			{/* Channel List */}
 			<div className="w-56 bg-white flex flex-col border-r border-slate-200">
