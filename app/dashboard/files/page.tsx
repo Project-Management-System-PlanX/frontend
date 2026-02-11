@@ -1,16 +1,16 @@
 "use client";
 
-import { DashboardHome } from "@/components/dashboard/DashboardHome";
+import { FilesArea } from "@/components/dashboard/FilesArea";
 import { TeamSidebar } from "@/components/dashboard/TeamSidebar";
 
-export default function DashboardPage() {
+export default function FilesPage() {
 	return (
 		<div className="h-screen flex overflow-hidden bg-[#D1F2EB]">
 			{/* Left Sidebar - Shared across all dashboard pages */}
 			<TeamSidebar activeChannel="" onChannelSelect={() => {}} onDirectorySelect={() => {}} />
 
-			{/* Main Dashboard Home */}
-			<DashboardHome />
+			{/* Main Files Area */}
+			<FilesArea />
 		</div>
 	);
 }

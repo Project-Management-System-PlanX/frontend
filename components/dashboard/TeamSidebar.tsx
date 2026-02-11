@@ -12,6 +12,8 @@ import {
 	Settings,
 	UserPlus,
 } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -59,6 +61,7 @@ export function TeamSidebar({
 	const [channelsExpanded, setChannelsExpanded] = useState(true);
 	const [dmsExpanded, setDmsExpanded] = useState(true);
 	const [activeDirectory, setActiveDirectory] = useState<string | undefined>("channels");
+	const pathname = usePathname();
 
 	const handleDirectorySelect = (directory: string) => {
 		setActiveDirectory(directory);
@@ -78,52 +81,80 @@ export function TeamSidebar({
 				<TooltipProvider delayDuration={0}>
 					<Tooltip>
 						<TooltipTrigger asChild>
-							<Button
-								variant="ghost"
-								size="icon"
-								className="w-9 h-9 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200"
-							>
-								<Home className="w-5 h-5" />
-							</Button>
+							<Link href="/dashboard">
+								<Button
+									variant="ghost"
+									size="icon"
+									className={cn(
+										"w-9 h-9 rounded-lg transition-colors",
+										pathname === "/dashboard"
+											? "bg-[#0B6E4F] text-white hover:bg-[#0B6E4F]/90"
+											: "text-slate-500 hover:text-slate-900 hover:bg-slate-200",
+									)}
+								>
+									<Home className="w-5 h-5" />
+								</Button>
+							</Link>
 						</TooltipTrigger>
-						<TooltipContent side="right">Home</TooltipContent>
+						<TooltipContent side="right">Dashboard</TooltipContent>
 					</Tooltip>
 
 					<Tooltip>
 						<TooltipTrigger asChild>
-							<Button
-								variant="ghost"
-								size="icon"
-								className="w-9 h-9 rounded-lg bg-[#0B6E4F] text-white hover:bg-[#0B6E4F]/90"
-							>
-								<MessageSquare className="w-5 h-5" />
-							</Button>
+							<Link href="/dashboard/chat">
+								<Button
+									variant="ghost"
+									size="icon"
+									className={cn(
+										"w-9 h-9 rounded-lg transition-colors",
+										pathname === "/dashboard/chat"
+											? "bg-[#0B6E4F] text-white hover:bg-[#0B6E4F]/90"
+											: "text-slate-500 hover:text-slate-900 hover:bg-slate-200",
+									)}
+								>
+									<MessageSquare className="w-5 h-5" />
+								</Button>
+							</Link>
 						</TooltipTrigger>
-						<TooltipContent side="right">Messages</TooltipContent>
+						<TooltipContent side="right">Chat</TooltipContent>
 					</Tooltip>
 
 					<Tooltip>
 						<TooltipTrigger asChild>
-							<Button
-								variant="ghost"
-								size="icon"
-								className="w-9 h-9 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200"
-							>
-								<CheckSquare className="w-5 h-5" />
-							</Button>
+							<Link href="/dashboard/task">
+								<Button
+									variant="ghost"
+									size="icon"
+									className={cn(
+										"w-9 h-9 rounded-lg transition-colors",
+										pathname === "/dashboard/task"
+											? "bg-[#0B6E4F] text-white hover:bg-[#0B6E4F]/90"
+											: "text-slate-500 hover:text-slate-900 hover:bg-slate-200",
+									)}
+								>
+									<CheckSquare className="w-5 h-5" />
+								</Button>
+							</Link>
 						</TooltipTrigger>
 						<TooltipContent side="right">Tasks</TooltipContent>
 					</Tooltip>
 
 					<Tooltip>
 						<TooltipTrigger asChild>
-							<Button
-								variant="ghost"
-								size="icon"
-								className="w-9 h-9 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200"
-							>
-								<FolderOpen className="w-5 h-5" />
-							</Button>
+							<Link href="/dashboard/files">
+								<Button
+									variant="ghost"
+									size="icon"
+									className={cn(
+										"w-9 h-9 rounded-lg transition-colors",
+										pathname === "/dashboard/files"
+											? "bg-[#0B6E4F] text-white hover:bg-[#0B6E4F]/90"
+											: "text-slate-500 hover:text-slate-900 hover:bg-slate-200",
+									)}
+								>
+									<FolderOpen className="w-5 h-5" />
+								</Button>
+							</Link>
 						</TooltipTrigger>
 						<TooltipContent side="right">Files</TooltipContent>
 					</Tooltip>
