@@ -62,7 +62,11 @@ const channels: Channel[] = [
 	},
 ];
 
-export function ChannelsDirectory() {
+interface ChannelsDirectoryProps {
+	onBack?: () => void;
+}
+
+export function ChannelsDirectory(_props: ChannelsDirectoryProps) {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [showBanner, setShowBanner] = useState(true);
 	const [hoveredChannelId, setHoveredChannelId] = useState<string | null>(null);
@@ -104,7 +108,7 @@ export function ChannelsDirectory() {
 					</p>
 					<Button
 						onClick={() => setShowBanner(false)}
-						className="bg-slate-700 hover:bg-slate-600  text-white font-semibold"
+						className="bg-slate-700 hover:bg-slate-600 text-white font-semibold"
 					>
 						Create a channel
 					</Button>
@@ -184,40 +188,58 @@ export function ChannelsDirectory() {
 					) : (
 						<div className="space-y-3">
 							{filteredChannels.map((channel) => (
-								<button
-									type="button"
+								<ChannelCard
 									key={channel.id}
+									channel={channel}
+									isHovered={hoveredChannelId === channel.id}
 									onMouseEnter={() => setHoveredChannelId(channel.id)}
 									onMouseLeave={() => setHoveredChannelId(null)}
-									className={`w-full text-left px-4 py-3 border border-slate-200 rounded-lg transition-colors cursor-pointer ${
-										hoveredChannelId === channel.id ? "bg-slate-50 border-slate-300" : "bg-white"
-									}`}
-								>
-									<div className="flex items-start justify-between gap-3">
-										<div className="flex-1 min-w-0">
-											<div className="flex items-center gap-2 mb-1">
-												<Hash className="w-4 h-4 text-slate-400 shrink-0" />
-												<h3 className="font-medium text-slate-900 text-sm truncate">
-													{channel.name}
-												</h3>
-											</div>
-											<p className="text-xs text-slate-600 ml-6">{channel.description}</p>
-										</div>
-										{hoveredChannelId === channel.id && channel.isJoined && (
-											<Button
-												size="sm"
-												className="bg-[#0B6E4F] hover:bg-[#0B6E4F]/90 text-white text-xs shrink-0"
-												onClick={(e) => e.stopPropagation()}
-											>
-												Leave
-											</Button>
-										)}
-									</div>
-								</button>
+								/>
 							))}
 						</div>
 					)}
 				</div>
+			</div>
+		</div>
+	);
+}
+
+function ChannelCard({
+	channel,
+	isHovered,
+	onMouseEnter,
+	onMouseLeave,
+}: {
+	channel: Channel;
+	isHovered: boolean;
+	onMouseEnter: () => void;
+	onMouseLeave: () => void;
+}) {
+	return (
+		// biome-ignore lint/a11y/noStaticElementInteractions: div uses onMouseEnter/Leave for hover highlight only
+		<div
+			onMouseEnter={onMouseEnter}
+			onMouseLeave={onMouseLeave}
+			className={`w-full text-left px-4 py-3 border border-slate-200 rounded-lg transition-colors cursor-pointer ${
+				isHovered ? "bg-slate-50 border-slate-300" : "bg-white"
+			}`}
+		>
+			<div className="flex items-start justify-between gap-3">
+				<div className="flex-1 min-w-0">
+					<div className="flex items-center gap-2 mb-1">
+						<Hash className="w-4 h-4 text-slate-400 shrink-0" />
+						<h3 className="font-medium text-slate-900 text-sm truncate">{channel.name}</h3>
+					</div>
+					<p className="text-xs text-slate-600 ml-6">{channel.description}</p>
+				</div>
+				{isHovered && channel.isJoined && (
+					<Button
+						size="sm"
+						className="bg-[#0B6E4F] hover:bg-[#0B6E4F]/90 text-white text-xs shrink-0"
+					>
+						Leave
+					</Button>
+				)}
 			</div>
 		</div>
 	);

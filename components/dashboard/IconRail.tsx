@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
 	{ href: "/dashboard", icon: Home, label: "Dashboard", exact: true },
-	{ href: "/dashboard/chat", icon: MessageSquare, label: "Chat", exact: true },
+	{ href: "/dashboard/chat", icon: MessageSquare, label: "Chat", exact: false },
 	{ href: "/dashboard/task", icon: CheckSquare, label: "Tasks", exact: true },
 	{ href: "/dashboard/files", icon: FolderOpen, label: "Files", exact: true },
 ];

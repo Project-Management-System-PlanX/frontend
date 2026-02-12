@@ -1,24 +1,24 @@
 "use client";
 
 import { Hash, MoreHorizontal, UserCheck, Users, Users2 } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface DirectoriesSectionProps {
-	onDirectorySelect: (directory: string) => void;
-	activeDirectory?: string;
+	onDirectorySelect?: (directory: string) => void;
 }
 
-export function DirectoriesSection({
-	onDirectorySelect,
-	activeDirectory,
-}: DirectoriesSectionProps) {
-	const directories = [
-		{ id: "people", label: "People", icon: Users2 },
-		{ id: "channels", label: "Channels", icon: Hash },
-		{ id: "groups", label: "Groups", icon: Users },
-		{ id: "invitations", label: "Invitations", icon: UserCheck },
-	];
+const directories = [
+	{ id: "people", label: "People", icon: Users2, href: "/dashboard/chat/directories/people" },
+	{ id: "channels", label: "Channels", icon: Hash, href: "/dashboard/chat/directories/channel" },
+	{ id: "groups", label: "Groups", icon: Users, href: "#" },
+	{ id: "invitations", label: "Invitations", icon: UserCheck, href: "#" },
+];
+
+export function DirectoriesSection(_props: DirectoriesSectionProps) {
+	const pathname = usePathname();
 
 	return (
 		<div className="mt-4 px-2">
@@ -29,16 +29,16 @@ export function DirectoriesSection({
 			<div className="grid grid-cols-3 gap-2">
 				{directories.slice(0, 3).map((dir) => {
 					const Icon = dir.icon;
-					const isActive = activeDirectory === dir.id;
+					const isActive = pathname.startsWith(dir.href) && dir.href !== "#";
 					return (
-						<Button
+						<Link
 							key={dir.id}
-							variant="ghost"
+							href={dir.href}
 							className={cn(
 								"flex h-auto flex-col items-center gap-1 rounded-lg p-2 transition-colors",
 								"hover:bg-slate-100",
+								isActive && "bg-slate-100",
 							)}
-							onClick={() => onDirectorySelect(dir.id)}
 						>
 							<div
 								className={cn(
@@ -56,17 +56,18 @@ export function DirectoriesSection({
 							>
 								{dir.label}
 							</span>
-						</Button>
+						</Link>
 					);
 				})}
 				<div className="flex items-center gap-1">
 					{(() => {
-						const isActive = activeDirectory === "invitations";
+						const invDir = directories[3];
+						const Icon = invDir.icon;
+						const isActive = pathname.startsWith(invDir.href) && invDir.href !== "#";
 						return (
-							<Button
-								variant="ghost"
+							<Link
+								href={invDir.href}
 								className="flex h-auto flex-col items-center gap-1 rounded-lg p-2 transition-colors hover:bg-slate-100"
-								onClick={() => onDirectorySelect("invitations")}
 							>
 								<div
 									className={cn(
@@ -74,7 +75,7 @@ export function DirectoriesSection({
 										isActive ? "bg-[#0B6E4F]" : "bg-slate-100 text-slate-500",
 									)}
 								>
-									<UserCheck className={cn("h-3.5 w-3.5", isActive ? "text-white" : "")} />
+									<Icon className={cn("h-3.5 w-3.5", isActive ? "text-white" : "")} />
 								</div>
 								<span
 									className={cn(
@@ -84,7 +85,7 @@ export function DirectoriesSection({
 								>
 									Invitations
 								</span>
-							</Button>
+							</Link>
 						);
 					})()}
 					<Button

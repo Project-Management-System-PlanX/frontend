@@ -53,6 +53,7 @@ interface ChatAreaProps {
 	channelName: string;
 	detailsOpen: boolean;
 	onToggleDetails: () => void;
+	isDM?: boolean;
 }
 
 const messages: Message[] = [
@@ -97,7 +98,7 @@ const messages: Message[] = [
 	},
 ];
 
-export function ChatArea({ channelName, detailsOpen, onToggleDetails }: ChatAreaProps) {
+export function ChatArea({ channelName, detailsOpen, onToggleDetails, isDM }: ChatAreaProps) {
 	const [messageInput, setMessageInput] = useState("");
 
 	return (
@@ -109,7 +110,7 @@ export function ChatArea({ channelName, detailsOpen, onToggleDetails }: ChatArea
 			<div className="h-14 px-4 flex items-center justify-between border-b border-[#e5e7eb] shrink-0">
 				<div className="flex items-center gap-3">
 					<span className="text-[#202020] font-medium text-lg flex items-center gap-2">
-						<span className="text-[#9a9a9a]">#</span> {channelName}
+						<span className="text-[#9a9a9a]">{isDM ? "@" : "#"}</span> {channelName}
 					</span>
 					<Button variant="ghost" size="icon" className="w-6 h-6 text-amber-400">
 						<Star className="w-4 h-4 fill-current" />

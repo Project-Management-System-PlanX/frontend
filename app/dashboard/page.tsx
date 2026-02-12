@@ -7,7 +7,7 @@ export default function DashboardPage() {
 	return (
 		<div className="h-screen flex overflow-hidden bg-[#D1F2EB]">
 			{/* Left Sidebar - Shared across all dashboard pages */}
-			<TeamSidebar activeChannel="" onChannelSelect={() => {}} onDirectorySelect={() => {}} />
+			<TeamSidebar activeChannel="" onChannelSelect={() => {}} />
 
 			{/* Main Dashboard Home */}
 			<DashboardHome />

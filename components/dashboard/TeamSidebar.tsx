@@ -1,6 +1,8 @@
 "use client";
 
 import { ChevronDown, ExternalLink, Hash, Plus, UserPlus } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -18,14 +20,14 @@ interface Channel {
 interface DirectMessage {
 	id: string;
 	name: string;
+	slug: string;
 	avatar?: string;
 	online?: boolean;
 }
 
 interface TeamSidebarProps {
-	activeChannel: string;
-	onChannelSelect: (channelId: string) => void;
-	onDirectorySelect?: (directory: string) => void;
+	activeChannel?: string;
+	onChannelSelect?: (channelId: string) => void;
 }
 
 const channels: Channel[] = [
@@ -35,29 +37,22 @@ const channels: Channel[] = [
 ];
 
 const directMessages: DirectMessage[] = [
-	{ id: "user-1", name: "Ravikrishna J (you)", online: true },
-	{ id: "user-2", name: "Sarah Chen", online: true },
-	{ id: "user-3", name: "Alex Morgan", online: false },
+	{ id: "user-1", name: "Ravikrishna J (you)", slug: "ravikrishna-j", online: true },
+	{ id: "user-2", name: "Sarah Chen", slug: "sarah-chen", online: true },
+	{ id: "user-3", name: "Alex Morgan", slug: "alex-morgan", online: false },
 ];
 
-export function TeamSidebar({
-	activeChannel,
-	onChannelSelect,
-	onDirectorySelect,
-}: TeamSidebarProps) {
+export function TeamSidebar(_props: TeamSidebarProps) {
+	const pathname = usePathname();
 	const [channelsExpanded, setChannelsExpanded] = useState(true);
 	const [dmsExpanded, setDmsExpanded] = useState(true);
-	const [activeDirectory, setActiveDirectory] = useState<string | undefined>("channels");
 
-	const handleDirectorySelect = (directory: string) => {
-		setActiveDirectory(directory);
-		onChannelSelect(""); // Clear active channel
-		onDirectorySelect?.(directory);
+	const isChannelActive = (channelId: string) => {
+		return pathname === `/dashboard/chat/channel/${channelId}`;
 	};
 
-	const handleChannelSelect = (channelId: string) => {
-		setActiveDirectory(undefined); // Clear active directory
-		onChannelSelect(channelId);
+	const isDMActive = (slug: string) => {
+		return pathname === `/dashboard/chat/dm/${slug}`;
 	};
 
 	return (
@@ -103,20 +98,19 @@ export function TeamSidebar({
 							{channelsExpanded && (
 								<div className="mt-1.5 space-y-0.5">
 									{channels.map((channel) => (
-										<button
-											type="button"
+										<Link
 											key={channel.id}
-											onClick={() => handleChannelSelect(channel.id)}
+											href={`/dashboard/chat/channel/${channel.id}`}
 											className={cn(
 												"flex items-center gap-2 w-full px-2 py-1.5 rounded-md text-sm transition-colors",
-												activeChannel === channel.id
+												isChannelActive(channel.id)
 													? "bg-[#0B6E4F] text-white"
 													: "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
 											)}
 										>
 											<Hash className="w-4 h-4 shrink-0" />
 											<span className="truncate">{channel.name}</span>
-										</button>
+										</Link>
 									))}
 								</div>
 							)}
@@ -141,10 +135,15 @@ export function TeamSidebar({
 							{dmsExpanded && (
 								<div className="mt-1.5 space-y-0.5">
 									{directMessages.map((dm) => (
-										<button
-											type="button"
+										<Link
 											key={dm.id}
-											className="flex items-center gap-2 w-full px-2 py-1.5 rounded-md text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+											href={`/dashboard/chat/dm/${dm.slug}`}
+											className={cn(
+												"flex items-center gap-2 w-full px-2 py-1.5 rounded-md text-sm transition-colors",
+												isDMActive(dm.slug)
+													? "bg-[#0B6E4F] text-white"
+													: "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+											)}
 										>
 											<div className="relative">
 												<Avatar className="w-5 h-5">
@@ -162,16 +161,13 @@ export function TeamSidebar({
 												)}
 											</div>
 											<span className="truncate">{dm.name}</span>
-										</button>
+										</Link>
 									))}
 								</div>
 							)}
 						</div>
 
-						<DirectoriesSection
-							onDirectorySelect={handleDirectorySelect}
-							activeDirectory={activeDirectory}
-						/>
+						<DirectoriesSection />
 					</div>
 				</ScrollArea>
 
