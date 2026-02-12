@@ -10,6 +10,8 @@ import {
 	Plus,
 	User,
 } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -23,8 +25,6 @@ interface SpaceItem {
 }
 
 interface TaskSidebarProps {
-	onForYouClick?: () => void;
-	onSpaceClick?: (spaceId: string) => void;
 	forYouActive?: boolean;
 	activeSpaceId?: string;
 }
@@ -38,13 +38,15 @@ const recentSpaces: SpaceItem[] = [
 	{ id: "my-sales-team-2", name: "My Sales Team", color: "#FF9800", icon: "📋" },
 ];
 
-export function TaskSidebar({
-	onForYouClick,
-	onSpaceClick,
-	forYouActive = false,
-	activeSpaceId,
-}: TaskSidebarProps) {
+export function TaskSidebar(_props: TaskSidebarProps) {
+	const pathname = usePathname();
 	const [spacesExpanded, setSpacesExpanded] = useState(true);
+
+	const isForYouActive = pathname === "/dashboard/task/for-you";
+
+	const isSpaceActive = (spaceId: string) => {
+		return pathname === `/dashboard/task/space/${spaceId}`;
+	};
 
 	return (
 		<div className="flex h-full" style={{ fontFamily: "var(--font-figtree), Figtree" }}>
@@ -69,18 +71,17 @@ export function TaskSidebar({
 					<div className="p-3">
 						{/* For You */}
 						<div className="mb-4">
-							<button
-								type="button"
-								onClick={onForYouClick}
+							<Link
+								href="/dashboard/task/for-you"
 								className={`flex items-center gap-2 w-full px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition-colors rounded-md ${
-									forYouActive
+									isForYouActive
 										? "text-[#0B6E4F] bg-[#0B6E4F]/8"
 										: "text-slate-500 hover:text-slate-900"
 								}`}
 							>
 								<User className="w-3.5 h-3.5" />
 								<span>FOR YOU</span>
-							</button>
+							</Link>
 						</div>
 
 						{/* Spaces Section */}
@@ -125,11 +126,14 @@ export function TaskSidebar({
 										</span>
 										<div className="mt-1.5 space-y-0.5">
 											{starredSpaces.map((space) => (
-												<button
-													type="button"
+												<Link
 													key={space.id}
-													onClick={() => onSpaceClick?.(space.id)}
-													className={`flex items-center gap-2.5 w-full px-2 py-1.5 rounded-md text-sm transition-colors ${activeSpaceId === space.id ? "bg-slate-100 text-slate-900" : "text-slate-700 hover:bg-slate-100"}`}
+													href={`/dashboard/task/space/${space.id}`}
+													className={`flex items-center gap-2.5 w-full px-2 py-1.5 rounded-md text-sm transition-colors ${
+														isSpaceActive(space.id)
+															? "bg-slate-100 text-slate-900"
+															: "text-slate-700 hover:bg-slate-100"
+													}`}
 												>
 													<span
 														className="w-5 h-5 rounded flex items-center justify-center text-[10px] shrink-0"
@@ -138,7 +142,7 @@ export function TaskSidebar({
 														{space.icon}
 													</span>
 													<span className="truncate">{space.name}</span>
-												</button>
+												</Link>
 											))}
 										</div>
 									</div>
@@ -150,11 +154,14 @@ export function TaskSidebar({
 										</span>
 										<div className="mt-1.5 space-y-0.5">
 											{recentSpaces.map((space) => (
-												<button
-													type="button"
+												<Link
 													key={space.id}
-													onClick={() => onSpaceClick?.(space.id)}
-													className={`flex items-center gap-2.5 w-full px-2 py-1.5 rounded-md text-sm transition-colors ${activeSpaceId === space.id ? "bg-slate-100 text-slate-900" : "text-slate-700 hover:bg-slate-100"}`}
+													href={`/dashboard/task/space/${space.id}`}
+													className={`flex items-center gap-2.5 w-full px-2 py-1.5 rounded-md text-sm transition-colors ${
+														isSpaceActive(space.id)
+															? "bg-slate-100 text-slate-900"
+															: "text-slate-700 hover:bg-slate-100"
+													}`}
 												>
 													<span
 														className="w-5 h-5 rounded flex items-center justify-center text-[10px] shrink-0"
@@ -163,7 +170,7 @@ export function TaskSidebar({
 														{space.icon}
 													</span>
 													<span className="truncate">{space.name}</span>
-												</button>
+												</Link>
 											))}
 										</div>
 									</div>
