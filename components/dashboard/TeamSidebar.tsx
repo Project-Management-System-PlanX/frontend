@@ -8,15 +8,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { type Channel, useChannelStore } from "@/stores/channel-store";
 import { CreateChannelDialog } from "./CreateChannelDialog";
 import { DirectoriesSection } from "./DirectoriesSection";
 import { IconRail } from "./IconRail";
-
-interface Channel {
-	id: string;
-	name: string;
-	unread?: boolean;
-}
 
 interface DirectMessage {
 	id: string;
@@ -31,12 +26,6 @@ interface TeamSidebarProps {
 	onChannelSelect?: (channelId: string) => void;
 }
 
-const defaultChannels: Channel[] = [
-	{ id: "all-teamup", name: "all-teamup" },
-	{ id: "product-design", name: "product-design" },
-	{ id: "marketing-dev", name: "marketing-dev" },
-];
-
 const directMessages: DirectMessage[] = [
 	{ id: "user-1", name: "Ravikrishna J (you)", slug: "ravikrishna-j", online: true },
 	{ id: "user-2", name: "Sarah Chen", slug: "sarah-chen", online: true },
@@ -46,7 +35,7 @@ const directMessages: DirectMessage[] = [
 export function TeamSidebar(_props: TeamSidebarProps) {
 	const pathname = usePathname();
 	const router = useRouter();
-	const [channelsList, setChannelsList] = useState<Channel[]>(defaultChannels);
+	const { channels, addChannel } = useChannelStore();
 	const [channelsExpanded, setChannelsExpanded] = useState(true);
 	const [dmsExpanded, setDmsExpanded] = useState(true);
 	const [createChannelOpen, setCreateChannelOpen] = useState(false);
@@ -108,7 +97,7 @@ export function TeamSidebar(_props: TeamSidebarProps) {
 
 							{channelsExpanded && (
 								<div className="mt-1.5 space-y-0.5">
-									{channelsList.map((channel) => (
+									{channels.map((channel) => (
 										<Link
 											key={channel.id}
 											href={`/dashboard/chat/channel/${channel.id}`}
@@ -203,8 +192,9 @@ export function TeamSidebar(_props: TeamSidebarProps) {
 						id: channel.name,
 						name: channel.name,
 						unread: true,
+						isJoined: true,
 					};
-					setChannelsList((prev) => [...prev, newChannel]);
+					addChannel(newChannel);
 					router.push(`/dashboard/chat/channel/${channel.name}`);
 				}}
 			/>
