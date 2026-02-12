@@ -24,7 +24,9 @@ interface SpaceItem {
 
 interface TaskSidebarProps {
 	onForYouClick?: () => void;
+	onSpaceClick?: (spaceId: string) => void;
 	forYouActive?: boolean;
+	activeSpaceId?: string;
 }
 
 const starredSpaces: SpaceItem[] = [
@@ -33,9 +35,15 @@ const starredSpaces: SpaceItem[] = [
 
 const recentSpaces: SpaceItem[] = [
 	{ id: "my-sales-team", name: "My Sales Team", color: "#FF9800", icon: "📋" },
+	{ id: "my-sales-team-2", name: "My Sales Team", color: "#FF9800", icon: "📋" },
 ];
 
-export function TaskSidebar({ onForYouClick, forYouActive = false }: TaskSidebarProps) {
+export function TaskSidebar({
+	onForYouClick,
+	onSpaceClick,
+	forYouActive = false,
+	activeSpaceId,
+}: TaskSidebarProps) {
 	const [spacesExpanded, setSpacesExpanded] = useState(true);
 
 	return (
@@ -120,7 +128,8 @@ export function TaskSidebar({ onForYouClick, forYouActive = false }: TaskSidebar
 												<button
 													type="button"
 													key={space.id}
-													className="flex items-center gap-2.5 w-full px-2 py-1.5 rounded-md text-sm text-slate-700 hover:bg-slate-100 transition-colors"
+													onClick={() => onSpaceClick?.(space.id)}
+													className={`flex items-center gap-2.5 w-full px-2 py-1.5 rounded-md text-sm transition-colors ${activeSpaceId === space.id ? "bg-slate-100 text-slate-900" : "text-slate-700 hover:bg-slate-100"}`}
 												>
 													<span
 														className="w-5 h-5 rounded flex items-center justify-center text-[10px] shrink-0"
@@ -144,7 +153,8 @@ export function TaskSidebar({ onForYouClick, forYouActive = false }: TaskSidebar
 												<button
 													type="button"
 													key={space.id}
-													className="flex items-center gap-2.5 w-full px-2 py-1.5 rounded-md text-sm text-slate-700 hover:bg-slate-100 transition-colors"
+													onClick={() => onSpaceClick?.(space.id)}
+													className={`flex items-center gap-2.5 w-full px-2 py-1.5 rounded-md text-sm transition-colors ${activeSpaceId === space.id ? "bg-slate-100 text-slate-900" : "text-slate-700 hover:bg-slate-100"}`}
 												>
 													<span
 														className="w-5 h-5 rounded flex items-center justify-center text-[10px] shrink-0"

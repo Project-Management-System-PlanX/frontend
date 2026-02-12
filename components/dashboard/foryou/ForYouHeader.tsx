@@ -2,9 +2,9 @@ import { Plus, Search } from "lucide-react";
 
 export function ForYouHeader() {
 	return (
-		<div className="h-14 px-6 flex items-center gap-4 border-b border-slate-200 shrink-0 bg-white">
+		<div className="h-14 px-6 flex items-center justify-center gap-4 border-b border-slate-200 shrink-0 bg-white">
 			{/* Search */}
-			<div className="flex items-center gap-2.5 bg-slate-100 rounded-lg px-4 py-2 flex-1 max-w-[520px]">
+			<div className="flex items-center gap-2.5 bg-slate-100 rounded-lg px-4 py-2 w-full max-w-[520px]">
 				<Search className="w-4 h-4 text-slate-400 shrink-0" />
 				<input
 					type="text"
