@@ -1,1 +1,4 @@
 Button background: now uses bg-[#156d97]
+
+a page should open like this it should looks like exaclty same as in the ss int the task main.. but in the liight theme
+like that use the small fotn add aSmooth fadeInUp entrance animation (0.35s)
