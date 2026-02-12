@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CreateChannelDialog } from "./CreateChannelDialog";
 
 interface Channel {
 	id: string;
@@ -70,6 +71,7 @@ export function ChannelsDirectory(_props: ChannelsDirectoryProps) {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [showBanner, setShowBanner] = useState(true);
 	const [hoveredChannelId, setHoveredChannelId] = useState<string | null>(null);
+	const [createChannelOpen, setCreateChannelOpen] = useState(false);
 
 	const filteredChannels = channels.filter((channel) =>
 		channel.name.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -81,7 +83,7 @@ export function ChannelsDirectory(_props: ChannelsDirectoryProps) {
 			<div className="h-16 px-6 flex items-center justify-between border-b border-slate-200 bg-white shrink-0">
 				<h1 className="text-2xl font-semibold text-slate-900">Channels</h1>
 				<Button
-					onClick={() => setShowBanner(true)}
+					onClick={() => setCreateChannelOpen(true)}
 					className="gap-2 bg-[#0B6E4F] hover:bg-[#0B6E4F]/90 text-white"
 				>
 					<Plus className="w-4 h-4" />
@@ -107,7 +109,7 @@ export function ChannelsDirectory(_props: ChannelsDirectoryProps) {
 						Organize them by any project, group, initiative or topic of your choosing.
 					</p>
 					<Button
-						onClick={() => setShowBanner(false)}
+						onClick={() => setCreateChannelOpen(true)}
 						className="bg-slate-700 hover:bg-slate-600 text-white font-semibold"
 					>
 						Create a channel
@@ -200,6 +202,15 @@ export function ChannelsDirectory(_props: ChannelsDirectoryProps) {
 					)}
 				</div>
 			</div>
+
+			{/* Create Channel Dialog */}
+			<CreateChannelDialog
+				open={createChannelOpen}
+				onOpenChange={setCreateChannelOpen}
+				onChannelCreated={(channel) => {
+					console.log("Channel created:", channel);
+				}}
+			/>
 		</div>
 	);
 }

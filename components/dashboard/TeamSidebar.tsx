@@ -2,12 +2,13 @@
 
 import { ChevronDown, ExternalLink, Hash, Plus, UserPlus } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { CreateChannelDialog } from "./CreateChannelDialog";
 import { DirectoriesSection } from "./DirectoriesSection";
 import { IconRail } from "./IconRail";
 
@@ -30,7 +31,7 @@ interface TeamSidebarProps {
 	onChannelSelect?: (channelId: string) => void;
 }
 
-const channels: Channel[] = [
+const defaultChannels: Channel[] = [
 	{ id: "all-teamup", name: "all-teamup" },
 	{ id: "product-design", name: "product-design" },
 	{ id: "marketing-dev", name: "marketing-dev" },
@@ -44,8 +45,11 @@ const directMessages: DirectMessage[] = [
 
 export function TeamSidebar(_props: TeamSidebarProps) {
 	const pathname = usePathname();
+	const router = useRouter();
+	const [channelsList, setChannelsList] = useState<Channel[]>(defaultChannels);
 	const [channelsExpanded, setChannelsExpanded] = useState(true);
 	const [dmsExpanded, setDmsExpanded] = useState(true);
+	const [createChannelOpen, setCreateChannelOpen] = useState(false);
 
 	const isChannelActive = (channelId: string) => {
 		return pathname === `/dashboard/chat/channel/${channelId}`;
@@ -78,26 +82,33 @@ export function TeamSidebar(_props: TeamSidebarProps) {
 					<div className="p-3">
 						{/* Channels Section */}
 						<div className="mb-4">
-							<button
-								type="button"
-								onClick={() => setChannelsExpanded(!channelsExpanded)}
-								className="flex items-center justify-between w-full px-2 py-1.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider hover:text-slate-900"
-							>
-								<span>Channels</span>
-								<div className="flex items-center gap-1">
-									<Plus className="w-3.5 h-3.5" />
+							<div className="flex items-center justify-between w-full px-2 py-1.5">
+								<button
+									type="button"
+									onClick={() => setChannelsExpanded(!channelsExpanded)}
+									className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 uppercase tracking-wider hover:text-slate-900"
+								>
 									<ChevronDown
 										className={cn(
 											"w-3.5 h-3.5 transition-transform",
 											!channelsExpanded && "-rotate-90",
 										)}
 									/>
-								</div>
-							</button>
+									<span>Channels</span>
+								</button>
+								<button
+									type="button"
+									onClick={() => setCreateChannelOpen(true)}
+									className="text-slate-400 hover:text-slate-900 transition-colors p-0.5 rounded hover:bg-slate-100"
+									title="Create channel"
+								>
+									<Plus className="w-3.5 h-3.5" />
+								</button>
+							</div>
 
 							{channelsExpanded && (
 								<div className="mt-1.5 space-y-0.5">
-									{channels.map((channel) => (
+									{channelsList.map((channel) => (
 										<Link
 											key={channel.id}
 											href={`/dashboard/chat/channel/${channel.id}`}
@@ -182,6 +193,21 @@ export function TeamSidebar(_props: TeamSidebarProps) {
 					</Button>
 				</div>
 			</div>
+
+			{/* Create Channel Dialog */}
+			<CreateChannelDialog
+				open={createChannelOpen}
+				onOpenChange={setCreateChannelOpen}
+				onChannelCreated={(channel) => {
+					const newChannel: Channel = {
+						id: channel.name,
+						name: channel.name,
+						unread: true,
+					};
+					setChannelsList((prev) => [...prev, newChannel]);
+					router.push(`/dashboard/chat/channel/${channel.name}`);
+				}}
+			/>
 		</div>
 	);
 }
