@@ -22,13 +22,21 @@ export function IconRail() {
 		<div className="w-14 bg-slate-50 border-r border-slate-200 flex flex-col items-center py-4 gap-3">
 			<TooltipProvider delayDuration={0}>
 				{navItems.map((item) => {
+					// Use /dashboard/task/for-you as the default link for Tasks
+					// but keep highlighting active for any /dashboard/task route
+					const href = item.label === "Tasks" ? "/dashboard/task/for-you" : item.href;
+
 					const Icon = item.icon;
-					const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href);
+					const isActive = item.exact
+						? pathname === item.href
+						: item.label === "Tasks"
+							? pathname.startsWith("/dashboard/task")
+							: pathname.startsWith(item.href);
 
 					return (
 						<Tooltip key={item.href}>
 							<TooltipTrigger asChild>
-								<Link href={item.href}>
+								<Link href={href}>
 									<Button
 										variant="ghost"
 										size="icon"

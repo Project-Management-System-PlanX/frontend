@@ -49,7 +49,7 @@ export function ChannelDetails({ channelName, isOpen, onClose }: ChannelDetailsP
 
 	return (
 		<div
-			className="w-72 bg-white border-l border-[#e5e7eb] flex flex-col shrink-0"
+			className="w-72 bg-white border-l border-[#e5e7eb] flex flex-col shrink-0 h-full"
 			style={{ fontFamily: "var(--font-figtree), Figtree" }}
 		>
 			{/* Header */}

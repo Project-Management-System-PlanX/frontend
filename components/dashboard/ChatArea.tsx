@@ -19,7 +19,7 @@ import {
 	Strikethrough,
 	Video,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -100,10 +100,59 @@ const messages: Message[] = [
 
 export function ChatArea({ channelName, detailsOpen, onToggleDetails, isDM }: ChatAreaProps) {
 	const [messageInput, setMessageInput] = useState("");
+	const [messagesList, setMessagesList] = useState<Message[]>(messages);
+	const scrollRef = useRef<HTMLDivElement>(null);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: This effect should run whenever messagesList changes to ensure the view scrolls to bottom.
+	useEffect(() => {
+		if (scrollRef.current) {
+			scrollRef.current.scrollIntoView({ behavior: "instant" });
+		}
+	}, [messagesList]);
+
+	const handleSendMessage = () => {
+		if (!messageInput.trim()) return;
+
+		const newMessage: Message = {
+			id: Date.now().toString(),
+			user: {
+				name: "Ravikrishna J (you)",
+				avatar: "/avatars/user.png", // Assuming a default avatar exists or using a placeholder
+				isBot: false,
+			},
+			content: messageInput,
+			timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+			isNew: false, // Don't show the "New Messages" banner for own messages
+		};
+
+		setMessagesList((prev) => [...prev, newMessage]);
+		setMessageInput("");
+
+		// Mock a bot reply after 1 second for "real-time" feel
+		setTimeout(() => {
+			const botReply: Message = {
+				id: (Date.now() + 1).toString(),
+				user: {
+					name: "TeamUP Bot",
+					isBot: true,
+					appLabel: "APP",
+				},
+				content: "I've received your message. How else can I help you today?",
+				timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+			};
+			setMessagesList((prev) => [...prev, botReply]);
+		}, 1000);
+	};
+
+	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+		if (e.key === "Enter") {
+			handleSendMessage();
+		}
+	};
 
 	return (
 		<div
-			className="flex-1 flex flex-col bg-white min-w-0"
+			className="flex-1 flex flex-col bg-white min-w-0 h-full overflow-hidden"
 			style={{ fontFamily: "var(--font-figtree), Figtree" }}
 		>
 			{/* Channel Header */}
@@ -199,9 +248,9 @@ export function ChatArea({ channelName, detailsOpen, onToggleDetails, isDM }: Ch
 			</div>
 
 			{/* Messages Area */}
-			<ScrollArea className="flex-1">
+			<ScrollArea className="flex-1 h-0 overflow-y-auto w-full">
 				<div className="p-4 space-y-6">
-					{messages.map((message) => (
+					{messagesList.map((message) => (
 						<div key={message.id}>
 							{/* New Messages Divider */}
 							{message.isNew && (
@@ -226,8 +275,11 @@ export function ChatArea({ channelName, detailsOpen, onToggleDetails, isDM }: Ch
 											? "🤖"
 											: message.user.name
 													.split(" ")
+													.filter((part) => !part.includes("("))
 													.map((n) => n[0])
-													.join("")}
+													.join("")
+													.toUpperCase()
+													.slice(0, 2)}
 									</AvatarFallback>
 								</Avatar>
 
@@ -248,7 +300,7 @@ export function ChatArea({ channelName, detailsOpen, onToggleDetails, isDM }: Ch
 										</p>
 									)}
 
-									{message.user.isBot && (
+									{message.user.isBot && !message.content && (
 										<p className="text-[#404040] mt-1 leading-relaxed text-[15px]">
 											New task created in{" "}
 											<span className="text-[#0B6E4F] hover:underline cursor-pointer">
@@ -322,11 +374,12 @@ export function ChatArea({ channelName, detailsOpen, onToggleDetails, isDM }: Ch
 							</div>
 						</div>
 					))}
+					<div ref={scrollRef} />
 				</div>
 			</ScrollArea>
 
 			{/* Message Input */}
-			<div className="p-4 border-t border-[#e5e7eb] shrink-0">
+			<div className="pt-2 pb-4 px-4 border-t border-[#e5e7eb] shrink-0">
 				<div className="bg-white rounded-xl border border-[#e5e7eb] shadow-sm">
 					{/* Formatting Toolbar */}
 					<div className="flex items-center gap-1 px-3 py-2 border-b border-[#e5e7eb]">
@@ -379,6 +432,7 @@ export function ChatArea({ channelName, detailsOpen, onToggleDetails, isDM }: Ch
 							type="text"
 							value={messageInput}
 							onChange={(e) => setMessageInput(e.target.value)}
+							onKeyDown={handleKeyDown}
 							placeholder={`Message #${channelName}`}
 							className="w-full bg-transparent text-[#202020] placeholder-[#9a9a9a] outline-none text-[15px]"
 						/>
@@ -414,6 +468,7 @@ export function ChatArea({ channelName, detailsOpen, onToggleDetails, isDM }: Ch
 							size="icon"
 							className="w-9 h-9 rounded-lg bg-[#0B6E4F] hover:bg-[#0B6E4F]/90 text-white"
 							disabled={!messageInput.trim()}
+							onClick={handleSendMessage}
 						>
 							<Send className="w-4 h-4" />
 						</Button>
