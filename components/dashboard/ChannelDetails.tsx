@@ -1,9 +1,11 @@
 "use client";
 
 import { Edit3, FileText, Github, LogOut, Pin, Plus, Slack, Users, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useChannelStore } from "@/stores/channel-store";
 
 interface ChannelDetailsProps {
 	channelName: string;
@@ -35,11 +37,19 @@ const integrations = [
 ];
 
 export function ChannelDetails({ channelName, isOpen, onClose }: ChannelDetailsProps) {
+	const router = useRouter();
+	const removeChannel = useChannelStore((state) => state.removeChannel);
+
 	if (!isOpen) return null;
+
+	const handleLeaveChannel = () => {
+		removeChannel(channelName); // Assuming channelName is the ID as per TeamSidebar implementation
+		router.push("/dashboard");
+	};
 
 	return (
 		<div
-			className="w-72 bg-white border-l border-[#e5e7eb] flex flex-col shrink-0"
+			className="w-72 bg-white border-l border-[#e5e7eb] flex flex-col shrink-0 h-full"
 			style={{ fontFamily: "var(--font-figtree), Figtree" }}
 		>
 			{/* Header */}
@@ -141,6 +151,7 @@ export function ChannelDetails({ channelName, isOpen, onClose }: ChannelDetailsP
 				<Button
 					variant="ghost"
 					className="w-full justify-center gap-2 text-[#9a9a9a] hover:text-red-500 hover:bg-red-50 text-sm"
+					onClick={handleLeaveChannel}
 				>
 					<LogOut className="w-3.5 h-3.5" />
 					<span>Leave Channel</span>

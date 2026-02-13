@@ -6,13 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
-const nameSuggestions = [
-	{ prefix: "help", description: "For questions, assistance, and resources on a topic" },
-	{ prefix: "proj", description: "For collaboration on and discussion about a project" },
-	{ prefix: "team", description: "For updates and work from a department or team" },
-	{ prefix: "social", description: "For casual conversations and team bonding" },
-];
-
 interface CreateChannelDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
@@ -29,7 +22,6 @@ export function CreateChannelDialog({
 	const [step, setStep] = useState(1);
 	const [channelName, setChannelName] = useState("");
 	const [visibility, setVisibility] = useState<"public" | "private">("public");
-	const [showSuggestions, setShowSuggestions] = useState(false);
 	const [slideDirection, setSlideDirection] = useState<"forward" | "backward">("forward");
 	const inputRef = useRef<HTMLInputElement>(null);
 
@@ -48,7 +40,6 @@ export function CreateChannelDialog({
 			setStep(1);
 			setChannelName("");
 			setVisibility("public");
-			setShowSuggestions(false);
 			setSlideDirection("forward");
 		}, 200);
 	};
@@ -80,19 +71,8 @@ export function CreateChannelDialog({
 		const sanitized = value.toLowerCase().replace(/[^a-z0-9-_]/g, "-");
 		if (sanitized.length <= maxLength) {
 			setChannelName(sanitized);
-			setShowSuggestions(sanitized.length === 0);
 		}
 	};
-
-	const handleSuggestionClick = (prefix: string) => {
-		setChannelName(`${prefix}-`);
-		setShowSuggestions(false);
-		inputRef.current?.focus();
-	};
-
-	const filteredSuggestions = nameSuggestions.filter(
-		(s) => channelName.length === 0 || s.prefix.startsWith(channelName),
-	);
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
@@ -129,7 +109,7 @@ export function CreateChannelDialog({
 						<button
 							type="button"
 							onClick={handleClose}
-							className="text-slate-300 hover:text-slate-500 transition-colors p-1 rounded-lg hover:bg-slate-50 -mr-1 -mt-1"
+							className="text-slate-300 hover:text-red-500 transition-colors p-1 rounded-lg hover:bg-red-50 -mr-1 -mt-1"
 						>
 							<X className="w-5 h-5" />
 						</button>
@@ -153,7 +133,7 @@ export function CreateChannelDialog({
 				</div>
 
 				{/* ──── Body ──── */}
-				<div className="px-7 py-6 min-h-[220px] overflow-hidden">
+				<div className="px-7 py-6 min-h-[120px] overflow-hidden">
 					<div
 						key={step}
 						className={cn(
@@ -181,10 +161,6 @@ export function CreateChannelDialog({
 											type="text"
 											value={channelName}
 											onChange={(e) => handleNameChange(e.target.value)}
-											onFocus={() => setShowSuggestions(channelName.length === 0)}
-											onBlur={() => {
-												setTimeout(() => setShowSuggestions(false), 150);
-											}}
 											onKeyDown={(e) => {
 												if (e.key === "Enter" && channelName.trim()) {
 													handleNext();
@@ -202,35 +178,6 @@ export function CreateChannelDialog({
 											{maxLength - channelName.length}
 										</span>
 									</div>
-
-									{/* Suggestions Dropdown */}
-									{showSuggestions && filteredSuggestions.length > 0 && (
-										<div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-xl overflow-hidden z-10 shadow-lg animate-[fadeIn_0.15s_ease-out]">
-											<div className="px-4 py-2 border-b border-slate-100">
-												<p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 flex items-center gap-1.5">
-													<Sparkles className="w-3 h-3" />
-													Suggestions
-												</p>
-											</div>
-											{filteredSuggestions.map((suggestion) => (
-												<button
-													key={suggestion.prefix}
-													type="button"
-													onMouseDown={(e) => e.preventDefault()}
-													onClick={() => handleSuggestionClick(suggestion.prefix)}
-													className="w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-b-0 group/item"
-												>
-													<span className="text-slate-900 text-sm font-semibold group-hover/item:text-[#0B6E4F] transition-colors">
-														{suggestion.prefix}
-													</span>
-													<span className="text-slate-400 text-sm">
-														{" "}
-														&mdash; {suggestion.description}
-													</span>
-												</button>
-											))}
-										</div>
-									)}
 								</div>
 
 								{channelName && (

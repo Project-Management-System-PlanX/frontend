@@ -1,5 +1,6 @@
 "use client";
 
+import confetti from "canvas-confetti";
 import {
 	AlertCircle,
 	Calendar,
@@ -236,10 +237,70 @@ export function SpaceBoardView() {
 		}
 	};
 
+	const triggerCelebration = () => {
+		// Fire confetti
+		const count = 200;
+		const defaults = {
+			origin: { y: 0.7 },
+			zIndex: 9999, // Ensure it's on top of everything
+		};
+
+		function fire(particleRatio: number, opts: confetti.Options) {
+			confetti({
+				...defaults,
+				...opts,
+				particleCount: Math.floor(count * particleRatio),
+			});
+		}
+
+		fire(0.25, {
+			spread: 26,
+			startVelocity: 55,
+			colors: ["#0B6E4F", "#F59E0B"], // Green and Orange
+			shapes: ["circle"],
+		});
+
+		fire(0.2, {
+			spread: 60,
+			colors: ["#3B82F6", "#EF4444"], // Blue and Red
+			shapes: ["square"],
+		});
+
+		fire(0.35, {
+			spread: 100,
+			decay: 0.91,
+			scalar: 0.8,
+			colors: ["#8B5CF6", "#10B981"], // Purple and Emerald
+			shapes: ["star"],
+		});
+
+		fire(0.1, {
+			spread: 120,
+			startVelocity: 25,
+			decay: 0.92,
+			scalar: 1.2,
+			colors: ["#F472B6"], // Pink
+			shapes: ["circle"],
+		});
+
+		fire(0.1, {
+			spread: 120,
+			startVelocity: 45,
+			shapes: ["circle"], // Default colors
+		});
+	};
+
 	const handleDrop = (e: DragEvent, targetColumnId: string) => {
 		e.preventDefault();
 		const taskId = e.dataTransfer.getData("taskId");
 		if (!taskId) return;
+
+		// Trigger celebration if moving to Done column from a different column
+		const task = tasks.find((t) => t.id === taskId);
+		if (task && task.columnId !== "done" && targetColumnId === "done") {
+			triggerCelebration();
+		}
+
 		setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, columnId: targetColumnId } : t)));
 	};
 

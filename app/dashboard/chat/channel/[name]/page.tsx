@@ -10,7 +10,7 @@ export default function ChannelPage({ params }: { params: Promise<{ name: string
 	const [detailsOpen, setDetailsOpen] = useState(true);
 
 	return (
-		<>
+		<div className="flex-1 flex min-w-0 overflow-hidden h-full">
 			<ChatArea
 				channelName={channelName}
 				detailsOpen={detailsOpen}
@@ -23,6 +23,6 @@ export default function ChannelPage({ params }: { params: Promise<{ name: string
 				isOpen={detailsOpen}
 				onClose={() => setDetailsOpen(false)}
 			/>
-		</>
+		</div>
 	);
 }

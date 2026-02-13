@@ -259,7 +259,7 @@ export function SpaceTimelineView() {
 
 	// Timeline range
 	const timelineStart = new Date(2026, 0, 1);
-	const timelineEnd = new Date(2026, 4, 1);
+	const timelineEnd = new Date(2026, 11, 31);
 	const totalDays = daysBetween(timelineStart, timelineEnd);
 	const timelineWidth = totalDays * DAY_WIDTH;
 
