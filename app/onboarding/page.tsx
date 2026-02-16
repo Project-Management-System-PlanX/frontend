@@ -660,11 +660,11 @@ export default function OnboardingPage() {
 										</div>
 										<motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
 											<Link
-												href="/dashboard"
+												href="/workspaces"
 												className="inline-flex items-center justify-center gap-2 w-full bg-[#0B6E4F] text-white px-6 py-4 rounded-xl font-medium hover:shadow-lg hover:shadow-lg transition-all"
 												style={{ fontFamily: "Figtree" }}
 											>
-												Go to Dashboard
+												Go to Workspaces
 												<ArrowRight className="w-4 h-4" />
 											</Link>
 										</motion.div>
