@@ -1,31 +1,16 @@
 "use client";
 
 import { AnimatePresence, motion, type Variants } from "framer-motion";
-import {
-	ArrowLeft,
-	ArrowRight,
-	Building2,
-	Check,
-	Loader2,
-	Lock,
-	Mail,
-	Sparkles,
-	User,
-	Users,
-	Zap,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Loader2, Lock, Mail, Zap } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { memo, useCallback, useMemo, useState } from "react";
 
-type OnboardingStep = "signup" | "otp" | "workspace" | "name" | "invite" | "complete";
+type OnboardingStep = "signup" | "otp" | "complete";
 
 interface OnboardingData {
 	email: string;
 	otp: string[];
-	workspaceName: string;
-	userName: string;
-	inviteEmails: string[];
 }
 
 // Animation variants for better performance (defined outside component)
@@ -55,7 +40,7 @@ const staggerItem: Variants = {
 };
 
 // Step configuration moved outside component
-const steps: OnboardingStep[] = ["signup", "otp", "workspace", "name", "invite", "complete"];
+const steps: OnboardingStep[] = ["signup", "otp", "complete"];
 
 const stepInfo = {
 	signup: {
@@ -67,21 +52,6 @@ const stepInfo = {
 		title: "Verify your email",
 		subtitle: "Enter the code we sent to your inbox",
 		icon: Mail,
-	},
-	workspace: {
-		title: "Create your workspace",
-		subtitle: "Give your team a home",
-		icon: Building2,
-	},
-	name: {
-		title: "What's your name?",
-		subtitle: "Let us know who you are",
-		icon: User,
-	},
-	invite: {
-		title: "Invite your team",
-		subtitle: "Collaboration works better together",
-		icon: Users,
 	},
 	complete: {
 		title: "You're all set!",
@@ -110,39 +80,6 @@ const leftPanelContent = {
 		icon: Lock,
 		gradient: "from-[#0B6E4F] via-[#50C878] to-[#013220]",
 		features: ["End-to-end Encryption", "Two-Factor Auth", "SOC 2 Compliant"],
-	},
-	workspace: {
-		headline: "Your Team's Digital Headquarters",
-		description:
-			"Create a centralized hub where your team can collaborate, communicate, and achieve more together.",
-		highlight: "Unlimited team members",
-		stat: "50%",
-		statLabel: "Faster decisions",
-		icon: Building2,
-		gradient: "from-[#50C878] via-[#0B6E4F] to-[#D1F2EB]",
-		features: ["Custom Workflows", "Shared Dashboards", "Role Management"],
-	},
-	name: {
-		headline: "Personalized Experience Awaits",
-		description:
-			"TeamUp learns your preferences and adapts to how you work, making every interaction more intuitive.",
-		highlight: "AI-powered insights",
-		stat: "3x",
-		statLabel: "Productivity boost",
-		icon: Sparkles,
-		gradient: "from-[#013220] via-[#0B6E4F] to-[#50C878]",
-		features: ["Smart Suggestions", "Adaptive UI", "Personal Dashboard"],
-	},
-	invite: {
-		headline: "Better Together",
-		description:
-			"Teams using TeamUp report higher engagement, clearer communication, and faster project completion.",
-		highlight: "Seamless collaboration",
-		stat: "40%",
-		statLabel: "Less meetings needed",
-		icon: Users,
-		gradient: "from-[#D1F2EB] via-[#50C878] to-[#0B6E4F]",
-		features: ["Easy Invites", "Team Channels", "Shared Goals"],
 	},
 	complete: {
 		headline: "Ready to Transform Your Team",
@@ -278,9 +215,6 @@ export default function OnboardingPage() {
 	const [data, setData] = useState<OnboardingData>({
 		email: "",
 		otp: ["", "", "", "", "", ""],
-		workspaceName: "",
-		userName: "",
-		inviteEmails: ["", "", ""],
 	});
 
 	const currentStepIndex = steps.indexOf(currentStep);
@@ -318,26 +252,12 @@ export default function OnboardingPage() {
 		}
 	}, []);
 
-	const handleInviteEmailChange = useCallback((index: number, value: string) => {
-		setData((prev) => {
-			const newEmails = [...prev.inviteEmails];
-			newEmails[index] = value;
-			return { ...prev, inviteEmails: newEmails };
-		});
-	}, []);
-
 	const canProceed = useMemo(() => {
 		switch (currentStep) {
 			case "signup":
 				return data.email.includes("@") && data.email.includes(".");
 			case "otp":
 				return data.otp.every((digit) => digit !== "");
-			case "workspace":
-				return data.workspaceName.length >= 2;
-			case "name":
-				return data.userName.length >= 2;
-			case "invite":
-				return true;
 			default:
 				return true;
 		}
@@ -540,96 +460,6 @@ export default function OnboardingPage() {
 									</div>
 								)}
 
-								{currentStep === "workspace" && (
-									<div className="space-y-6">
-										<div className="space-y-2">
-											<p
-												className="text-sm font-medium text-[#013220]"
-												style={{ fontFamily: "Figtree" }}
-											>
-												Workspace name
-											</p>
-											<input
-												type="text"
-												value={data.workspaceName}
-												onChange={(e) => setData({ ...data, workspaceName: e.target.value })}
-												placeholder="Acme Inc."
-												className="w-full px-4 py-3.5 rounded-xl border border-gray-200 focus:border-[#50C878] focus:ring-2 focus:ring-[#50C878]/20 outline-none transition-all text-[#013220]"
-												style={{ fontFamily: "Figtree" }}
-											/>
-											<p className="text-sm text-gray-500" style={{ fontFamily: "Figtree" }}>
-												This is the name your team will see
-											</p>
-										</div>
-									</div>
-								)}
-
-								{currentStep === "name" && (
-									<div className="space-y-6">
-										<div className="space-y-2">
-											<p
-												className="text-sm font-medium text-[#013220]"
-												style={{ fontFamily: "Figtree" }}
-											>
-												Your full name
-											</p>
-											<input
-												type="text"
-												value={data.userName}
-												onChange={(e) => setData({ ...data, userName: e.target.value })}
-												placeholder="John Doe"
-												className="w-full px-4 py-3.5 rounded-xl border border-gray-200 focus:border-[#50C878] focus:ring-2 focus:ring-[#50C878]/20 outline-none transition-all text-[#013220]"
-												style={{ fontFamily: "Figtree" }}
-											/>
-										</div>
-									</div>
-								)}
-
-								{currentStep === "invite" && (
-									<div className="space-y-6">
-										<div className="space-y-3">
-											<p
-												className="text-sm font-medium text-[#013220]"
-												style={{ fontFamily: "Figtree" }}
-											>
-												Invite teammates by email
-											</p>
-											{data.inviteEmails.map((email, index) => (
-												<motion.input
-													// biome-ignore lint/suspicious/noArrayIndexKey: invite inputs are added sequentially
-													key={`invite-${index}`}
-													type="email"
-													value={email}
-													onChange={(e) => handleInviteEmailChange(index, e.target.value)}
-													placeholder={`teammate${index + 1}@company.com`}
-													className="w-full px-4 py-3.5 rounded-xl border border-gray-200 focus:border-[#50C878] focus:ring-2 focus:ring-[#50C878]/20 outline-none transition-all text-[#013220]"
-													style={{ fontFamily: "Figtree" }}
-													initial={{ opacity: 0, y: 10 }}
-													animate={{ opacity: 1, y: 0 }}
-													transition={{ delay: index * 0.1 }}
-												/>
-											))}
-											<motion.button
-												type="button"
-												onClick={() =>
-													setData({ ...data, inviteEmails: [...data.inviteEmails, ""] })
-												}
-												className="text-[#50C878] text-sm font-medium hover:underline"
-												style={{ fontFamily: "Figtree" }}
-												whileHover={{ scale: 1.02 }}
-											>
-												+ Add another
-											</motion.button>
-										</div>
-										<p
-											className="text-sm text-gray-500 text-center"
-											style={{ fontFamily: "Figtree" }}
-										>
-											You can skip this and invite teammates later
-										</p>
-									</div>
-								)}
-
 								{currentStep === "complete" && (
 									<motion.div
 										className="text-center space-y-6"
@@ -650,12 +480,10 @@ export default function OnboardingPage() {
 												className="text-2xl font-bold text-[#013220] mb-2"
 												style={{ fontFamily: "Figtree" }}
 											>
-												Welcome, {data.userName}!
+												Email Verified!
 											</h3>
 											<p className="text-gray-600" style={{ fontFamily: "Figtree" }}>
-												Your workspace{" "}
-												<span className="font-semibold text-[#50C878]">{data.workspaceName}</span>{" "}
-												is ready.
+												You can now select your workspace.
 											</p>
 										</div>
 										<motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
@@ -686,7 +514,7 @@ export default function OnboardingPage() {
 											<Loader2 className="w-5 h-5 animate-spin" />
 										) : (
 											<>
-												{currentStep === "invite" ? "Complete Setup" : "Continue"}
+												{currentStep === "otp" ? "Complete Setup" : "Continue"}
 												<ArrowRight className="w-4 h-4" />
 											</>
 										)}

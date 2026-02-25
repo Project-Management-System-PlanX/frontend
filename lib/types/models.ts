@@ -1,0 +1,65 @@
+export type Role = "OWNER" | "ADMIN" | "MEMBER";
+export type ChannelType = "PUBLIC" | "PRIVATE";
+
+export interface Workspace {
+	id: string;
+	name: string;
+	slug: string;
+	ownerId: string;
+	avatar?: string | null;
+	createdAt: string;
+	updatedAt: string;
+	members?: WorkspaceMember[];
+	channels?: Channel[];
+}
+
+export interface Channel {
+	id: string;
+	workspaceId: string;
+	name: string;
+	type: ChannelType;
+	description?: string;
+	createdAt: string;
+	updatedAt: string;
+	members?: ChannelMember[];
+	groups?: Group[];
+}
+
+export interface Group {
+	id: string;
+	channelId: string;
+	name: string;
+	description?: string;
+	createdAt: string;
+	updatedAt: string;
+	members?: GroupMember[];
+}
+
+export interface WorkspaceMember {
+	id: string;
+	workspaceId: string;
+	userId: string;
+	role: Role;
+	joinedAt: string;
+}
+
+export interface ChannelMember {
+	id: string;
+	channelId: string;
+	userId: string;
+	role: Role | string;
+	joinedAt: string;
+}
+
+export interface GroupMember {
+	id: string;
+	groupId: string;
+	userId: string;
+	joinedAt: string;
+}
+
+// API Error
+export interface ApiError {
+	message: string;
+	status: number;
+}

@@ -54,36 +54,14 @@ const initialWorkspaces = [
 
 export default function WorkspacesPage() {
 	const [view, setView] = useState<"grid" | "list">("grid");
-	const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 	const [workspaces, setWorkspaces] = useState(initialWorkspaces);
-
-	const handleCreateWorkspace = (name: string) => {
-		const newWorkspace = {
-			id: workspaces.length + 1,
-			name: name,
-			slug: name.toLowerCase().replace(/\s+/g, "-"),
-			plan: "FREE",
-			members: 1,
-			activeTasks: 0,
-			lastActive: "Just now",
-			color: "bg-emerald-500",
-			initial: name.charAt(0).toUpperCase(),
-		};
-		setWorkspaces([newWorkspace, ...workspaces]);
-	};
+	const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
 	return (
 		<div
 			className="min-h-screen bg-[#F8FCFA] text-black selection:bg-[#D1F2EB] selection:text-[#013220]"
 			style={{ fontFamily: "Figtree, sans-serif" }}
 		>
-			<CreateWorkspaceDialog
-				isOpen={isCreateModalOpen}
-				onClose={() => setIsCreateModalOpen(false)}
-				onCreate={handleCreateWorkspace}
-			/>
-
-			{/* Navbar */}
 			<header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-[#D1F2EB]">
 				<div className="max-w-[1400px] mx-auto px-4 h-16 flex items-center justify-between">
 					<div className="flex items-center gap-4">
@@ -160,10 +138,10 @@ export default function WorkspacesPage() {
 							<button
 								type="button"
 								onClick={() => setIsCreateModalOpen(true)}
-								className="h-10 px-4 flex items-center gap-2 bg-[#0B6E4F] text-white rounded-lg text-sm font-medium hover:bg-[#013220] transition-colors shadow-sm shadow-[#0B6E4F]/20"
+								className="h-10 px-4 flex items-center gap-2 bg-[#0B6E4F] hover:bg-[#0B6E4F]/90 text-white font-medium rounded-lg transition-colors shadow-sm"
 							>
 								<Plus className="w-4 h-4" />
-								Create Workspace
+								<span className="hidden sm:inline">New Workspace</span>
 							</button>
 						</div>
 					</div>
@@ -264,6 +242,23 @@ export default function WorkspacesPage() {
 										)}
 									</Link>
 								))}
+
+								<button
+									type="button"
+									onClick={() => setIsCreateModalOpen(true)}
+									className={`group border-2 border-dashed border-[#D1F2EB] rounded-xl hover:border-[#50C878] hover:bg-[#D1F2EB]/10 transition-all flex flex-col items-center justify-center text-gray-400 hover:text-[#0B6E4F] ${
+										view === "grid" ? "min-h-[160px]" : "p-4 min-h-[72px]"
+									}`}
+								>
+									<div
+										className={`flex items-center justify-center gap-3 ${view === "grid" ? "flex-col" : "flex-row w-full"}`}
+									>
+										<div className="w-10 h-10 rounded-full bg-white border border-[#D1F2EB] flex items-center justify-center group-hover:bg-[#0B6E4F] group-hover:text-white group-hover:border-[#0B6E4F] transition-all shadow-sm">
+											<Plus className="w-5 h-5" />
+										</div>
+										<span className="font-medium text-sm">Create Workspace</span>
+									</div>
+								</button>
 							</div>
 						</div>
 
@@ -351,6 +346,27 @@ export default function WorkspacesPage() {
 					</div>
 				</motion.div>
 			</main>
+
+			<CreateWorkspaceDialog
+				isOpen={isCreateModalOpen}
+				onClose={() => setIsCreateModalOpen(false)}
+				onCreate={(name) => {
+					setWorkspaces([
+						...workspaces,
+						{
+							id: workspaces.length + 1,
+							name,
+							slug: name.toLowerCase().replace(/\s+/g, "-"),
+							plan: "FREE",
+							members: 1,
+							activeTasks: 0,
+							lastActive: "just now",
+							color: "bg-[#0B6E4F]",
+							initial: name.charAt(0).toUpperCase(),
+						},
+					]);
+				}}
+			/>
 		</div>
 	);
 }
