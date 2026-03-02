@@ -18,6 +18,7 @@ export const useWorkspaces = (userId?: string, token?: string) => {
 	return useQuery({
 		queryKey: workspaceKeys.list({ userId }),
 		queryFn: () => workspaceService.list(userId, token),
+		enabled: !!token,
 	});
 };
 

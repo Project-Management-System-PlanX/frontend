@@ -6,9 +6,9 @@ import {
 	CheckCircle2,
 	Clock,
 	LayoutGrid,
+	Link2,
 	List,
 	LogOut,
-	MoreHorizontal,
 	Plus,
 	Search,
 	Users,
@@ -17,6 +17,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { CreateWorkspaceDialog } from "@/components/workspaces/CreateWorkspaceDialog";
+import { InviteMembersDialog } from "@/components/workspaces/InviteMembersDialog";
 import { useWorkspaces } from "@/hooks/api";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 
@@ -34,6 +35,7 @@ const WORKSPACE_COLORS = [
 export default function WorkspacesPage() {
 	const [view, setView] = useState<"grid" | "list">("grid");
 	const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+	const [inviteWorkspace, setInviteWorkspace] = useState<{ id: string; name: string } | null>(null);
 	const router = useRouter();
 
 	const { user, token, isLoading: authLoading, signOut } = useSupabaseAuth();
@@ -217,9 +219,15 @@ export default function WorkspacesPage() {
 												{view === "grid" && (
 													<button
 														type="button"
-														className="text-gray-400 hover:text-[#0B6E4F] p-1 rounded hover:bg-[#D1F2EB]/30 transition-colors"
+														onClick={(e) => {
+															e.preventDefault();
+															e.stopPropagation();
+															setInviteWorkspace({ id: workspace.id, name: workspace.name });
+														}}
+														className="text-gray-400 hover:text-[#0B6E4F] p-1.5 rounded-lg hover:bg-[#D1F2EB]/30 transition-colors"
+														title="Invite members"
 													>
-														<MoreHorizontal className="w-5 h-5" />
+														<Link2 className="w-4 h-4" />
 													</button>
 												)}
 											</div>
@@ -357,6 +365,16 @@ export default function WorkspacesPage() {
 				}}
 				token={token}
 			/>
+
+			{inviteWorkspace && (
+				<InviteMembersDialog
+					isOpen={!!inviteWorkspace}
+					onClose={() => setInviteWorkspace(null)}
+					workspaceId={inviteWorkspace.id}
+					workspaceName={inviteWorkspace.name}
+					userId={user?.id ?? ""}
+				/>
+			)}
 		</div>
 	);
 }
