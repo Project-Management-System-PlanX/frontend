@@ -1,6 +1,18 @@
 export type Role = "OWNER" | "ADMIN" | "MEMBER";
 export type ChannelType = "PUBLIC" | "PRIVATE";
 
+export interface UserProfile {
+	id: string;
+	supabaseId: string;
+	email: string;
+	firstName: string;
+	lastName: string;
+	username: string;
+	imageUrl?: string;
+	createdAt: string;
+	updatedAt: string;
+}
+
 export interface Workspace {
 	id: string;
 	name: string;

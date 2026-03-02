@@ -6,7 +6,6 @@ import { API_ENDPOINTS } from "../config";
 export interface CreateWorkspacePayload {
 	name: string;
 	slug: string;
-	ownerId: string;
 	avatar?: string;
 }
 
