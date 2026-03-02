@@ -1,5 +1,5 @@
 export type Role = "OWNER" | "ADMIN" | "MEMBER";
-export type ChannelType = "PUBLIC" | "PRIVATE";
+export type ChannelType = "PUBLIC" | "PRIVATE" | "DIRECT_MESSAGE";
 
 export interface UserProfile {
 	id: string;
