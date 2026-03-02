@@ -85,7 +85,7 @@ export function useMessages(channelId: string | null) {
 					const { data: userData } = await supabase
 						.from("users")
 						.select("firstName, lastName, username, imageUrl, email")
-						.eq("id", payload.new.user_id)
+						.eq("supabaseId", payload.new.user_id)
 						.single();
 
 					const newMessage: Message = {

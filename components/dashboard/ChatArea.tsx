@@ -150,22 +150,13 @@ export function ChatArea({ channelName, detailsOpen, onToggleDetails, isDM }: Ch
 						</Tooltip>
 					</TooltipProvider>
 
-					{/* Member Avatars */}
-					<div className="flex items-center -space-x-2 ml-4">
-						{[1, 2, 3].map((i) => (
-							<Avatar key={i} className="w-7 h-7 border-2 border-white">
-								<AvatarFallback
-									className="text-[10px] bg-[#F57799] text-black
-								"
-								>
-									U{i}
-								</AvatarFallback>
-							</Avatar>
-						))}
-						<div className="w-7 h-7 rounded-full bg-[#FDC3A1] flex items-center justify-center text-[10px] text-black font-medium border-2 border-white">
-							+{channel?.members ? Math.max(0, channel.members - 3) : 0}
+					{/* Member Count Badge */}
+					{channel?.members != null && channel.members > 0 && (
+						<div className="flex items-center gap-1.5 ml-4 px-2.5 py-1 bg-slate-100 rounded-full">
+							<div className="w-2 h-2 rounded-full bg-[#22c55e]" />
+							<span className="text-xs font-medium text-slate-600">{channel.members} members</span>
 						</div>
-					</div>
+					)}
 
 					<div className="w-px h-6 bg-[#e5e7eb] mx-2" />
 
