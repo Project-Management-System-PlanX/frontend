@@ -1,6 +1,9 @@
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002";
 
 export const API_ENDPOINTS = {
+	// Users
+	USER_ME: "/users/me",
+
 	// Workspaces
 	WORKSPACES: "/workspaces",
 	WORKSPACE_BY_ID: (id: string) => `/workspaces/${id}`,

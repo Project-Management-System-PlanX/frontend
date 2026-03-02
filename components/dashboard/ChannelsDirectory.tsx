@@ -1,11 +1,15 @@
 "use client";
 
-import { Check, ChevronDown, Hash, Plus, Search, X } from "lucide-react";
+import { Check, ChevronDown, Hash, Loader2, Plus, Search, X } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { type Channel, useChannelStore } from "@/stores/channel-store";
+import { useWorkspaceStore } from "@/stores/workspace-store";
+import { useWorkspaceChannels } from "@/hooks/use-workspace-channels";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
+import { channelService } from "@/lib/api/services";
 import { CreateChannelDialog } from "./CreateChannelDialog";
 
 interface ChannelsDirectoryProps {
@@ -18,11 +22,53 @@ export function ChannelsDirectory(_props: ChannelsDirectoryProps) {
 	const [hoveredChannelId, setHoveredChannelId] = useState<string | null>(null);
 	const [createChannelOpen, setCreateChannelOpen] = useState(false);
 
-	const { channels, addChannel, removeChannel } = useChannelStore();
+	const { token } = useSupabaseAuth();
+	const { channels, isLoaded, activeWorkspaceId } = useWorkspaceChannels();
+	const { addChannel, removeChannel } = useChannelStore();
+	const { activeWorkspaceName } = useWorkspaceStore();
 
 	const filteredChannels = channels.filter((channel) =>
 		channel.name.toLowerCase().includes(searchQuery.toLowerCase()),
 	);
+
+	// Sort channels: alphabetically by name
+	const sortedChannels = [...filteredChannels].sort((a, b) => a.name.localeCompare(b.name));
+
+	const handleCreateChannel = async (channel: { name: string; visibility: "public" | "private" }) => {
+		if (!activeWorkspaceId || !token) return;
+
+		try {
+			const newChannel = await channelService.create(
+				{
+					workspaceId: activeWorkspaceId,
+					name: channel.name,
+					type: channel.visibility === "public" ? "PUBLIC" : "PRIVATE",
+				},
+				token,
+			);
+
+			addChannel({
+				id: newChannel.id,
+				name: newChannel.name,
+				workspaceId: newChannel.workspaceId,
+				type: newChannel.type as Channel["type"],
+				description: newChannel.description,
+				members: 1,
+				isJoined: true,
+				createdAt: newChannel.createdAt,
+				updatedAt: newChannel.updatedAt,
+			});
+		} catch (error) {
+			console.error("Failed to create channel:", error);
+			alert("Failed to create channel. Please try again.");
+		}
+	};
+
+	const handleLeaveChannel = async (channelId: string) => {
+		removeChannel(channelId);
+		// Optionally call API to leave
+		// try { await channelService.removeMember(channelId, userId, token); } catch {}
+	};
 
 	return (
 		<div className="flex-1 flex flex-col bg-white min-w-0 overflow-hidden">
@@ -128,16 +174,22 @@ export function ChannelsDirectory(_props: ChannelsDirectoryProps) {
 					Most recommended <ChevronDown className="w-3 h-3 ml-1 opacity-50" />
 				</Button>
 			</div>
+
 			{/* Channels List */}
 			<div className="flex-1 overflow-y-auto">
 				<div className="px-8 pb-8 max-w-5xl mx-auto">
-					{filteredChannels.length === 0 ? (
+					{!isLoaded ? (
+						<div className="flex items-center justify-center h-64">
+							<Loader2 className="w-6 h-6 animate-spin text-[#0B6E4F]" />
+							<span className="ml-3 text-sm text-slate-500">Loading channels...</span>
+						</div>
+					) : sortedChannels.length === 0 ? (
 						<div className="flex items-center justify-center h-64 text-slate-500 text-sm">
 							No channels found
 						</div>
 					) : (
 						<div className="bg-white border border-slate-200 rounded-lg overflow-hidden divide-y divide-slate-100 shadow-sm">
-							{filteredChannels.map((channel, index) => (
+							{sortedChannels.map((channel, index) => (
 								<ChannelCard
 									key={channel.id}
 									channel={channel}
@@ -145,7 +197,7 @@ export function ChannelsDirectory(_props: ChannelsDirectoryProps) {
 									isHovered={hoveredChannelId === channel.id}
 									onMouseEnter={() => setHoveredChannelId(channel.id)}
 									onMouseLeave={() => setHoveredChannelId(null)}
-									onLeave={() => removeChannel(channel.id)}
+									onLeave={() => handleLeaveChannel(channel.id)}
 								/>
 							))}
 						</div>
@@ -157,16 +209,8 @@ export function ChannelsDirectory(_props: ChannelsDirectoryProps) {
 			<CreateChannelDialog
 				open={createChannelOpen}
 				onOpenChange={setCreateChannelOpen}
-				onChannelCreated={(channel) => {
-					addChannel({
-						id: channel.name,
-						name: channel.name,
-						type: channel.visibility === "public" ? "PUBLIC" : "PRIVATE",
-						members: 1, // Start with 1 member (creator)
-						description: `This is the #${channel.name} channel.`,
-						isJoined: true,
-					});
-				}}
+				onChannelCreated={handleCreateChannel}
+				workspaceName={activeWorkspaceName || "Team UP"}
 			/>
 
 			<style jsx global>{`
@@ -207,6 +251,11 @@ function ChannelCard({
 					<div className="flex items-center gap-1.5">
 						<Hash className="w-3.5 h-3.5 text-slate-400 shrink-0" />
 						<h3 className="font-bold text-slate-900 text-[15px] leading-none">{channel.name}</h3>
+						{channel.type && (
+							<span className="ml-1 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider bg-slate-100 text-slate-500 rounded">
+								{channel.type}
+							</span>
+						)}
 					</div>
 
 					<div className="flex items-center gap-2 text-xs text-slate-500 leading-normal">
@@ -219,7 +268,7 @@ function ChannelCard({
 						{channel.isJoined !== false && <span className="text-slate-300">·</span>}
 
 						<span className="shrink-0">
-							{channel.members || 1} {channel.members === 1 ? "member" : "members"}
+							{channel.members || 0} {channel.members === 1 ? "member" : "members"}
 						</span>
 
 						{channel.description && (

@@ -6,24 +6,14 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChannelStore } from "@/stores/channel-store";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
+import { channelService } from "@/lib/api/services";
 
 interface ChannelDetailsProps {
 	channelName: string;
 	isOpen: boolean;
 	onClose: () => void;
 }
-
-interface DetailItem {
-	icon: React.ComponentType<{ className?: string }>;
-	label: string;
-	count: number;
-}
-
-const detailItems: DetailItem[] = [
-	{ icon: Users, label: "Members", count: 15 },
-	{ icon: Pin, label: "Pinned Items", count: 4 },
-	{ icon: FileText, label: "Files", count: 28 },
-];
 
 const integrations = [
 	{ name: "Slack", icon: Slack, color: "bg-[#4A154B]" },
@@ -38,14 +28,41 @@ const integrations = [
 
 export function ChannelDetails({ channelName, isOpen, onClose }: ChannelDetailsProps) {
 	const router = useRouter();
-	const removeChannel = useChannelStore((state) => state.removeChannel);
+	const { token, user } = useSupabaseAuth();
+	const { channels, removeChannel } = useChannelStore();
+
+	// Find channel in the store by ID
+	const channel = channels.find((c) => c.id === channelName);
+	const displayName = channel?.name || channelName;
+	const description = channel?.description || "No description available.";
+	const memberCount = channel?.members || 0;
 
 	if (!isOpen) return null;
 
-	const handleLeaveChannel = () => {
-		removeChannel(channelName); // Assuming channelName is the ID as per TeamSidebar implementation
-		router.push("/dashboard");
+	const handleLeaveChannel = async () => {
+		if (!token || !user?.id) {
+			removeChannel(channelName);
+			router.push("/dashboard/chat");
+			return;
+		}
+
+		try {
+			await channelService.removeMember(channelName, user.id, token);
+			removeChannel(channelName);
+			router.push("/dashboard/chat");
+		} catch (error) {
+			console.error("Failed to leave channel:", error);
+			// Still remove from local storage for immediate UX
+			removeChannel(channelName);
+			router.push("/dashboard/chat");
+		}
 	};
+
+	const detailItems = [
+		{ icon: Users, label: "Members", count: memberCount },
+		{ icon: Pin, label: "Pinned Items", count: 0 },
+		{ icon: FileText, label: "Files", count: 0 },
+	];
 
 	return (
 		<div
@@ -73,14 +90,14 @@ export function ChannelDetails({ channelName, isOpen, onClose }: ChannelDetailsP
 					<div className="flex flex-col items-center text-center">
 						<Avatar className="w-16 h-16 rounded-xl">
 							<AvatarFallback className="rounded-xl bg-[#202020] text-white text-xl font-semibold">
-								{channelName
+								{displayName
 									.split("-")
 									.map((w) => w[0]?.toUpperCase())
 									.join("")}
 							</AvatarFallback>
 						</Avatar>
 						<div className="flex items-center gap-2 mt-3">
-							<span className="text-[#202020] font-medium text-base">#{channelName}</span>
+							<span className="text-[#202020] font-medium text-base">#{displayName}</span>
 							<Button
 								variant="ghost"
 								size="icon"
@@ -90,8 +107,13 @@ export function ChannelDetails({ channelName, isOpen, onClose }: ChannelDetailsP
 							</Button>
 						</div>
 						<p className="text-xs text-[#9a9a9a] mt-2 leading-relaxed max-w-[200px]">
-							Collaborative channel for UI, UX, and Design Systems.
+							{description}
 						</p>
+						{channel?.type && (
+							<span className="mt-2 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-slate-100 text-slate-600 rounded-full">
+								{channel.type}
+							</span>
+						)}
 					</div>
 
 					<div className="h-px bg-[#e5e7eb]" />

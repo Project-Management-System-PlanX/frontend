@@ -9,6 +9,7 @@ import {
 	Link as LinkIcon,
 	List,
 	ListOrdered,
+	Loader2,
 	Mic,
 	Phone,
 	PlusCircle,
@@ -24,30 +25,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-
-interface Message {
-	id: string;
-	user: {
-		name: string;
-		avatar?: string;
-		isBot?: boolean;
-		appLabel?: string;
-	};
-	content: string;
-	timestamp: string;
-	reactions?: { emoji: string; count: number }[];
-	attachment?: {
-		name: string;
-		type: string;
-		size: string;
-	};
-	replies?: {
-		count: number;
-		lastReply: string;
-		avatars: string[];
-	};
-	isNew?: boolean;
-}
+import { useMessages, type Message as SupabaseMessage } from "@/hooks/chat/use-messages";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
+import { useChannelStore } from "@/stores/channel-store";
 
 interface ChatAreaProps {
 	channelName: string;
@@ -56,98 +36,71 @@ interface ChatAreaProps {
 	isDM?: boolean;
 }
 
-const messages: Message[] = [
-	{
-		id: "1",
-		user: { name: "Alex Morgan", avatar: "/avatars/alex.png" },
-		content:
-			"Hey team! I've just updated the Figma board for the new Dashboard interface. Check out the dark mode variants in the 'V2-Final' page. The gradients now use the #0B6E4F to #50C878 range we discussed.",
-		timestamp: "10:31 AM",
-		reactions: [
-			{ emoji: "🚀", count: 4 },
-			{ emoji: "🔥", count: 2 },
-		],
-		attachment: {
-			name: "TeamUP_Dashboard_v2.fig",
-			type: "FIGMA DESIGN",
-			size: "12.4 MB",
-		},
-	},
-	{
-		id: "2",
-		user: { name: "Sarah Chen", avatar: "/avatars/sarah.png" },
-		content:
-			"Thanks Alex! The contrast ratios on the primary button look much better now. I'll take a look at the responsive grids this afternoon. Are we planning to use the sea blue for all interactive states?",
-		timestamp: "10:45 AM",
-		replies: {
-			count: 3,
-			lastReply: "Last reply 15 minutes ago",
-			avatars: ["/avatars/alex.png", "/avatars/user.png"],
-		},
-	},
-	{
-		id: "3",
-		user: {
-			name: "TeamUP Bot",
-			isBot: true,
-			appLabel: "APP",
-		},
-		content: "",
-		timestamp: "11:02 AM",
-		isNew: true,
-	},
-];
-
 export function ChatArea({ channelName, detailsOpen, onToggleDetails, isDM }: ChatAreaProps) {
 	const [messageInput, setMessageInput] = useState("");
-	const [messagesList, setMessagesList] = useState<Message[]>(messages);
 	const scrollRef = useRef<HTMLDivElement>(null);
+	const { user } = useSupabaseAuth();
+	const { channels } = useChannelStore();
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: This effect should run whenever messagesList changes to ensure the view scrolls to bottom.
+	// Find the channel by ID (channelName is actually channelId from URL)
+	const channel = channels.find((c) => c.id === channelName);
+	const displayName = channel ? channel.name : channelName;
+
+	// Use real Supabase messages for this channel
+	const { messages, isLoading, error, sendMessage } = useMessages(channelName);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Scroll to bottom when messages change
 	useEffect(() => {
 		if (scrollRef.current) {
 			scrollRef.current.scrollIntoView({ behavior: "instant" });
 		}
-	}, [messagesList]);
+	}, [messages]);
 
-	const handleSendMessage = () => {
-		if (!messageInput.trim()) return;
+	const handleSendMessage = async () => {
+		if (!messageInput.trim() || !user?.id) return;
 
-		const newMessage: Message = {
-			id: Date.now().toString(),
-			user: {
-				name: "Ravikrishna J (you)",
-				avatar: "/avatars/user.png", // Assuming a default avatar exists or using a placeholder
-				isBot: false,
-			},
-			content: messageInput,
-			timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-			isNew: false, // Don't show the "New Messages" banner for own messages
-		};
-
-		setMessagesList((prev) => [...prev, newMessage]);
-		setMessageInput("");
-
-		// Mock a bot reply after 1 second for "real-time" feel
-		setTimeout(() => {
-			const botReply: Message = {
-				id: (Date.now() + 1).toString(),
-				user: {
-					name: "TeamUP Bot",
-					isBot: true,
-					appLabel: "APP",
-				},
-				content: "I've received your message. How else can I help you today?",
-				timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-			};
-			setMessagesList((prev) => [...prev, botReply]);
-		}, 1000);
+		try {
+			await sendMessage(messageInput, user.id);
+			setMessageInput("");
+		} catch (err) {
+			console.error("Failed to send message:", err);
+		}
 	};
 
 	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
 		if (e.key === "Enter") {
 			handleSendMessage();
 		}
+	};
+
+	const formatMessageTime = (timestamp: string) => {
+		try {
+			return new Date(timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+		} catch {
+			return timestamp;
+		}
+	};
+
+	const getDisplayName = (msg: SupabaseMessage) => {
+		if (msg.users) {
+			const name = [msg.users.firstName, msg.users.lastName].filter(Boolean).join(" ");
+			if (name) {
+				return msg.user_id === user?.id ? `${name} (you)` : name;
+			}
+			return msg.users.username || msg.users.email;
+		}
+		return msg.user_id === user?.id ? "You" : "Unknown User";
+	};
+
+	const getInitials = (msg: SupabaseMessage) => {
+		const name = getDisplayName(msg).replace(" (you)", "");
+		return name
+			.split(" ")
+			.filter((part) => !part.includes("("))
+			.map((n) => n[0])
+			.join("")
+			.toUpperCase()
+			.slice(0, 2);
 	};
 
 	return (
@@ -159,7 +112,7 @@ export function ChatArea({ channelName, detailsOpen, onToggleDetails, isDM }: Ch
 			<div className="h-14 px-4 flex items-center justify-between border-b border-[#e5e7eb] shrink-0">
 				<div className="flex items-center gap-3">
 					<span className="text-[#202020] font-medium text-lg flex items-center gap-2">
-						<span className="text-[#9a9a9a]">{isDM ? "@" : "#"}</span> {channelName}
+						<span className="text-[#9a9a9a]">{isDM ? "@" : "#"}</span> {displayName}
 					</span>
 					<Button variant="ghost" size="icon" className="w-6 h-6 text-amber-400">
 						<Star className="w-4 h-4 fill-current" />
@@ -210,7 +163,7 @@ export function ChatArea({ channelName, detailsOpen, onToggleDetails, isDM }: Ch
 							</Avatar>
 						))}
 						<div className="w-7 h-7 rounded-full bg-[#FDC3A1] flex items-center justify-center text-[10px] text-black font-medium border-2 border-white">
-							+12
+							+{channel?.members ? Math.max(0, channel.members - 3) : 0}
 						</div>
 					</div>
 
@@ -250,130 +203,57 @@ export function ChatArea({ channelName, detailsOpen, onToggleDetails, isDM }: Ch
 			{/* Messages Area */}
 			<ScrollArea className="flex-1 h-0 overflow-y-auto w-full">
 				<div className="p-4 space-y-6">
-					{messagesList.map((message) => (
-						<div key={message.id}>
-							{/* New Messages Divider */}
-							{message.isNew && (
-								<div className="flex items-center gap-4 my-6">
-									<div className="flex-1 h-px bg-red-300" />
-									<span className="text-[11px] font-semibold text-red-500 uppercase tracking-wider">
-										New Messages
-									</span>
-									<div className="flex-1 h-px bg-red-300" />
-								</div>
-							)}
+					{isLoading ? (
+						<div className="flex items-center justify-center py-16">
+							<Loader2 className="w-6 h-6 animate-spin text-[#0B6E4F]" />
+							<span className="ml-3 text-sm text-slate-500">Loading messages...</span>
+						</div>
+					) : error ? (
+						<div className="flex items-center justify-center py-16">
+							<p className="text-sm text-red-500">Failed to load messages: {error}</p>
+						</div>
+					) : messages.length === 0 ? (
+						<div className="flex flex-col items-center justify-center py-16 text-center">
+							<div className="w-16 h-16 rounded-2xl bg-[#0B6E4F]/10 flex items-center justify-center mb-4">
+								<span className="text-2xl">💬</span>
+							</div>
+							<h3 className="font-semibold text-slate-900 mb-1">No messages yet</h3>
+							<p className="text-sm text-slate-500 max-w-xs">
+								Be the first to send a message in{" "}
+								<span className="font-medium text-[#0B6E4F]">#{displayName}</span>
+							</p>
+						</div>
+					) : (
+						messages.map((message) => (
+							<div key={message.id}>
+								<div className="flex gap-3 group">
+									<Avatar className="w-10 h-10 shrink-0">
+										<AvatarImage src={message.users?.imageUrl || undefined} />
+										<AvatarFallback className="bg-[#e5e7eb] text-[#404040]">
+											{getInitials(message)}
+										</AvatarFallback>
+									</Avatar>
 
-							<div className="flex gap-3 group">
-								<Avatar className="w-10 h-10 shrink-0">
-									<AvatarImage src={message.user.avatar} />
-									<AvatarFallback
-										className={
-											message.user.isBot ? "bg-[#0B6E4F] text-white" : "bg-[#e5e7eb] text-[#404040]"
-										}
-									>
-										{message.user.isBot
-											? "🤖"
-											: message.user.name
-													.split(" ")
-													.filter((part) => !part.includes("("))
-													.map((n) => n[0])
-													.join("")
-													.toUpperCase()
-													.slice(0, 2)}
-									</AvatarFallback>
-								</Avatar>
-
-								<div className="flex-1 min-w-0">
-									<div className="flex items-center gap-2">
-										<span className="font-medium text-[#202020]">{message.user.name}</span>
-										{message.user.appLabel && (
-											<span className="px-1.5 py-0.5 text-[10px] font-semibold bg-[#0B6E4F] text-white rounded">
-												{message.user.appLabel}
+									<div className="flex-1 min-w-0">
+										<div className="flex items-center gap-2">
+											<span className="font-medium text-[#202020]">
+												{getDisplayName(message)}
 											</span>
+											<span className="text-xs text-[#9a9a9a]">
+												{formatMessageTime(message.created_at)}
+											</span>
+										</div>
+
+										{message.content && (
+											<p className="text-[#404040] mt-1 leading-relaxed text-[15px]">
+												{message.content}
+											</p>
 										)}
-										<span className="text-xs text-[#9a9a9a]">{message.timestamp}</span>
 									</div>
-
-									{message.content && (
-										<p className="text-[#404040] mt-1 leading-relaxed text-[15px]">
-											{message.content}
-										</p>
-									)}
-
-									{message.user.isBot && !message.content && (
-										<p className="text-[#404040] mt-1 leading-relaxed text-[15px]">
-											New task created in{" "}
-											<span className="text-[#0B6E4F] hover:underline cursor-pointer">
-												#product-roadmap
-											</span>
-											:{" "}
-											<span className="italic text-[#202020]">
-												"Finalize Dark Mode CSS variables"
-											</span>
-										</p>
-									)}
-
-									{/* Attachment */}
-									{message.attachment && (
-										<div className="mt-3 inline-flex items-center gap-3 bg-[#f8f9fa] rounded-lg px-4 py-3 border border-[#e5e7eb]">
-											<div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-												<FileText className="w-5 h-5 text-white" />
-											</div>
-											<div>
-												<p className="text-sm font-medium text-[#202020]">
-													{message.attachment.name}
-												</p>
-												<p className="text-xs text-[#9a9a9a]">
-													{message.attachment.type} • {message.attachment.size}
-												</p>
-											</div>
-										</div>
-									)}
-
-									{/* Reactions */}
-									{message.reactions && (
-										<div className="flex items-center gap-2 mt-3">
-											{message.reactions.map((reaction) => (
-												<button
-													type="button"
-													key={reaction.emoji}
-													className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#f5f5f5] hover:bg-[#e5e7eb] border border-[#e5e7eb] transition-colors"
-												>
-													<span>{reaction.emoji}</span>
-													<span className="text-xs text-[#404040] font-medium">
-														{reaction.count}
-													</span>
-												</button>
-											))}
-										</div>
-									)}
-
-									{/* Replies */}
-									{message.replies && (
-										<button type="button" className="flex items-center gap-2 mt-3 group/reply">
-											<div className="flex -space-x-1.5">
-												{message.replies.avatars.map((avatar) => (
-													<Avatar
-														key={`${message.id}-${avatar}`}
-														className="w-5 h-5 border border-white"
-													>
-														<AvatarImage src={avatar} />
-														<AvatarFallback className="text-[8px] bg-[#e5e7eb] text-[#404040]">
-															U
-														</AvatarFallback>
-													</Avatar>
-												))}
-											</div>
-											<span className="text-[#0B6E4F] text-sm font-medium group-hover/reply:underline">
-												{message.replies.count} replies
-											</span>
-											<span className="text-xs text-[#9a9a9a]">{message.replies.lastReply}</span>
-										</button>
-									)}
 								</div>
 							</div>
-						</div>
-					))}
+						))
+					)}
 					<div ref={scrollRef} />
 				</div>
 			</ScrollArea>
@@ -433,7 +313,7 @@ export function ChatArea({ channelName, detailsOpen, onToggleDetails, isDM }: Ch
 							value={messageInput}
 							onChange={(e) => setMessageInput(e.target.value)}
 							onKeyDown={handleKeyDown}
-							placeholder={`Message #${channelName}`}
+							placeholder={`Message ${isDM ? "@" : "#"}${displayName}`}
 							className="w-full bg-transparent text-[#202020] placeholder-[#9a9a9a] outline-none text-[15px]"
 						/>
 					</div>

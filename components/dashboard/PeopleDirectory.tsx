@@ -1,78 +1,12 @@
 "use client";
 
-import { CheckCircle2, ChevronDown, Circle, Clock, Search, X } from "lucide-react";
+import { CheckCircle2, ChevronDown, Circle, Clock, Loader2, Search, X } from "lucide-react";
 import { useState } from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
-interface Person {
-	id: string;
-	name: string;
-	title: string;
-	avatar: string;
-	status?: "verified" | "online" | "away" | "offline";
-}
-
-const people: Person[] = [
-	{
-		id: "1",
-		name: "Ravikrishna J",
-		title: "That's you!",
-		avatar: "/avatars/user.png",
-		status: "verified",
-	},
-	{
-		id: "2",
-		name: "Elena Vance",
-		title: "Product Designer",
-		avatar: "/avatars/sarah.png",
-		status: "away",
-	},
-	{
-		id: "3",
-		name: "Marcus Wright",
-		title: "Engineering Lead",
-		avatar: "/avatars/alex.png",
-		status: "online",
-	},
-	{
-		id: "4",
-		name: "Sarah Chen",
-		title: "Head of Operations",
-		avatar: "/avatars/1.png",
-		status: "online",
-	},
-	{
-		id: "5",
-		name: "David Miller",
-		title: "Marketing Manager",
-		avatar: "/avatars/2.png",
-		status: "offline",
-	},
-	{
-		id: "6",
-		name: "Morgan Lee",
-		title: "DevOps Engineer",
-		avatar: "/avatars/3.png",
-		status: "online",
-	},
-	{
-		id: "7",
-		name: "Jordan Smith",
-		title: "UX Researcher",
-		avatar: "/avatars/4.png",
-		status: "offline",
-	},
-	{
-		id: "8",
-		name: "Casey Johnson",
-		title: "Senior Developer",
-		avatar: "/avatars/5.png",
-		status: "online",
-	},
-];
+import { useWorkspaceMembers } from "@/hooks/use-workspace-members";
 
 const getStatusIcon = (status?: string) => {
 	switch (status) {
@@ -92,9 +26,36 @@ const getStatusIcon = (status?: string) => {
 export function PeopleDirectory() {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [showBanner, setShowBanner] = useState(true);
-	const [displayCount, setDisplayCount] = useState(5);
+	const [displayCount, setDisplayCount] = useState(10);
 
-	const filteredPeople = people.filter(
+	const { members, currentUserProfile, isLoading } = useWorkspaceMembers();
+
+	// Map members to display format
+	const people = members.map((member) => {
+		const name = member.profile
+			? [member.profile.firstName, member.profile.lastName].filter(Boolean).join(" ") || member.profile.email
+			: member.userId.slice(0, 8);
+
+		const isCurrentUser = member.userId === currentUserProfile?.supabaseId;
+
+		return {
+			id: member.id,
+			name: isCurrentUser ? name : name,
+			title: isCurrentUser ? "That's you!" : member.role || "Member",
+			avatar: member.profile?.imageUrl || "",
+			status: isCurrentUser ? "verified" as const : member.online ? "online" as const : "offline" as const,
+			isCurrentUser,
+		};
+	});
+
+	// Sort: current user first, then alphabetically by name
+	const sortedPeople = [...people].sort((a, b) => {
+		if (a.isCurrentUser) return -1;
+		if (b.isCurrentUser) return 1;
+		return a.name.localeCompare(b.name);
+	});
+
+	const filteredPeople = sortedPeople.filter(
 		(person) =>
 			person.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
 			person.title.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -193,7 +154,12 @@ export function PeopleDirectory() {
 			{/* People Grid */}
 			<div className="flex-1 overflow-y-auto">
 				<div className="p-8">
-					{displayedPeople.length === 0 ? (
+					{isLoading ? (
+						<div className="flex items-center justify-center h-64">
+							<Loader2 className="w-6 h-6 animate-spin text-[#0B6E4F]" />
+							<span className="ml-3 text-sm text-slate-500">Loading people...</span>
+						</div>
+					) : displayedPeople.length === 0 ? (
 						<div className="flex items-center justify-center h-64 text-slate-500">
 							No people found
 						</div>
@@ -218,7 +184,7 @@ export function PeopleDirectory() {
 														.toUpperCase()}
 												</AvatarFallback>
 											</Avatar>
-											{person.id === "1" && (
+											{person.isCurrentUser && (
 												<Button
 													size="sm"
 													className="absolute top-2 right-2 bg-[#0B6E4F] hover:bg-[#0B6E4F]/90 text-white h-6 px-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
@@ -252,7 +218,7 @@ export function PeopleDirectory() {
 								{displayCount < filteredPeople.length && (
 									<Button
 										variant="outline"
-										onClick={() => setDisplayCount(displayCount + 5)}
+										onClick={() => setDisplayCount(displayCount + 10)}
 										className="bg-white border-slate-200 text-slate-700 hover:bg-slate-50 px-8"
 									>
 										Load more
