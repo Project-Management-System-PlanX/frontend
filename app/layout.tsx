@@ -2,6 +2,7 @@ import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import { Figtree, Geist_Mono, Inter } from "next/font/google";
 import type React from "react";
+import { ProfileCompletionModal } from "@/components/modals/ProfileCompletionModal";
 import { QueryProvider } from "@/providers/query-provider";
 import "./globals.css";
 
@@ -41,7 +42,10 @@ export default function RootLayout({
 			<body
 				className={`${inter.variable} ${figtree.variable} ${geistMono.variable} font-sans antialiased`}
 			>
-				<QueryProvider>{children}</QueryProvider>
+				<QueryProvider>
+					{children}
+					<ProfileCompletionModal />
+				</QueryProvider>
 				<Analytics />
 			</body>
 		</html>
