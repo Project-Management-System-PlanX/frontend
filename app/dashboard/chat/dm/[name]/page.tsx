@@ -1,13 +1,13 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
 import { use, useEffect, useState } from "react";
 import { ChatArea } from "@/components/dashboard/ChatArea";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useWorkspaceMembers } from "@/hooks/use-workspace-members";
-import { useWorkspaceStore } from "@/stores/workspace-store";
 import { channelService } from "@/lib/api/services";
 import { useChannelStore } from "@/stores/channel-store";
-import { Loader2 } from "lucide-react";
+import { useWorkspaceStore } from "@/stores/workspace-store";
 
 export default function DMPage({ params }: { params: Promise<{ name: string }> }) {
 	const { name } = use(params);
@@ -36,7 +36,7 @@ export default function DMPage({ params }: { params: Promise<{ name: string }> }
 				const existingDM = channels.find(
 					(c) =>
 						c.type === "DIRECT_MESSAGE" &&
-						c.name === `dm-${[user.id, targetMember.userId].sort().join("-")}`
+						c.name === `dm-${[user.id, targetMember.userId].sort().join("-")}`,
 				);
 
 				if (existingDM) {
@@ -55,7 +55,7 @@ export default function DMPage({ params }: { params: Promise<{ name: string }> }
 						name: dmName,
 						type: "DIRECT_MESSAGE",
 					},
-					token
+					token,
 				);
 
 				// Add the other user as a member of this DM channel
@@ -98,9 +98,21 @@ export default function DMPage({ params }: { params: Promise<{ name: string }> }
 		findOrCreateDMChannel();
 	}, [token, activeWorkspaceId, targetMember, user?.id, channels, addChannel]);
 
+	const getNameFromEmail = (email: string) => {
+		const local = email.split("@")[0] || "";
+		return local
+			.replace(/[._-]/g, " ")
+			.split(" ")
+			.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+			.join(" ");
+	};
+
 	// Display name for the DM header
 	const displayName = targetMember?.profile
-		? [targetMember.profile.firstName, targetMember.profile.lastName].filter(Boolean).join(" ") || targetMember.profile.email
+		? [targetMember.profile.firstName, targetMember.profile.lastName].filter(Boolean).join(" ") ||
+			(targetMember.profile.username
+				? targetMember.profile.username
+				: getNameFromEmail(targetMember.profile.email))
 		: dmSlug;
 
 	if (isCreating || !dmChannelId) {
@@ -125,8 +137,9 @@ export default function DMPage({ params }: { params: Promise<{ name: string }> }
 		<ChatArea
 			channelName={dmChannelId}
 			detailsOpen={false}
-			onToggleDetails={() => { }}
+			onToggleDetails={() => {}}
 			isDM
+			dmDisplayName={displayName}
 		/>
 	);
 }

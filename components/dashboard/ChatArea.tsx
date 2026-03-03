@@ -3,7 +3,6 @@
 import {
 	AtSign,
 	Bold,
-	FileText,
 	Info,
 	Italic,
 	Link as LinkIcon,
@@ -25,7 +24,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useMessages, type Message as SupabaseMessage } from "@/hooks/chat/use-messages";
+import { type Message as SupabaseMessage, useMessages } from "@/hooks/chat/use-messages";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useChannelStore } from "@/stores/channel-store";
 
@@ -34,9 +33,16 @@ interface ChatAreaProps {
 	detailsOpen: boolean;
 	onToggleDetails: () => void;
 	isDM?: boolean;
+	dmDisplayName?: string;
 }
 
-export function ChatArea({ channelName, detailsOpen, onToggleDetails, isDM }: ChatAreaProps) {
+export function ChatArea({
+	channelName,
+	detailsOpen,
+	onToggleDetails,
+	isDM,
+	dmDisplayName,
+}: ChatAreaProps) {
 	const [messageInput, setMessageInput] = useState("");
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const { user } = useSupabaseAuth();
@@ -44,7 +50,7 @@ export function ChatArea({ channelName, detailsOpen, onToggleDetails, isDM }: Ch
 
 	// Find the channel by ID (channelName is actually channelId from URL)
 	const channel = channels.find((c) => c.id === channelName);
-	const displayName = channel ? channel.name : channelName;
+	const displayName = isDM && dmDisplayName ? dmDisplayName : channel ? channel.name : channelName;
 
 	// Use real Supabase messages for this channel
 	const { messages, isLoading, error, sendMessage } = useMessages(channelName);
@@ -81,13 +87,21 @@ export function ChatArea({ channelName, detailsOpen, onToggleDetails, isDM }: Ch
 		}
 	};
 
+	const getNameFromEmail = (email: string) => {
+		const local = email.split("@")[0] || "";
+		return local
+			.replace(/[._-]/g, " ")
+			.split(" ")
+			.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+			.join(" ");
+	};
+
 	const getDisplayName = (msg: SupabaseMessage) => {
 		if (msg.users) {
 			const name = [msg.users.firstName, msg.users.lastName].filter(Boolean).join(" ");
-			if (name) {
-				return msg.user_id === user?.id ? `${name} (you)` : name;
-			}
-			return msg.users.username || msg.users.email;
+			let finalName = name;
+			if (!finalName) finalName = msg.users.username || getNameFromEmail(msg.users.email);
+			return msg.user_id === user?.id ? `${finalName} (you)` : finalName;
 		}
 		return msg.user_id === user?.id ? "You" : "Unknown User";
 	};
@@ -227,9 +241,7 @@ export function ChatArea({ channelName, detailsOpen, onToggleDetails, isDM }: Ch
 
 									<div className="flex-1 min-w-0">
 										<div className="flex items-center gap-2">
-											<span className="font-medium text-[#202020]">
-												{getDisplayName(message)}
-											</span>
+											<span className="font-medium text-[#202020]">{getDisplayName(message)}</span>
 											<span className="text-xs text-[#9a9a9a]">
 												{formatMessageTime(message.created_at)}
 											</span>
