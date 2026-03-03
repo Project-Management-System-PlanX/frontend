@@ -3,6 +3,7 @@
 import { CheckSquare, FolderOpen, Home, MessageSquare, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ProfileCompletionModal } from "@/components/modals/ProfileCompletionModal";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -20,6 +21,7 @@ export function IconRail() {
 
 	return (
 		<div className="w-14 bg-slate-50 border-r border-slate-200 flex flex-col items-center py-4 gap-3">
+			<ProfileCompletionModal />
 			<TooltipProvider delayDuration={0}>
 				{navItems.map((item) => {
 					// Use /dashboard/task/for-you as the default link for Tasks
