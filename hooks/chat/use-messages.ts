@@ -5,7 +5,11 @@ export interface Message {
 	id: string;
 	channel_id: string;
 	user_id: string;
-	content: string;
+	content?: string;
+	file_url?: string;
+	file_name?: string;
+	file_type?: string;
+	file_size?: number;
 	is_edited: boolean;
 	created_at: string;
 	updated_at: string;
@@ -109,18 +113,33 @@ export function useMessages(channelId: string | null) {
 	}, [channelId, supabase]);
 
 	// 3. Function to send a new message
-	const sendMessage = async (content: string, userId: string) => {
-		if (!channelId || !content.trim()) return;
+	const sendMessage = async (
+		content: string,
+		userId: string,
+		fileDetails?: { url: string; name: string; type: string; size: number },
+	) => {
+		if (!channelId || (!content.trim() && !fileDetails)) return;
 
 		// Optimistic update could go here, but for simplicity we'll let Realtime handle the insert event
 		const now = new Date().toISOString();
-		const { error: insertError } = await supabase.from("messages").insert({
+
+		const insertData: any = {
 			id: crypto.randomUUID(), // Explicitly provide ID since default(uuid()) might be missing in DB schema
 			channel_id: channelId,
 			user_id: userId,
-			content: content.trim(),
+			content: content.trim() || null,
 			updated_at: now, // Explicitly provide updated_at since it violates not-null constraint
-		});
+		};
+
+		if (fileDetails) {
+			insertData.file_url = fileDetails.url;
+			insertData.file_name = fileDetails.name;
+			insertData.file_type = fileDetails.type;
+			insertData.file_size = fileDetails.size;
+		}
+
+		// Insert without typed type constraint checking because we altered schema directly
+		const { error: insertError } = await supabase.from("messages").insert(insertData);
 
 		if (insertError) {
 			console.error("Error sending message:", insertError);

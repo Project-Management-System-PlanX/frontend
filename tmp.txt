@@ -1,0 +1,61 @@
+components\dashboard\ChatArea.tsx:317:15 lint/performance/noImgElement ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Don't use <img> element.
+  
+    315 │ 												{message.file_type?.startsWith("image/") ? (
+    316 │ 													<a href={message.file_url} target="_blank" rel="noreferrer">
+  > 317 │ 														<img
+        │ 														^^^^
+  > 318 │ 															src={message.file_url}
+  > 319 │ 															alt={message.file_name || "Attachment"}
+  > 320 │ 															className="max-w-[300px] max-h-[300px] rounded-lg border border-slate-200 object-contain hover:opacity-90 transition-opacity"
+  > 321 │ 														/>
+        │ 														^^
+    322 │ 													</a>
+    323 │ 												) : (
+  
+  i Using the <img> can lead to slower LCP and higher bandwidth. Consider using <Image /> from next/image to automatically optimize images.
+  
+
+components\dashboard\ChatArea.tsx:76:7 lint/complexity/useOptionalChain  FIXABLE  ━━━━━━━━━━━━━━━━━━
+
+  ! Change to an optional chain.
+  
+    75 │ 	const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  > 76 │ 		if (e.target.files && e.target.files[0]) {
+       │ 		    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    77 │ 			setAttachment(e.target.files[0]);
+    78 │ 			// Reset input so the same file could be selected again if removed
+  
+  i Unsafe fix: Change to an optional chain.
+  
+     74  74 │   
+     75  75 │   	const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+     76     │ - → → if·(e.target.files·&&·e.target.files[0])·{
+         76 │ + → → if·(e.target.files?.[0])·{
+     77  77 │   			setAttachment(e.target.files[0]);
+     78  78 │   			// Reset input so the same file could be selected again if removed
+  
+
+components\dashboard\ChatArea.tsx:88:8 lint/suspicious/noImplicitAnyLet ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × This variable implicitly has the any type.
+  
+    86 │ 		try {
+    87 │ 			setIsUploading(true);
+  > 88 │ 			let fileDetails;
+       │ 			    ^^^^^^^^^^^
+    89 │ 
+    90 │ 			if (attachment) {
+  
+  i Variable declarations without type annotation and initialization implicitly have the any type. Declare a type or initialize the variable with some value.
+  
+
+Checked 1 file in 20ms. No fixes applied.
+Found 1 error.
+Found 2 warnings.
+check ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Some errors were emitted while running checks.
+  
+

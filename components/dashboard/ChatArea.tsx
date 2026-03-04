@@ -3,6 +3,8 @@
 import {
 	AtSign,
 	Bold,
+	File as FileIcon,
+	Image as ImageIcon,
 	Info,
 	Italic,
 	Link as LinkIcon,
@@ -18,6 +20,7 @@ import {
 	Star,
 	Strikethrough,
 	Video,
+	X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -26,6 +29,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { type Message as SupabaseMessage, useMessages } from "@/hooks/chat/use-messages";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
+import { createClient } from "@/lib/supabase/client";
 import { useChannelStore } from "@/stores/channel-store";
 
 interface ChatAreaProps {
@@ -44,9 +48,15 @@ export function ChatArea({
 	dmDisplayName,
 }: ChatAreaProps) {
 	const [messageInput, setMessageInput] = useState("");
+	const [attachment, setAttachment] = useState<File | null>(null);
+	const [isUploading, setIsUploading] = useState(false);
+
 	const scrollRef = useRef<HTMLDivElement>(null);
+	const fileInputRef = useRef<HTMLInputElement>(null);
+
 	const { user } = useSupabaseAuth();
 	const { channels } = useChannelStore();
+	const supabase = createClient();
 
 	// Find the channel by ID (channelName is actually channelId from URL)
 	const channel = channels.find((c) => c.id === channelName);
@@ -62,14 +72,49 @@ export function ChatArea({
 		}
 	}, [messages]);
 
+	const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+		if (e.target.files?.[0]) {
+			setAttachment(e.target.files[0]);
+			// Reset input so the same file could be selected again if removed
+			e.target.value = "";
+		}
+	};
+
 	const handleSendMessage = async () => {
-		if (!messageInput.trim() || !user?.id) return;
+		if ((!messageInput.trim() && !attachment) || !user?.id || isUploading) return;
 
 		try {
-			await sendMessage(messageInput, user.id);
+			setIsUploading(true);
+			let fileDetails: { url: string; name: string; type: string; size: number } | undefined;
+
+			if (attachment) {
+				const fileExt = attachment.name.split(".").pop();
+				const fileName = `${crypto.randomUUID()}.${fileExt}`;
+				const filePath = `${channelName}/${fileName}`;
+
+				const { error: uploadError } = await supabase.storage
+					.from("chat_attachments")
+					.upload(filePath, attachment);
+
+				if (uploadError) throw uploadError;
+
+				const { data } = supabase.storage.from("chat_attachments").getPublicUrl(filePath);
+
+				fileDetails = {
+					url: data.publicUrl,
+					name: attachment.name,
+					type: attachment.type,
+					size: attachment.size,
+				};
+			}
+
+			await sendMessage(messageInput, user.id, fileDetails);
 			setMessageInput("");
+			setAttachment(null);
 		} catch (err) {
 			console.error("Failed to send message:", err);
+		} finally {
+			setIsUploading(false);
 		}
 	};
 
@@ -264,6 +309,42 @@ export function ChatArea({
 												{message.content}
 											</p>
 										)}
+
+										{message.file_url && (
+											<div className="mt-2">
+												{message.file_type?.startsWith("image/") ? (
+													<a href={message.file_url} target="_blank" rel="noreferrer">
+														{/* biome-ignore lint/performance/noImgElement: user content image */}
+														<img
+															src={message.file_url}
+															alt={message.file_name || "Attachment"}
+															className="max-w-[300px] max-h-[300px] rounded-lg border border-slate-200 object-contain hover:opacity-90 transition-opacity"
+														/>
+													</a>
+												) : (
+													<a
+														href={message.file_url}
+														target="_blank"
+														rel="noreferrer"
+														className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 max-w-sm transition-colors"
+													>
+														<div className="w-10 h-10 rounded bg-[#0B6E4F]/10 flex items-center justify-center shrink-0">
+															<FileIcon className="w-5 h-5 text-[#0B6E4F]" />
+														</div>
+														<div className="min-w-0 flex-1">
+															<p className="text-sm font-medium text-slate-900 truncate">
+																{message.file_name || "Attached File"}
+															</p>
+															{message.file_size && (
+																<p className="text-xs text-slate-500">
+																	{(message.file_size / 1024).toFixed(1)} KB
+																</p>
+															)}
+														</div>
+													</a>
+												)}
+											</div>
+										)}
 									</div>
 								</div>
 							</div>
@@ -321,8 +402,48 @@ export function ChatArea({
 						</TooltipProvider>
 					</div>
 
-					{/* Input */}
-					<div className="px-3 py-3">
+					{/* Input & Staging */}
+					<div className="px-3 py-3 flex flex-col gap-2">
+						{/* Hidden File Input */}
+						<input
+							type="file"
+							ref={fileInputRef}
+							hidden
+							onChange={handleFileSelect}
+							accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+						/>
+
+						{/* Attachment Staging Area */}
+						{attachment && (
+							<div className="flex items-center gap-3 p-2 rounded-lg border border-slate-200 bg-slate-50 w-max pr-8 relative group">
+								<div className="w-10 h-10 rounded bg-[#0B6E4F]/10 flex items-center justify-center">
+									{attachment.type.startsWith("image/") ? (
+										<ImageIcon className="w-5 h-5 text-[#0B6E4F]" />
+									) : (
+										<FileIcon className="w-5 h-5 text-[#0B6E4F]" />
+									)}
+								</div>
+								<div className="flex flex-col">
+									<span className="text-sm font-medium text-slate-700 max-w-[200px] truncate">
+										{attachment.name}
+									</span>
+									<span className="text-xs text-slate-500">
+										{(attachment.size / 1024).toFixed(1)} KB
+									</span>
+								</div>
+								<button
+									type="button"
+									onClick={() => {
+										setAttachment(null);
+										if (fileInputRef.current) fileInputRef.current.value = "";
+									}}
+									className="absolute -top-2 -right-2 w-6 h-6 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-red-500 hover:border-red-200 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+								>
+									<X className="w-3 h-3" />
+								</button>
+							</div>
+						)}
+
 						<input
 							type="text"
 							value={messageInput}
@@ -330,6 +451,7 @@ export function ChatArea({
 							onKeyDown={handleKeyDown}
 							placeholder={`Message ${isDM ? "@" : "#"}${displayName}`}
 							className="w-full bg-transparent text-[#202020] placeholder-[#9a9a9a] outline-none text-[15px]"
+							disabled={isUploading}
 						/>
 					</div>
 
@@ -338,16 +460,21 @@ export function ChatArea({
 						<div className="flex items-center gap-1">
 							<TooltipProvider delayDuration={0}>
 								{[
-									{ icon: PlusCircle, label: "Attach" },
+									{
+										icon: PlusCircle,
+										label: "Attach",
+										onClick: () => fileInputRef.current?.click(),
+									},
 									{ icon: AtSign, label: "Mention" },
 									{ icon: Smile, label: "Emoji" },
 									{ icon: Mic, label: "Record audio" },
-								].map(({ icon: Icon, label }) => (
+								].map(({ icon: Icon, label, onClick }) => (
 									<Tooltip key={label}>
 										<TooltipTrigger asChild>
 											<Button
 												variant="ghost"
 												size="icon"
+												onClick={onClick}
 												className="w-8 h-8 text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"
 											>
 												<Icon className="w-4 h-4" />
@@ -362,10 +489,14 @@ export function ChatArea({
 						<Button
 							size="icon"
 							className="w-9 h-9 rounded-lg bg-[#0B6E4F] hover:bg-[#0B6E4F]/90 text-white"
-							disabled={!messageInput.trim()}
+							disabled={(!messageInput.trim() && !attachment) || isUploading}
 							onClick={handleSendMessage}
 						>
-							<Send className="w-4 h-4" />
+							{isUploading ? (
+								<Loader2 className="w-4 h-4 animate-spin text-white" />
+							) : (
+								<Send className="w-4 h-4" />
+							)}
 						</Button>
 					</div>
 				</div>
