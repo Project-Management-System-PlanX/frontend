@@ -81,7 +81,19 @@ export function ChatArea({
 
 	const formatMessageTime = (timestamp: string) => {
 		try {
-			return new Date(timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+			// Supabase timestamp fields often miss the 'Z' UTC indicator.
+			// Without it, JS parses the time as local, breaking the timezone offset.
+			let tzString = timestamp;
+			const timePart = tzString.split("T")[1];
+			if (
+				timePart &&
+				!timePart.endsWith("Z") &&
+				!timePart.includes("+") &&
+				!timePart.includes("-")
+			) {
+				tzString += "Z";
+			}
+			return new Date(tzString).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 		} catch {
 			return timestamp;
 		}
