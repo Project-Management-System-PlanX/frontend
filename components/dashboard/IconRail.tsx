@@ -21,7 +21,7 @@ export function IconRail() {
 
 	return (
 		<div className="w-14 bg-slate-50 border-r border-slate-200 flex flex-col items-center py-4 gap-3">
-			{/* Switch Workspace */}
+			{/* Workspace */}
 			<TooltipProvider delayDuration={0}>
 				<Tooltip>
 					<TooltipTrigger asChild>
