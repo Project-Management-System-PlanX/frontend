@@ -30,9 +30,10 @@ export const useChannelStore = create<ChannelState>()(
 			isLoaded: false,
 			addChannel: (channel) =>
 				set(
-					(state) => ({
-						channels: [...state.channels, channel],
-					}),
+					(state) => {
+						if (state.channels.some((c) => c.id === channel.id)) return state;
+						return { channels: [...state.channels, channel] };
+					},
 					false,
 					"addChannel",
 				),
