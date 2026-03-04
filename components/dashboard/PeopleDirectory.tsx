@@ -33,7 +33,8 @@ export function PeopleDirectory() {
 	// Map members to display format
 	const people = members.map((member) => {
 		const name = member.profile
-			? [member.profile.firstName, member.profile.lastName].filter(Boolean).join(" ") || member.profile.email
+			? [member.profile.firstName, member.profile.lastName].filter(Boolean).join(" ") ||
+				member.profile.email
 			: member.userId.slice(0, 8);
 
 		const isCurrentUser = member.userId === currentUserProfile?.supabaseId;
@@ -43,7 +44,11 @@ export function PeopleDirectory() {
 			name: isCurrentUser ? name : name,
 			title: isCurrentUser ? "That's you!" : member.role || "Member",
 			avatar: member.profile?.imageUrl || "",
-			status: isCurrentUser ? "verified" as const : member.online ? "online" as const : "offline" as const,
+			status: isCurrentUser
+				? ("verified" as const)
+				: member.online
+					? ("online" as const)
+					: ("offline" as const),
 			isCurrentUser,
 		};
 	});

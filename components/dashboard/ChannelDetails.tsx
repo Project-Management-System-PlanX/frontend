@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useChannelStore } from "@/stores/channel-store";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { channelService } from "@/lib/api/services";
+import { useChannelStore } from "@/stores/channel-store";
 
 interface ChannelDetailsProps {
 	channelName: string;
