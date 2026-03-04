@@ -100,9 +100,17 @@ export default function InvitePage() {
 			setState("success");
 		} catch (err: unknown) {
 			// If already a member, treat as success
-			if (err && typeof err === "object" && "message" in err) {
-				const msg = String((err as { message: string }).message);
-				if (msg.toLowerCase().includes("already") || msg.toLowerCase().includes("unique")) {
+			if (err && typeof err === "object") {
+				const status = "status" in err ? (err as { status: number }).status : 0;
+				const msg =
+					"message" in err ? String((err as { message: string }).message).toLowerCase() : "";
+
+				if (
+					status === 409 ||
+					msg.includes("already") ||
+					msg.includes("unique") ||
+					msg.includes("conflict")
+				) {
 					setState("success");
 					return;
 				}

@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckSquare, FolderOpen, Home, MessageSquare, Settings } from "lucide-react";
+import { CheckSquare, FolderOpen, Home, LayoutGrid, MessageSquare, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ProfileCompletionModal } from "@/components/modals/ProfileCompletionModal";
@@ -21,6 +21,26 @@ export function IconRail() {
 
 	return (
 		<div className="w-14 bg-slate-50 border-r border-slate-200 flex flex-col items-center py-4 gap-3">
+			{/* Switch Workspace */}
+			<TooltipProvider delayDuration={0}>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Link href="/workspaces">
+							<Button
+								variant="ghost"
+								size="icon"
+								className="w-9 h-9 rounded-lg text-slate-500 hover:text-[#0B6E4F] hover:bg-[#D1F2EB] transition-colors"
+							>
+								<LayoutGrid className="w-5 h-5" />
+							</Button>
+						</Link>
+					</TooltipTrigger>
+					<TooltipContent side="right">Workspace</TooltipContent>
+				</Tooltip>
+			</TooltipProvider>
+
+			<div className="w-7 border-t border-slate-200" />
+
 			<ProfileCompletionModal />
 			<TooltipProvider delayDuration={0}>
 				{navItems.map((item) => {
