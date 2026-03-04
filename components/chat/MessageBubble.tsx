@@ -51,11 +51,11 @@ export function MessageBubble({ message, isOwnMessage, showAvatar = true }: Mess
 						}`}
 						style={{ wordBreak: "break-word" }}
 					>
-						{message.content.split("\n").map((line, i) => (
+						{(message.content || "").split("\n").map((line, i) => (
 							// biome-ignore lint/suspicious/noArrayIndexKey: Safe for simple text lines
 							<span key={i}>
 								{line}
-								<br />
+								{i !== (message.content || "").split("\n").length - 1 && <br />}
 							</span>
 						))}
 					</div>
