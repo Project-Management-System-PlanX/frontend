@@ -113,10 +113,13 @@ export function useMessages(channelId: string | null) {
 		if (!channelId || !content.trim()) return;
 
 		// Optimistic update could go here, but for simplicity we'll let Realtime handle the insert event
+		const now = new Date().toISOString();
 		const { error: insertError } = await supabase.from("messages").insert({
+			id: crypto.randomUUID(), // Explicitly provide ID since default(uuid()) might be missing in DB schema
 			channel_id: channelId,
 			user_id: userId,
 			content: content.trim(),
+			updated_at: now, // Explicitly provide updated_at since it violates not-null constraint
 		});
 
 		if (insertError) {

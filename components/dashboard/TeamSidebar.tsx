@@ -7,13 +7,13 @@ import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn } from "@/lib/utils";
-import { useChannelStore, type Channel } from "@/stores/channel-store";
-import { useWorkspaceStore } from "@/stores/workspace-store";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useWorkspaceChannels } from "@/hooks/use-workspace-channels";
 import { useWorkspaceMembers } from "@/hooks/use-workspace-members";
-import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { channelService } from "@/lib/api/services";
+import { cn } from "@/lib/utils";
+import { type Channel, useChannelStore } from "@/stores/channel-store";
+import { useWorkspaceStore } from "@/stores/workspace-store";
 import { CreateChannelDialog } from "./CreateChannelDialog";
 import { DirectoriesSection } from "./DirectoriesSection";
 import { IconRail } from "./IconRail";
@@ -44,7 +44,7 @@ export function TeamSidebar(_props: TeamSidebarProps) {
 	};
 
 	// Generate display name for a member
-	const getMemberDisplayName = (member: typeof members[0]) => {
+	const getMemberDisplayName = (member: (typeof members)[0]) => {
 		if (member.profile) {
 			const name = [member.profile.firstName, member.profile.lastName].filter(Boolean).join(" ");
 			if (member.userId === currentUserProfile?.supabaseId) {
@@ -59,16 +59,22 @@ export function TeamSidebar(_props: TeamSidebarProps) {
 	};
 
 	// Generate slug for DM routing
-	const getMemberSlug = (member: typeof members[0]) => {
+	const getMemberSlug = (member: (typeof members)[0]) => {
 		if (member.profile) {
-			const name = [member.profile.firstName, member.profile.lastName].filter(Boolean).join("-").toLowerCase();
+			const name = [member.profile.firstName, member.profile.lastName]
+				.filter(Boolean)
+				.join("-")
+				.toLowerCase();
 			return name || member.profile.username || member.userId;
 		}
 		return member.userId;
 	};
 
 	// Handle channel creation via real API
-	const handleChannelCreated = async (channel: { name: string; visibility: "public" | "private" }) => {
+	const handleChannelCreated = async (channel: {
+		name: string;
+		visibility: "public" | "private";
+	}) => {
 		if (!activeWorkspaceId || !token) return;
 
 		try {
@@ -157,26 +163,28 @@ export function TeamSidebar(_props: TeamSidebarProps) {
 											<Loader2 className="w-4 h-4 animate-spin text-slate-400" />
 											<span className="ml-2 text-xs text-slate-400">Loading channels...</span>
 										</div>
-									) : channels.length === 0 ? (
+									) : channels.filter((c) => c.type !== "DIRECT_MESSAGE").length === 0 ? (
 										<div className="px-2 py-3 text-xs text-slate-400 text-center">
 											No channels yet. Create one!
 										</div>
 									) : (
-										channels.map((channel) => (
-											<Link
-												key={channel.id}
-												href={`/dashboard/chat/channel/${channel.id}`}
-												className={cn(
-													"flex items-center gap-2 w-full px-2 py-1.5 rounded-md text-sm transition-colors",
-													isChannelActive(channel.id)
-														? "bg-[#0B6E4F] text-white"
-														: "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
-												)}
-											>
-												<Hash className="w-4 h-4 shrink-0" />
-												<span className="truncate">{channel.name}</span>
-											</Link>
-										))
+										channels
+											.filter((c) => c.type !== "DIRECT_MESSAGE")
+											.map((channel) => (
+												<Link
+													key={channel.id}
+													href={`/dashboard/chat/channel/${channel.id}`}
+													className={cn(
+														"flex items-center gap-2 w-full px-2 py-1.5 rounded-md text-sm transition-colors",
+														isChannelActive(channel.id)
+															? "bg-[#0B6E4F] text-white"
+															: "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+													)}
+												>
+													<Hash className="w-4 h-4 shrink-0" />
+													<span className="truncate">{channel.name}</span>
+												</Link>
+											))
 									)}
 								</div>
 							)}

@@ -5,11 +5,11 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
+import { useWorkspaceChannels } from "@/hooks/use-workspace-channels";
+import { channelService } from "@/lib/api/services";
 import { type Channel, useChannelStore } from "@/stores/channel-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
-import { useWorkspaceChannels } from "@/hooks/use-workspace-channels";
-import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
-import { channelService } from "@/lib/api/services";
 import { CreateChannelDialog } from "./CreateChannelDialog";
 
 interface ChannelsDirectoryProps {
@@ -27,14 +27,17 @@ export function ChannelsDirectory(_props: ChannelsDirectoryProps) {
 	const { addChannel, removeChannel } = useChannelStore();
 	const { activeWorkspaceName } = useWorkspaceStore();
 
-	const filteredChannels = channels.filter((channel) =>
-		channel.name.toLowerCase().includes(searchQuery.toLowerCase()),
-	);
+	const filteredChannels = channels
+		.filter((channel) => channel.type !== "DIRECT_MESSAGE")
+		.filter((channel) => channel.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
 	// Sort channels: alphabetically by name
 	const sortedChannels = [...filteredChannels].sort((a, b) => a.name.localeCompare(b.name));
 
-	const handleCreateChannel = async (channel: { name: string; visibility: "public" | "private" }) => {
+	const handleCreateChannel = async (channel: {
+		name: string;
+		visibility: "public" | "private";
+	}) => {
 		if (!activeWorkspaceId || !token) return;
 
 		try {
