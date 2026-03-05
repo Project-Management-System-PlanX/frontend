@@ -20,6 +20,7 @@ import { CreateWorkspaceDialog } from "@/components/workspaces/CreateWorkspaceDi
 import { InviteMembersDialog } from "@/components/workspaces/InviteMembersDialog";
 import { useWorkspaces } from "@/hooks/api";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
+import { useWorkspaceStore } from "@/stores/workspace-store";
 
 const WORKSPACE_COLORS = [
 	"bg-blue-500",
@@ -44,6 +45,8 @@ export default function WorkspacesPage() {
 		isLoading: workspacesLoading,
 		refetch,
 	} = useWorkspaces(undefined, token);
+
+	const { setActiveWorkspace } = useWorkspaceStore();
 
 	const isLoading = authLoading || workspacesLoading;
 
@@ -183,6 +186,7 @@ export default function WorkspacesPage() {
 										<Link
 											key={workspace.id}
 											href="/dashboard"
+											onClick={() => setActiveWorkspace(workspace.id, workspace.name)}
 											className={`group block bg-white border border-[#D1F2EB] rounded-xl hover:border-[#50C878] transition-all shadow-sm hover:shadow-md hover:shadow-[#50C878]/5 ${
 												view === "grid" ? "p-5" : "p-4 flex items-center justify-between gap-6"
 											}`}
@@ -252,7 +256,8 @@ export default function WorkspacesPage() {
 													<CheckCircle2 className="w-4 h-4 text-gray-400" />
 													<div className="text-sm">
 														<span className="font-semibold text-black">
-															{workspace.channels?.length ?? 0}
+															{workspace.channels?.filter((c) => c.type !== "DIRECT_MESSAGE")
+																.length ?? 0}
 														</span>{" "}
 														<span className="text-gray-500 text-xs">channels</span>
 													</div>
@@ -313,7 +318,12 @@ export default function WorkspacesPage() {
 										{
 											label: "Total Channels",
 											value: String(
-												workspaces?.reduce((acc, ws) => acc + (ws.channels?.length ?? 0), 0) ?? 0,
+												workspaces?.reduce(
+													(acc, ws) =>
+														acc +
+														(ws.channels?.filter((c) => c.type !== "DIRECT_MESSAGE").length ?? 0),
+													0,
+												) ?? 0,
 											),
 											percent: 70,
 										},
@@ -360,8 +370,11 @@ export default function WorkspacesPage() {
 			<CreateWorkspaceDialog
 				isOpen={isCreateModalOpen}
 				onClose={() => setIsCreateModalOpen(false)}
-				onCreateSuccess={() => {
+				onCreateSuccess={(newWorkspace) => {
 					refetch();
+					if (newWorkspace) {
+						setActiveWorkspace(newWorkspace.id, newWorkspace.name);
+					}
 				}}
 				token={token}
 			/>

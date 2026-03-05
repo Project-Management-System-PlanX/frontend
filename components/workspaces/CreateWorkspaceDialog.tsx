@@ -2,13 +2,14 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Building2, Check, Loader2, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { workspaceService } from "@/lib/api/services";
 
 interface CreateWorkspaceDialogProps {
 	isOpen: boolean;
 	onClose: () => void;
-	onCreateSuccess: () => void;
+	onCreateSuccess: (workspace?: any) => void;
 	token?: string;
 }
 
@@ -24,6 +25,7 @@ export function CreateWorkspaceDialog({
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [name, setName] = useState("");
+	const router = useRouter();
 
 	if (!isOpen) return null;
 
@@ -40,7 +42,7 @@ export function CreateWorkspaceDialog({
 		setError(null);
 
 		try {
-			await workspaceService.create(
+			const activeWorkspace = await workspaceService.create(
 				{
 					name: name.trim(),
 					slug,
@@ -48,7 +50,7 @@ export function CreateWorkspaceDialog({
 				token,
 			);
 			setStep("complete");
-			onCreateSuccess();
+			onCreateSuccess(activeWorkspace);
 		} catch (err: unknown) {
 			if (err && typeof err === "object" && "message" in err) {
 				setError(String((err as { message: string }).message));
@@ -60,11 +62,14 @@ export function CreateWorkspaceDialog({
 		}
 	};
 
-	const handleClose = () => {
+	const handleClose = (shouldNavigate?: boolean) => {
 		setStep("name");
 		setName("");
 		setError(null);
 		onClose();
+		if (shouldNavigate) {
+			router.push("/dashboard");
+		}
 	};
 
 	return (
@@ -74,7 +79,7 @@ export function CreateWorkspaceDialog({
 				initial={{ opacity: 0 }}
 				animate={{ opacity: 1 }}
 				exit={{ opacity: 0 }}
-				onClick={handleClose}
+				onClick={() => handleClose()}
 				className="absolute inset-0 bg-white/60 backdrop-blur-md"
 			/>
 
@@ -88,7 +93,7 @@ export function CreateWorkspaceDialog({
 			>
 				<button
 					type="button"
-					onClick={handleClose}
+					onClick={() => handleClose()}
 					className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors z-10"
 				>
 					<X className="w-4 h-4" />
@@ -187,7 +192,7 @@ export function CreateWorkspaceDialog({
 								</div>
 								<button
 									type="button"
-									onClick={handleClose}
+									onClick={() => handleClose(true)}
 									className="w-full flex items-center justify-center gap-2 bg-[#0B6E4F] text-white px-6 py-4 rounded-xl font-semibold hover:bg-[#013220] hover:shadow-lg hover:shadow-[#0B6E4F]/20 transition-all"
 								>
 									Go to Workspace <ArrowRight className="w-4 h-4" />

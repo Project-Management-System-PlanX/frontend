@@ -45,7 +45,11 @@ export async function fetchClient<T>(
 		} catch {
 			message = response.statusText || message;
 		}
-		const error: ApiError = { message, status: response.status };
+		const error = new Error(
+			typeof message === "string" ? message : JSON.stringify(message),
+		) as Error & ApiError;
+		error.status = response.status;
+		error.message = typeof message === "string" ? message : JSON.stringify(message);
 		throw error;
 	}
 
