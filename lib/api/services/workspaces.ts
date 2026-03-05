@@ -56,4 +56,28 @@ export const workspaceService = {
 		apiClient.delete<{ count: number }>(API_ENDPOINTS.WORKSPACE_MEMBER(workspaceId, userId), {
 			token,
 		}),
+
+	// Invite Management
+	createInvite: async (workspaceId: string, token?: string) =>
+		apiClient.post<{ token: string; expires_at: string }>(
+			API_ENDPOINTS.CREATE_INVITE(workspaceId),
+			undefined,
+			{ token },
+		),
+
+	getInvite: async (inviteToken: string) =>
+		apiClient.get<{
+			id: string;
+			token: string;
+			workspace_id: string;
+			expires_at: string;
+			workspaces: { id: string; name: string; slug: string; avatar: string | null };
+		}>(API_ENDPOINTS.GET_INVITE(inviteToken)),
+
+	acceptInvite: async (inviteToken: string, token?: string) =>
+		apiClient.post<{ success: boolean; workspaceId: string }>(
+			API_ENDPOINTS.ACCEPT_INVITE(inviteToken),
+			undefined,
+			{ token },
+		),
 };

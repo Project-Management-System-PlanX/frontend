@@ -102,8 +102,12 @@ export function TeamSidebar(_props: TeamSidebarProps) {
 
 			router.push(`/dashboard/chat/channel/${newChannel.id}`);
 		} catch (error) {
-			console.error("Failed to create channel:", error);
-			alert("Failed to create channel. Please try again.");
+			const errorMessage =
+				error instanceof Error
+					? error.message
+					: (error as { message?: string })?.message || "Unknown error";
+			console.error("Failed to create channel:", errorMessage, error);
+			alert(`Failed to create channel: ${errorMessage}`);
 		}
 	};
 

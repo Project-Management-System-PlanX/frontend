@@ -20,6 +20,7 @@ import { CreateWorkspaceDialog } from "@/components/workspaces/CreateWorkspaceDi
 import { InviteMembersDialog } from "@/components/workspaces/InviteMembersDialog";
 import { useWorkspaces } from "@/hooks/api";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
+import { useChannelStore } from "@/stores/channel-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 
 const WORKSPACE_COLORS = [
@@ -40,13 +41,13 @@ export default function WorkspacesPage() {
 	const router = useRouter();
 
 	const { user, token, isLoading: authLoading, signOut } = useSupabaseAuth();
+	const { setActiveWorkspace } = useWorkspaceStore();
+	const { setChannels } = useChannelStore();
 	const {
 		data: workspaces,
 		isLoading: workspacesLoading,
 		refetch,
 	} = useWorkspaces(undefined, token);
-
-	const { setActiveWorkspace } = useWorkspaceStore();
 
 	const isLoading = authLoading || workspacesLoading;
 
@@ -183,11 +184,15 @@ export default function WorkspacesPage() {
 									}
 								>
 									{workspaces.map((workspace, index) => (
-										<Link
+										<button
 											key={workspace.id}
-											href="/dashboard"
-											onClick={() => setActiveWorkspace(workspace.id, workspace.name)}
-											className={`group block bg-white border border-[#D1F2EB] rounded-xl hover:border-[#50C878] transition-all shadow-sm hover:shadow-md hover:shadow-[#50C878]/5 ${
+											type="button"
+											onClick={() => {
+												setActiveWorkspace(workspace.id, workspace.name);
+												setChannels([]); // Clear stale channels so they reload for the new workspace
+												router.push("/dashboard");
+											}}
+											className={`group block cursor-pointer bg-white border border-[#D1F2EB] rounded-xl hover:border-[#50C878] transition-all shadow-sm hover:shadow-md hover:shadow-[#50C878]/5 text-left ${
 												view === "grid" ? "p-5" : "p-4 flex items-center justify-between gap-6"
 											}`}
 										>
@@ -279,7 +284,7 @@ export default function WorkspacesPage() {
 													</span>
 												</div>
 											)}
-										</Link>
+										</button>
 									))}
 
 									<button

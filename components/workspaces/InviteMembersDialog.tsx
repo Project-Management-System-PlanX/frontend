@@ -3,7 +3,8 @@
 import { motion } from "framer-motion";
 import { Check, Copy, Link2, Loader2, X } from "lucide-react";
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
+import { workspaceService } from "@/lib/api/services/workspaces";
 
 interface InviteMembersDialogProps {
 	isOpen: boolean;
@@ -18,14 +19,13 @@ export function InviteMembersDialog({
 	onClose,
 	workspaceId,
 	workspaceName,
-	userId,
 }: InviteMembersDialogProps) {
 	const [isLoading, setIsLoading] = useState(false);
 	const [inviteLink, setInviteLink] = useState<string | null>(null);
 	const [copied, setCopied] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
-	const supabase = createClient();
+	const { token } = useSupabaseAuth();
 
 	if (!isOpen) return null;
 
@@ -34,16 +34,7 @@ export function InviteMembersDialog({
 		setError(null);
 
 		try {
-			const { data, error: insertError } = await supabase
-				.from("workspace_invites")
-				.insert({
-					workspace_id: workspaceId,
-					created_by: userId,
-				})
-				.select()
-				.single();
-
-			if (insertError) throw insertError;
+			const data = await workspaceService.createInvite(workspaceId, token || undefined);
 
 			const link = `${window.location.origin}/invite/${data.token}`;
 			setInviteLink(link);

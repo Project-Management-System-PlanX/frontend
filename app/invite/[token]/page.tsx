@@ -6,17 +6,14 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
-import { workspaceService } from "@/lib/api/services";
+import { workspaceService } from "@/lib/api/services/workspaces";
 import { createClient } from "@/lib/supabase/client";
 
 interface InviteData {
 	id: string;
 	workspace_id: string;
 	token: string;
-	created_by: string;
 	expires_at: string;
-	max_uses: number;
-	use_count: number;
 	workspaces: {
 		id: string;
 		name: string;
@@ -30,7 +27,7 @@ type PageState = "loading" | "preview" | "auth" | "joining" | "success" | "error
 export default function InvitePage() {
 	const params = useParams();
 	const router = useRouter();
-	const token = params.token as string;
+	const inviteToken = params.token as string;
 
 	const { user, token: authToken, isLoading: authLoading, isAuthenticated } = useSupabaseAuth();
 	const supabase = createClient();
@@ -46,32 +43,20 @@ export default function InvitePage() {
 	const [authError, setAuthError] = useState<string | null>(null);
 	const [authSubmitting, setAuthSubmitting] = useState(false);
 
-	// Fetch invite details
+	// Fetch invite details via backend API (no auth needed)
 	useEffect(() => {
 		const fetchInvite = async () => {
 			try {
-				const { data, error: fetchError } = await supabase
-					.from("workspace_invites")
-					.select("*, workspaces(id, name, slug, avatar)")
-					.eq("token", token)
-					.single();
+				const data = await workspaceService.getInvite(inviteToken);
 
-				if (fetchError || !data) {
+				if (!data) {
 					setError("This invite link is invalid or has expired.");
 					setState("error");
 					return;
 				}
 
-				// Check expiry
 				if (new Date(data.expires_at) < new Date()) {
 					setError("This invite link has expired.");
-					setState("error");
-					return;
-				}
-
-				// Check max uses
-				if (data.max_uses > 0 && data.use_count >= data.max_uses) {
-					setError("This invite link has reached its maximum number of uses.");
 					setState("error");
 					return;
 				}
@@ -79,27 +64,22 @@ export default function InvitePage() {
 				setInvite(data as InviteData);
 				setState("preview");
 			} catch {
-				setError("Something went wrong. Please try again.");
+				setError("This invite link is invalid or has expired.");
 				setState("error");
 			}
 		};
 
 		fetchInvite();
-	}, [token, supabase]);
+	}, [inviteToken]);
 
 	const handleJoin = useCallback(async () => {
-		if (!invite || !authToken || !user) return;
+		if (!invite || !authToken) return;
 
 		setState("joining");
 		try {
-			await workspaceService.addMember(
-				invite.workspace_id,
-				{ userId: user.id, role: "MEMBER" },
-				authToken,
-			);
+			await workspaceService.acceptInvite(inviteToken, authToken);
 			setState("success");
 		} catch (err: unknown) {
-			// If already a member, treat as success
 			if (err && typeof err === "object") {
 				const status = "status" in err ? (err as { status: number }).status : 0;
 				const msg =
@@ -118,7 +98,7 @@ export default function InvitePage() {
 			setError("Failed to join workspace. Please try again.");
 			setState("error");
 		}
-	}, [invite, authToken, user]);
+	}, [invite, authToken, inviteToken]);
 
 	// Auto-join if already authenticated
 	useEffect(() => {
@@ -138,7 +118,6 @@ export default function InvitePage() {
 					password,
 				});
 				if (signUpError) throw signUpError;
-				// After signup, they need to verify email
 				setAuthError("Check your email to verify your account, then come back to this link.");
 			} else {
 				const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -146,7 +125,6 @@ export default function InvitePage() {
 					password,
 				});
 				if (signInError) throw signInError;
-				// Auth state change will trigger auto-join
 			}
 		} catch (err: unknown) {
 			const message = err instanceof Error ? err.message : "Authentication failed";
@@ -161,7 +139,7 @@ export default function InvitePage() {
 			const { error: oauthError } = await supabase.auth.signInWithOAuth({
 				provider: "google",
 				options: {
-					redirectTo: `${window.location.origin}/invite/${token}`,
+					redirectTo: `${window.location.origin}/invite/${inviteToken}`,
 				},
 			});
 			if (oauthError) throw oauthError;
@@ -251,7 +229,7 @@ export default function InvitePage() {
 										</span>
 									</div>
 									<div>
-										<p className="text-sm text-gray-500 mb-1">You've been invited to join</p>
+										<p className="text-sm text-gray-500 mb-1">You have been invited to join</p>
 										<h2 className="text-2xl font-bold text-[#013220]">{invite.workspaces.name}</h2>
 									</div>
 								</div>
@@ -415,7 +393,7 @@ export default function InvitePage() {
 									<Check className="w-10 h-10 text-white" />
 								</motion.div>
 								<div>
-									<h2 className="text-xl font-bold text-[#013220] mb-2">You're in!</h2>
+									<h2 className="text-xl font-bold text-[#013220] mb-2">You are in!</h2>
 									<p className="text-gray-500 text-sm">
 										Welcome to{" "}
 										<span className="font-semibold text-[#0B6E4F]">{invite.workspaces.name}</span>

@@ -24,4 +24,9 @@ export const API_ENDPOINTS = {
 	GROUP_BY_ID: (id: string) => `/groups/${id}`,
 	GROUP_MEMBERS: (groupId: string) => `/groups/${groupId}/members`,
 	GROUP_MEMBER: (groupId: string, userId: string) => `/groups/${groupId}/members/${userId}`,
+
+	// Invites
+	CREATE_INVITE: (workspaceId: string) => `/workspaces/${workspaceId}/invite`,
+	GET_INVITE: (token: string) => `/workspaces/invite/${token}`,
+	ACCEPT_INVITE: (token: string) => `/workspaces/invite/${token}/accept`,
 };
