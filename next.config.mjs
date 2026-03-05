@@ -10,18 +10,18 @@ const nextConfig = {
 		root: process.cwd(),
 	},
 	async rewrites() {
-		const workspaceServiceUrl = process.env.WORKSPACE_SERVICE_URL || 'http://localhost:3002';
-		const meetingServiceUrl = process.env.MEETING_SERVICE_URL || 'http://localhost:3005';
-		
+		const workspaceServiceUrl = process.env.WORKSPACE_SERVICE_URL || "http://localhost:3002";
+		const meetingServiceUrl = process.env.MEETING_SERVICE_URL || "http://localhost:3005";
+
 		return [
 			// Meeting service routes
 			{
-				source: '/api/meetings/:path*',
+				source: "/api/meetings/:path*",
 				destination: `${meetingServiceUrl}/api/meetings/:path*`,
 			},
 			// Workspace service routes (default for all other /api calls)
 			{
-				source: '/api/:path*',
+				source: "/api/:path*",
 				destination: `${workspaceServiceUrl}/:path*`,
 			},
 		];

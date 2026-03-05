@@ -123,7 +123,17 @@ export function useMessages(channelId: string | null) {
 		// Optimistic update could go here, but for simplicity we'll let Realtime handle the insert event
 		const now = new Date().toISOString();
 
-		const insertData: any = {
+		const insertData: {
+			id: string;
+			channel_id: string;
+			user_id: string;
+			content: string | null;
+			updated_at: string;
+			file_url?: string;
+			file_name?: string;
+			file_type?: string;
+			file_size?: number;
+		} = {
 			id: crypto.randomUUID(), // Explicitly provide ID since default(uuid()) might be missing in DB schema
 			channel_id: channelId,
 			user_id: userId,

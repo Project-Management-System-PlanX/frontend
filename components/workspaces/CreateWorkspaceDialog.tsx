@@ -5,11 +5,12 @@ import { ArrowRight, Building2, Check, Loader2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { workspaceService } from "@/lib/api/services";
+import type { Workspace } from "@/lib/types/models";
 
 interface CreateWorkspaceDialogProps {
 	isOpen: boolean;
 	onClose: () => void;
-	onCreateSuccess: (workspace?: any) => void;
+	onCreateSuccess: (workspace?: Workspace) => void;
 	token?: string;
 }
 
