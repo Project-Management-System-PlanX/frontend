@@ -300,7 +300,7 @@ export function ChatArea({
 										<div className="flex items-center gap-2">
 											<span className="font-medium text-[#202020]">{getDisplayName(message)}</span>
 											<span className="text-xs text-[#9a9a9a]">
-												{formatMessageTime(message.created_at)}
+												{formatMessageTime(message.created_at || message.createdAt || new Date().toISOString())}
 											</span>
 										</div>
 

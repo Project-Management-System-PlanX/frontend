@@ -13,7 +13,7 @@ export function MessageBubble({ message, isOwnMessage, showAvatar = true }: Mess
 		? `${message.users.firstName} ${message.users.lastName || ""}`
 		: message.users?.email?.split("@")[0] || "Unknown User";
 
-	const timeString = format(new Date(message.created_at), "h:mm a");
+	const timeString = format(new Date(message.created_at || message.createdAt || Date.now()), "h:mm a");
 
 	return (
 		<div className={`flex w-full ${isOwnMessage ? "justify-end" : "justify-start"} mb-4 px-4`}>
@@ -23,11 +23,10 @@ export function MessageBubble({ message, isOwnMessage, showAvatar = true }: Mess
 				{/* Avatar */}
 				{showAvatar && (
 					<div
-						className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ${
-							isOwnMessage
+						className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ${isOwnMessage
 								? "bg-gradient-to-tr from-[#50C878] to-[#0B6E4F]"
 								: "bg-gradient-to-tr from-gray-400 to-gray-600"
-						}`}
+							}`}
 						title={senderName}
 					>
 						{senderInitial.toUpperCase()}
@@ -44,11 +43,10 @@ export function MessageBubble({ message, isOwnMessage, showAvatar = true }: Mess
 
 					{/* Bubble body */}
 					<div
-						className={`relative px-4 py-3 text-sm rounded-2xl shadow-sm ${
-							isOwnMessage
+						className={`relative px-4 py-3 text-sm rounded-2xl shadow-sm ${isOwnMessage
 								? "bg-[#0B6E4F] text-white rounded-br-none"
 								: "bg-white border border-gray-100 text-[#013220] rounded-bl-none"
-						}`}
+							}`}
 						style={{ wordBreak: "break-word" }}
 					>
 						{(message.content || "").split("\n").map((line, i) => (
