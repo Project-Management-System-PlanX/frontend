@@ -1,4 +1,4 @@
-import type { Task, TaskComment } from "../../types/models";
+import type { Task, TaskAttachment, TaskComment } from "../../types/models";
 import { apiClient } from "../client";
 import { API_ENDPOINTS } from "../config";
 
@@ -7,22 +7,35 @@ export interface CreateTaskPayload {
 	title: string;
 	description?: string;
 	priority?: string;
+	workType?: string;
 	assigneeId?: string;
 	dueDate?: string;
+	startDate?: string;
 	position?: number;
 	statusId?: string;
+	parentId?: string;
+	teamId?: string;
+	flagged?: boolean;
+	restrictTo?: string;
+	labels?: string[];
 }
 
 export interface UpdateTaskPayload {
 	title?: string;
 	description?: string;
 	priority?: string;
+	workType?: string;
 	assigneeId?: string;
 	dueDate?: string | null;
+	startDate?: string | null;
 	position?: number;
 	statusId?: string;
 	resolution?: string;
 	labels?: string[];
+	parentId?: string | null;
+	teamId?: string | null;
+	flagged?: boolean;
+	restrictTo?: string | null;
 }
 
 export interface MoveTaskPayload {
@@ -32,6 +45,13 @@ export interface MoveTaskPayload {
 
 export interface CreateTaskCommentPayload {
 	content: string;
+}
+
+export interface CreateTaskAttachmentPayload {
+	fileName: string;
+	fileUrl: string;
+	fileType?: string;
+	fileSize?: number;
 }
 
 export const tasksService = {
@@ -72,4 +92,14 @@ export const tasksService = {
 
 	deleteComment: async (taskId: string, commentId: string, token?: string) =>
 		apiClient.delete<TaskComment>(API_ENDPOINTS.TASK_COMMENT(taskId, commentId), { token }),
+
+	// Attachments
+	createAttachment: async (taskId: string, data: CreateTaskAttachmentPayload, token?: string) =>
+		apiClient.post<TaskAttachment>(API_ENDPOINTS.TASK_ATTACHMENTS(taskId), data, { token }),
+
+	listAttachments: async (taskId: string, token?: string) =>
+		apiClient.get<TaskAttachment[]>(API_ENDPOINTS.TASK_ATTACHMENTS(taskId), { token }),
+
+	deleteAttachment: async (taskId: string, attachmentId: string, token?: string) =>
+		apiClient.delete<TaskAttachment>(API_ENDPOINTS.TASK_ATTACHMENT(taskId, attachmentId), { token }),
 };

@@ -59,7 +59,7 @@ export function RecommendedSpaces({ activeSpaceTab, setActiveSpaceTab }: Recomme
 								className="w-9 h-9 rounded-md flex items-center justify-center text-white text-sm mb-3 shadow-sm"
 								style={{ backgroundColor: space.color || "#0B6E4F" }}
 							>
-								{space.icon || "📋"}
+								{space.icon || space.prefix?.charAt(0) || "P"}
 							</div>
 
 							{/* Name & Type */}

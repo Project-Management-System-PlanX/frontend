@@ -14,7 +14,7 @@ export function StarredTab() {
 							className="w-[20px] h-[20px] rounded flex items-center justify-center shrink-0 text-[10px]"
 							style={{ backgroundColor: "#00ACC1" }}
 						>
-							📦
+							<span className="text-white font-bold">S</span>
 						</div>
 						{/* Title + Subtitle */}
 						<div className="min-w-0">

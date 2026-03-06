@@ -224,7 +224,7 @@ export function TaskSidebar(_props: TaskSidebarProps) {
 															className="w-5 h-5 rounded flex items-center justify-center text-[10px] shrink-0"
 															style={{ backgroundColor: space.color || "#0B6E4F", color: "#fff" }}
 														>
-															{space.icon || "📋"}
+															{space.icon || space.prefix?.charAt(0) || "P"}
 														</span>
 														<span className="truncate">{space.name}</span>
 													</Link>

@@ -48,6 +48,11 @@ export const API_ENDPOINTS = {
 	TASK_MOVE: (id: string) => `/tasks/${id}/move`,
 	TASK_COMMENTS: (taskId: string) => `/tasks/${taskId}/comments`,
 	TASK_COMMENT: (taskId: string, commentId: string) => `/tasks/${taskId}/comments/${commentId}`,
+	TASK_ATTACHMENTS: (taskId: string) => `/tasks/${taskId}/attachments`,
+	TASK_ATTACHMENT: (taskId: string, attachmentId: string) => `/tasks/${taskId}/attachments/${attachmentId}`,
+
+	// Teams
+	TEAMS_BY_WORKSPACE: (workspaceId: string) => `/teams/workspace/${workspaceId}`,
 
 	// Messages
 	MESSAGES: "/messages",

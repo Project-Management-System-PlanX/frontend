@@ -24,6 +24,8 @@ import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSpace } from "@/hooks/api/use-spaces";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
+import { useTasksRealtime } from "@/hooks/use-tasks-realtime";
+import { CreateTaskModal } from "../modals/CreateTaskModal";
 import { ForYouHeader } from "./foryou/ForYouHeader";
 import { SpaceBoardView } from "./space/SpaceBoardView";
 import { SpaceCalendarView } from "./space/SpaceCalendarView";
@@ -36,9 +38,11 @@ import { SpaceTimelineView } from "./space/SpaceTimelineView";
 export function Space({ spaceId }: { spaceId: string }) {
 	const [viewMode, _setViewMode] = useState<"list" | "column">("list");
 	const [activeTab, setActiveTab] = useState("Board");
+	const [showCreateTask, setShowCreateTask] = useState(false);
 
 	const { token } = useSupabaseAuth();
 	const { data: space, isLoading } = useSpace(spaceId, token || undefined);
+	useTasksRealtime(spaceId);
 
 	return (
 		<div
@@ -46,7 +50,7 @@ export function Space({ spaceId }: { spaceId: string }) {
 			style={{ fontFamily: "var(--font-figtree), Figtree" }}
 		>
 			{/* ──────── Top Header Bar ──────── */}
-			<ForYouHeader />
+			<ForYouHeader onCreateClick={() => setShowCreateTask(true)} />
 
 			{/* ──────── Header ──────── */}
 			<div className="px-6 pt-5 pb-3">
@@ -60,7 +64,7 @@ export function Space({ spaceId }: { spaceId: string }) {
 								className="w-8 h-8 rounded flex items-center justify-center text-white shadow-sm shrink-0"
 								style={{ backgroundColor: space?.color || "#0B6E4F" }}
 							>
-								<span className="text-sm">{space?.icon || "📋"}</span>
+								<span className="text-sm font-bold">{space?.icon || space?.prefix?.charAt(0) || "P"}</span>
 							</div>
 						)}
 						<div>
@@ -207,9 +211,9 @@ export function Space({ spaceId }: { spaceId: string }) {
 			{activeTab === "Board" ? (
 				<SpaceBoardView spaceId={spaceId} />
 			) : activeTab === "Calendar" ? (
-				<SpaceCalendarView />
+				<SpaceCalendarView spaceId={spaceId} />
 			) : activeTab === "Timeline" ? (
-				<SpaceTimelineView />
+				<SpaceTimelineView spaceId={spaceId} />
 			) : activeTab === "Forms" ? (
 				<SpaceFormsView />
 			) : activeTab === "Chart" ? (
@@ -219,6 +223,12 @@ export function Space({ spaceId }: { spaceId: string }) {
 			) : (
 				<SpaceColumnView />
 			)}
+
+			<CreateTaskModal
+				open={showCreateTask}
+				onOpenChange={setShowCreateTask}
+				defaultSpaceId={spaceId}
+			/>
 		</div>
 	);
 }

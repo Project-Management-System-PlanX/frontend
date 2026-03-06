@@ -76,10 +76,12 @@ export function SpaceBoardView({ spaceId }: { spaceId: string }) {
 			statusId,
 			title,
 			priority: "NONE",
+			workType: "TASK",
 			taskNumber: 0,
 			reporterId: "me", // Placeholder
 			resolution: "UNRESOLVED",
 			position: 0,
+			flagged: false,
 			createdAt: new Date().toISOString(),
 			updatedAt: new Date().toISOString(),
 		};
@@ -310,14 +312,7 @@ export function SpaceBoardView({ spaceId }: { spaceId: string }) {
 					);
 				})}
 
-				{/* Add Column button */}
-				<button
-					type="button"
-					className="w-[300px] shrink-0 h-10 flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 text-slate-400 hover:text-slate-600 hover:border-slate-300 hover:bg-slate-50 transition-all"
-				>
-					<Plus className="w-4 h-4" />
-					<span className="text-[13px] font-medium">Add Column</span>
-				</button>
+
 			</div>
 		</div>
 	);

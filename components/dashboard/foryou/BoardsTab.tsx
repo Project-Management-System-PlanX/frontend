@@ -59,7 +59,7 @@ export function BoardsTab() {
 							className="w-[18px] h-[18px] rounded flex items-center justify-center shrink-0 text-[9px]"
 							style={{ backgroundColor: "#FF9800" }}
 						>
-							📋
+							<span className="text-white font-bold">K</span>
 						</div>
 						<span className="text-[12px] text-slate-600">My Sales Team (KAN)</span>
 					</div>
@@ -80,7 +80,7 @@ export function BoardsTab() {
 							className="w-[18px] h-[18px] rounded flex items-center justify-center shrink-0 text-[9px]"
 							style={{ backgroundColor: "#00ACC1" }}
 						>
-							📦
+							<span className="text-white font-bold">S</span>
 						</div>
 						<span className="text-[12px] text-slate-600">
 							(Example) Sales Outreach Strategy (SAM1)

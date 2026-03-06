@@ -127,15 +127,42 @@ export interface Task {
 	description?: string;
 	taskNumber: number;
 	priority: string; // "NONE" | "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
+	workType: string; // "TASK" | "STORY" | "BUG" | "EPIC" | "SUBTASK"
 	assigneeId?: string;
 	reporterId: string;
 	dueDate?: string;
+	startDate?: string;
 	resolution: string; // "UNRESOLVED" | "DONE" | "WONT_DO" | "DUPLICATE"
 	position: number;
+	parentId?: string;
+	teamId?: string;
+	flagged: boolean;
+	restrictTo?: string;
 	createdAt: string;
 	updatedAt: string;
 	space?: Space;
 	status?: TaskStatus;
 	labels?: TaskLabel[];
 	comments?: TaskComment[];
+	attachments?: TaskAttachment[];
+	parent?: { id: string; title: string; taskNumber: number };
+	team?: { id: string; name: string };
+	children?: { id: string; title: string; taskNumber: number; statusId: string }[];
+}
+
+export interface TaskAttachment {
+	id: string;
+	taskId: string;
+	fileName: string;
+	fileUrl: string;
+	fileType?: string;
+	fileSize?: number;
+	createdAt: string;
+}
+
+export interface TaskLink {
+	id: string;
+	fromTaskId: string;
+	toTaskId: string;
+	linkType: string;
 }

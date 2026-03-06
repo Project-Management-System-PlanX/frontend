@@ -2,186 +2,10 @@
 
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
-
-/* ═══════════════════════════════════════════════
-   Types & Data
-   ═══════════════════════════════════════════════ */
-
-interface TimelineTask {
-	id: number;
-	text: string;
-	start: Date;
-	end: Date;
-	progress: number;
-	color: string;
-	type: "group" | "task" | "milestone";
-	parentId?: number;
-}
-
-const TASKS: TimelineTask[] = [
-	// ── Group 1: Q1 Product Launch ──
-	{
-		id: 1,
-		text: "Q1 Product Launch",
-		start: new Date(2026, 0, 6),
-		end: new Date(2026, 2, 28),
-		progress: 65,
-		color: "#0B6E4F",
-		type: "group",
-	},
-	{
-		id: 2,
-		text: "UI/UX Research & Design",
-		start: new Date(2026, 0, 6),
-		end: new Date(2026, 0, 31),
-		progress: 100,
-		color: "#10B981",
-		type: "task",
-		parentId: 1,
-	},
-	{
-		id: 3,
-		text: "Frontend Development",
-		start: new Date(2026, 1, 1),
-		end: new Date(2026, 1, 28),
-		progress: 80,
-		color: "#3B82F6",
-		type: "task",
-		parentId: 1,
-	},
-	{
-		id: 4,
-		text: "Backend API Integration",
-		start: new Date(2026, 1, 10),
-		end: new Date(2026, 2, 15),
-		progress: 50,
-		color: "#8B5CF6",
-		type: "task",
-		parentId: 1,
-	},
-	{
-		id: 5,
-		text: "QA & Testing",
-		start: new Date(2026, 2, 1),
-		end: new Date(2026, 2, 20),
-		progress: 20,
-		color: "#F59E0B",
-		type: "task",
-		parentId: 1,
-	},
-	{
-		id: 6,
-		text: "Launch Day",
-		start: new Date(2026, 2, 28),
-		end: new Date(2026, 2, 28),
-		progress: 0,
-		color: "#EF4444",
-		type: "milestone",
-		parentId: 1,
-	},
-
-	// ── Group 2: Sales Pipeline ──
-	{
-		id: 10,
-		text: "Sales Pipeline Optimization",
-		start: new Date(2026, 0, 13),
-		end: new Date(2026, 3, 15),
-		progress: 40,
-		color: "#3B82F6",
-		type: "group",
-	},
-	{
-		id: 11,
-		text: "CRM Data Migration",
-		start: new Date(2026, 0, 13),
-		end: new Date(2026, 1, 10),
-		progress: 90,
-		color: "#10B981",
-		type: "task",
-		parentId: 10,
-	},
-	{
-		id: 12,
-		text: "Lead Scoring Model",
-		start: new Date(2026, 1, 1),
-		end: new Date(2026, 2, 1),
-		progress: 60,
-		color: "#6366F1",
-		type: "task",
-		parentId: 10,
-	},
-	{
-		id: 13,
-		text: "Outreach Automation",
-		start: new Date(2026, 2, 1),
-		end: new Date(2026, 3, 1),
-		progress: 10,
-		color: "#F59E0B",
-		type: "task",
-		parentId: 10,
-	},
-	{
-		id: 14,
-		text: "Team Training & Rollout",
-		start: new Date(2026, 3, 1),
-		end: new Date(2026, 3, 15),
-		progress: 0,
-		color: "#94A3B8",
-		type: "task",
-		parentId: 10,
-	},
-
-	// ── Group 3: Marketing Campaign ──
-	{
-		id: 20,
-		text: "Marketing Campaign",
-		start: new Date(2026, 1, 15),
-		end: new Date(2026, 3, 30),
-		progress: 30,
-		color: "#F59E0B",
-		type: "group",
-	},
-	{
-		id: 21,
-		text: "Content Strategy",
-		start: new Date(2026, 1, 15),
-		end: new Date(2026, 2, 10),
-		progress: 70,
-		color: "#EC4899",
-		type: "task",
-		parentId: 20,
-	},
-	{
-		id: 22,
-		text: "Social Media Assets",
-		start: new Date(2026, 2, 1),
-		end: new Date(2026, 2, 25),
-		progress: 40,
-		color: "#8B5CF6",
-		type: "task",
-		parentId: 20,
-	},
-	{
-		id: 23,
-		text: "Email Campaign Launch",
-		start: new Date(2026, 2, 20),
-		end: new Date(2026, 3, 15),
-		progress: 0,
-		color: "#3B82F6",
-		type: "task",
-		parentId: 20,
-	},
-	{
-		id: 24,
-		text: "Campaign Review",
-		start: new Date(2026, 3, 20),
-		end: new Date(2026, 3, 30),
-		progress: 0,
-		color: "#94A3B8",
-		type: "task",
-		parentId: 20,
-	},
-];
+import { useSpace } from "@/hooks/api/use-spaces";
+import { useTasks } from "@/hooks/api/use-tasks";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
+import type { Task } from "@/lib/types/models";
 
 /* ═══════════════════════════════════════════════
    Helpers
@@ -230,6 +54,20 @@ function generateMonths(start: Date, end: Date) {
 }
 
 /* ═══════════════════════════════════════════════
+   Internal timeline task shape
+   ═══════════════════════════════════════════════ */
+
+interface TimelineTask {
+	id: string;
+	text: string;
+	start: Date;
+	end: Date;
+	color: string;
+	type: "task";
+	taskNumber?: number;
+}
+
+/* ═══════════════════════════════════════════════
    Component
    ═══════════════════════════════════════════════ */
 
@@ -237,31 +75,67 @@ const ROW_HEIGHT = 40;
 const DAY_WIDTH = 7;
 const TASK_LIST_WIDTH = 260;
 
-export function SpaceTimelineView() {
-	const [collapsedGroups, setCollapsedGroups] = useState<Set<number>>(new Set());
+const STATUS_COLORS: Record<string, string> = {
+	done: "#10B981",
+	progress: "#3B82F6",
+	review: "#F59E0B",
+};
 
-	const toggleGroup = (id: number) => {
-		setCollapsedGroups((prev) => {
-			const next = new Set(prev);
-			if (next.has(id)) next.delete(id);
-			else next.add(id);
-			return next;
-		});
-	};
+function getTaskColor(task: Task): string {
+	if (task.status?.isDone) return STATUS_COLORS.done;
+	const s = (task.status?.name || "").toLowerCase();
+	if (s.includes("progress")) return STATUS_COLORS.progress;
+	if (s.includes("review")) return STATUS_COLORS.review;
+	return task.status?.color || "#94A3B8";
+}
 
-	// Filter visible tasks
-	const visibleTasks = useMemo(() => {
-		return TASKS.filter((t) => {
-			if (!t.parentId) return true;
-			return !collapsedGroups.has(t.parentId);
-		});
-	}, [collapsedGroups]);
+export function SpaceTimelineView({ spaceId }: { spaceId: string }) {
+	const { token } = useSupabaseAuth();
+	const { data: space } = useSpace(spaceId, token || undefined);
+	const { data: tasks, isLoading } = useTasks(spaceId, undefined, token || undefined);
 
-	// Timeline range
-	const timelineStart = new Date(2026, 0, 1);
-	const timelineEnd = new Date(2026, 11, 31);
+	// Map real tasks → timeline tasks (only those with at least a start or due date)
+	const timelineTasks: TimelineTask[] = useMemo(() => {
+		if (!tasks) return [];
+		const now = new Date();
+		return tasks
+			.filter((t) => t.startDate || t.dueDate)
+			.map((t) => {
+				const start = t.startDate ? new Date(t.startDate) : t.dueDate ? new Date(t.dueDate) : now;
+				const end = t.dueDate ? new Date(t.dueDate) : start;
+				return {
+					id: t.id,
+					text: t.title,
+					start: start <= end ? start : end,
+					end: end >= start ? end : start,
+					color: getTaskColor(t),
+					type: "task" as const,
+					taskNumber: t.taskNumber,
+				};
+			});
+	}, [tasks]);
+
+	// Timeline range: derive from tasks or default to current quarter
+	const { timelineStart, timelineEnd } = useMemo(() => {
+		if (timelineTasks.length === 0) {
+			const now = new Date();
+			return {
+				timelineStart: new Date(now.getFullYear(), now.getMonth() - 1, 1),
+				timelineEnd: new Date(now.getFullYear(), now.getMonth() + 4, 0),
+			};
+		}
+		const starts = timelineTasks.map((t) => t.start.getTime());
+		const ends = timelineTasks.map((t) => t.end.getTime());
+		const min = new Date(Math.min(...starts));
+		const max = new Date(Math.max(...ends));
+		// Add 2-week padding on each side
+		min.setDate(min.getDate() - 14);
+		max.setDate(max.getDate() + 14);
+		return { timelineStart: min, timelineEnd: max };
+	}, [timelineTasks]);
+
 	const totalDays = daysBetween(timelineStart, timelineEnd);
-	const timelineWidth = totalDays * DAY_WIDTH;
+	const timelineWidth = Math.max(totalDays * DAY_WIDTH, 800);
 
 	const months = generateMonths(timelineStart, timelineEnd);
 	const weeks = generateWeeks(timelineStart, timelineEnd);
@@ -276,12 +150,24 @@ export function SpaceTimelineView() {
 	const getBarStyle = (task: TimelineTask) => {
 		const startOffset = Math.max(0, daysBetween(timelineStart, task.start)) * DAY_WIDTH;
 		const duration = Math.max(1, daysBetween(task.start, task.end)) * DAY_WIDTH;
-
-		if (task.type === "milestone") {
-			return { left: startOffset - 6, width: 12 };
-		}
 		return { left: startOffset, width: Math.max(duration, 8) };
 	};
+
+	if (isLoading) {
+		return (
+			<div className="flex-1 flex items-center justify-center text-sm text-slate-400">
+				Loading timeline...
+			</div>
+		);
+	}
+
+	if (timelineTasks.length === 0) {
+		return (
+			<div className="flex-1 flex items-center justify-center text-sm text-slate-400">
+				No tasks with dates to display on the timeline.
+			</div>
+		);
+	}
 
 	return (
 		<div
@@ -304,52 +190,22 @@ export function SpaceTimelineView() {
 
 					{/* Task Rows */}
 					<div className="flex-1 overflow-auto">
-						{visibleTasks.map((task) => {
-							const isGroup = task.type === "group";
-							const isCollapsed = collapsedGroups.has(task.id);
-							const isChild = !!task.parentId;
-
-							return (
+						{timelineTasks.map((task) => (
+							<div
+								key={task.id}
+								className="flex items-center gap-2 border-b border-slate-100 hover:bg-slate-50 transition-colors px-3"
+								style={{ height: ROW_HEIGHT }}
+							>
 								<div
-									key={task.id}
-									className={`flex items-center gap-2 border-b border-slate-100 hover:bg-slate-50 transition-colors ${isGroup ? "bg-slate-50/50" : ""}`}
-									style={{
-										height: ROW_HEIGHT,
-										paddingLeft: isChild ? 32 : 12,
-										paddingRight: 12,
-									}}
-								>
-									{isGroup ? (
-										<button
-											type="button"
-											onClick={() => toggleGroup(task.id)}
-											className="w-5 h-5 flex items-center justify-center rounded hover:bg-slate-200 transition-colors shrink-0"
-										>
-											{isCollapsed ? (
-												<ChevronRight className="w-3.5 h-3.5 text-slate-500" />
-											) : (
-												<ChevronDown className="w-3.5 h-3.5 text-slate-500" />
-											)}
-										</button>
-									) : (
-										<div
-											className="w-2 h-2 rounded-full shrink-0"
-											style={{ backgroundColor: task.color }}
-										/>
-									)}
-									<span
-										className={`text-sm truncate ${isGroup ? "font-semibold text-slate-800" : "text-slate-600"}`}
-									>
-										{task.text}
-									</span>
-									{isGroup && (
-										<span className="ml-auto text-[10px] font-bold text-slate-400">
-											{task.progress}%
-										</span>
-									)}
-								</div>
-							);
-						})}
+									className="w-2 h-2 rounded-full shrink-0"
+									style={{ backgroundColor: task.color }}
+								/>
+								<span className="text-sm text-slate-600 truncate">
+									{space?.prefix}-{task.taskNumber}{" "}
+									{task.text}
+								</span>
+							</div>
+						))}
 					</div>
 				</div>
 
@@ -408,96 +264,38 @@ export function SpaceTimelineView() {
 						)}
 
 						{/* Task Bars */}
-						{visibleTasks.map((task, idx) => {
+						{timelineTasks.map((task, idx) => {
 							const { left, width } = getBarStyle(task);
-							const top =
-								idx * ROW_HEIGHT +
-								(ROW_HEIGHT - (task.type === "group" ? 8 : task.type === "milestone" ? 12 : 22)) /
-									2;
+							const top = idx * ROW_HEIGHT + (ROW_HEIGHT - 22) / 2;
 
-							if (task.type === "milestone") {
-								return (
-									<div
-										key={task.id}
-										className="absolute z-10"
-										style={{
-											left,
-											top: top + 2,
-											width: 12,
-											height: 12,
-										}}
-										title={task.text}
-									>
-										<div
-											className="w-3 h-3 rotate-45 rounded-[2px]"
-											style={{ backgroundColor: task.color }}
-										/>
-									</div>
-								);
-							}
-
-							if (task.type === "group") {
-								return (
-									<div
-										key={task.id}
-										className="absolute z-10 rounded-sm"
-										style={{
-											left,
-											top,
-											width,
-											height: 8,
-											backgroundColor: task.color,
-											opacity: 0.35,
-										}}
-										title={`${task.text} — ${task.progress}%`}
-									>
-										{/* Group bar with left/right ticks */}
-										<div
-											className="absolute left-0 top-0 w-[3px] rounded-l-sm"
-											style={{ height: 14, backgroundColor: task.color }}
-										/>
-										<div
-											className="absolute right-0 top-0 w-[3px] rounded-r-sm"
-											style={{ height: 14, backgroundColor: task.color }}
-										/>
-									</div>
-								);
-							}
-
-							// Regular task bar
 							return (
 								<div
 									key={task.id}
 									className="absolute z-10 rounded-md group cursor-pointer"
-									style={{
-										left,
-										top,
-										width,
-										height: 22,
-									}}
-									title={`${task.text} — ${task.progress}%`}
+									style={{ left, top, width, height: 22 }}
+									title={`${space?.prefix}-${task.taskNumber} ${task.text}`}
 								>
 									{/* Background */}
 									<div
 										className="absolute inset-0 rounded-md opacity-20"
 										style={{ backgroundColor: task.color }}
 									/>
-									{/* Progress fill */}
+									{/* Color fill */}
 									<div
-										className="absolute inset-y-0 left-0 rounded-md transition-all"
+										className="absolute inset-y-0 left-0 rounded-md"
 										style={{
-											width: `${task.progress}%`,
+											width: "100%",
 											backgroundColor: task.color,
 											opacity: 0.85,
 										}}
 									/>
 									{/* Label */}
 									<span className="absolute inset-0 flex items-center px-2 text-[10px] font-semibold text-white mix-blend-normal truncate drop-shadow-sm">
-										{width > 60 ? task.text : ""}
+										{width > 60 ? `${space?.prefix}-${task.taskNumber} ${task.text}` : ""}
 									</span>
 									{/* Hover tooltip */}
 									<div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2.5 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-30 shadow-lg">
-										{task.text} · {task.progress}%
+										{space?.prefix}-{task.taskNumber} {task.text}
 									</div>
 								</div>
 							);

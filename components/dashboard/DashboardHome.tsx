@@ -266,7 +266,7 @@ export function DashboardHome() {
 					<div>
 						<h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2.5">
 							{greeting}, Ravikrishna
-							<span className="text-2xl">👋</span>
+							<span className="text-2xl">Hello!</span>
 						</h1>
 						<p className="text-sm text-slate-400 mt-1">
 							Here&apos;s what&apos;s happening across your workspace today
