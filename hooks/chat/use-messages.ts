@@ -126,27 +126,44 @@ export function useMessages(channelId: string | null) {
 					table: "messages",
 					filter: `channel_id=eq.${channelId}`,
 				},
-				async (payload) => {
-					const { data: userData } = await supabase
-						.from("users")
-						.select("firstName, lastName, username, imageUrl, email")
-						.eq("supabaseId", payload.new.user_id)
-						.single();
+				async (payload: any) => {
+					console.log("Realtime event received:", payload);
+					let userData;
+					try {
+						const res = await supabase
+							.from("users")
+							.select("firstName, lastName, username, imageUrl, email")
+							.eq("supabaseId", payload.new.user_id)
+							.single();
+						userData = res.data;
+						if (res.error) console.error("Error fetching user data:", res.error);
+					} catch (e) {
+						console.error("Exception fetching user data:", e);
+					}
 
 					const newMessage = normalizeMessage({
 						...(payload.new as Message),
 						users: userData || undefined,
 					});
+					console.log("Normalized new message:", newMessage);
 
 					setMessages((prev) => {
-						if (prev.some((msg) => msg.id === newMessage.id)) return prev;
+						if (prev.some((msg) => msg.id === newMessage.id)) {
+							console.log("Message already exists, ignoring.");
+							return prev;
+						}
+						console.log("Adding new message to state.");
 						return [...prev, newMessage];
 					});
-				},
+				}
 			)
-			.subscribe();
+			.subscribe((status, err) => {
+				console.log("Supabase Realtime Status:", status);
+				if (err) console.error("Realtime Error:", err);
+			});
 
 		return () => {
+			console.log("Cleaning up realtime channel...");
 			supabase.removeChannel(channel);
 		};
 	}, [channelId, fetchMessages]);
