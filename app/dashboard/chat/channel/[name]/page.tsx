@@ -7,7 +7,7 @@ import { ChatArea } from "@/components/dashboard/ChatArea";
 export default function ChannelPage({ params }: { params: Promise<{ name: string }> }) {
 	const { name } = use(params);
 	const channelName = decodeURIComponent(name);
-	const [detailsOpen, setDetailsOpen] = useState(true);
+	const [detailsOpen, setDetailsOpen] = useState(false);
 
 	return (
 		<div className="flex-1 flex min-w-0 overflow-hidden h-full">

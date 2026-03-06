@@ -40,6 +40,8 @@ export function ChannelDetails({ channelName, isOpen, onClose }: ChannelDetailsP
 	if (!isOpen) return null;
 
 	const handleLeaveChannel = async () => {
+		if (!confirm(`Are you sure you want to leave #${displayName}?`)) return;
+
 		if (!token || !user?.id) {
 			removeChannel(channelName);
 			router.push("/dashboard/chat");
@@ -50,9 +52,13 @@ export function ChannelDetails({ channelName, isOpen, onClose }: ChannelDetailsP
 			await channelService.removeMember(channelName, user.id, token);
 			removeChannel(channelName);
 			router.push("/dashboard/chat");
+			console.log(`Successfully left channel: ${channelName}`);
 		} catch (error) {
 			console.error("Failed to leave channel:", error);
-			// Still remove from local storage for immediate UX
+			alert(
+				"Failed to leave channel. It might be a system channel or you might not have permission.",
+			);
+			// Still remove from local store as fallback
 			removeChannel(channelName);
 			router.push("/dashboard/chat");
 		}

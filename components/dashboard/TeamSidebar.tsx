@@ -15,7 +15,6 @@ import { cn } from "@/lib/utils";
 import { type Channel, useChannelStore } from "@/stores/channel-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { CreateChannelDialog } from "./CreateChannelDialog";
-import { DirectoriesSection } from "./DirectoriesSection";
 import { IconRail } from "./IconRail";
 
 interface TeamSidebarProps {
@@ -256,8 +255,6 @@ export function TeamSidebar(_props: TeamSidebarProps) {
 								</div>
 							)}
 						</div>
-
-						<DirectoriesSection />
 					</div>
 				</ScrollArea>
 

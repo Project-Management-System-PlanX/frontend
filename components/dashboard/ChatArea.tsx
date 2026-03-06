@@ -12,14 +12,12 @@ import {
 	ListOrdered,
 	Loader2,
 	Mic,
-	Phone,
 	PlusCircle,
 	Search,
 	Send,
 	Smile,
 	Star,
 	Strikethrough,
-	Video,
 	X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -191,36 +189,6 @@ export function ChatArea({
 				</div>
 
 				<div className="flex items-center gap-2">
-					<TooltipProvider delayDuration={0}>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									variant="ghost"
-									size="sm"
-									className="gap-2 text-[#404040] hover:text-[#202020] hover:bg-[#f5f5f5]"
-								>
-									<Phone className="w-4 h-4" />
-									<span className="text-sm">Audio</span>
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>Start audio call</TooltipContent>
-						</Tooltip>
-
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									variant="ghost"
-									size="sm"
-									className="gap-2 text-[#404040] hover:text-[#202020] hover:bg-[#f5f5f5]"
-								>
-									<Video className="w-4 h-4" />
-									<span className="text-sm">Video</span>
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>Start video call</TooltipContent>
-						</Tooltip>
-					</TooltipProvider>
-
 					{/* Member Count Badge */}
 					{channel?.members != null && channel.members > 0 && (
 						<div className="flex items-center gap-1.5 ml-4 px-2.5 py-1 bg-slate-100 rounded-full">

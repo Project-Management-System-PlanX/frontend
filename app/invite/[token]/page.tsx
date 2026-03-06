@@ -15,7 +15,7 @@ interface InviteData {
 	workspaceId?: string;
 	token: string;
 	expires_at: string;
-	workspaces: {
+	workspace: {
 		id: string;
 		name: string;
 		slug: string;
@@ -226,12 +226,12 @@ export default function InvitePage() {
 								<div className="text-center space-y-4">
 									<div className="w-20 h-20 mx-auto bg-[#D1F2EB] rounded-2xl flex items-center justify-center">
 										<span className="text-3xl font-bold text-[#0B6E4F]">
-											{invite.workspaces.name.charAt(0).toUpperCase()}
+											{invite.workspace.name.charAt(0).toUpperCase()}
 										</span>
 									</div>
 									<div>
 										<p className="text-sm text-gray-500 mb-1">You have been invited to join</p>
-										<h2 className="text-2xl font-bold text-[#013220]">{invite.workspaces.name}</h2>
+										<h2 className="text-2xl font-bold text-[#013220]">{invite.workspace.name}</h2>
 									</div>
 								</div>
 
@@ -397,7 +397,7 @@ export default function InvitePage() {
 									<h2 className="text-xl font-bold text-[#013220] mb-2">You are in!</h2>
 									<p className="text-gray-500 text-sm">
 										Welcome to{" "}
-										<span className="font-semibold text-[#0B6E4F]">{invite.workspaces.name}</span>
+										<span className="font-semibold text-[#0B6E4F]">{invite.workspace.name}</span>
 									</p>
 								</div>
 								<button
