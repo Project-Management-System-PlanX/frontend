@@ -12,7 +12,7 @@ import { ViewedTab } from "./foryou/ViewedTab";
 import { WorkedOnTab } from "./foryou/WorkedOnTab";
 
 export function ForYouView() {
-	const [activeActivityTab, setActiveActivityTab] = useState("Worked on");
+	const [activeActivityTab, setActiveActivityTab] = useState("Assigned to me");
 	const [activeSpaceTab, setActiveSpaceTab] = useState("Recommended");
 
 	return (

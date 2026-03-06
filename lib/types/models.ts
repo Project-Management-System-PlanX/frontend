@@ -75,3 +75,67 @@ export interface ApiError {
 	message: string;
 	status: number;
 }
+
+// ─── Spaces & Tasks ───
+
+export interface Space {
+	id: string;
+	workspaceId: string;
+	name: string;
+	description?: string;
+	color: string;
+	icon: string;
+	prefix: string;
+	taskCounter: number;
+	createdBy: string;
+	createdAt: string;
+	updatedAt: string;
+	statuses?: TaskStatus[];
+	tasks?: Task[];
+}
+
+export interface TaskStatus {
+	id: string;
+	spaceId: string;
+	name: string;
+	color: string;
+	position: number;
+	isDone: boolean;
+}
+
+export interface TaskLabel {
+	id: string;
+	taskId: string;
+	name: string;
+	color: string;
+}
+
+export interface TaskComment {
+	id: string;
+	taskId: string;
+	userId: string;
+	content: string;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface Task {
+	id: string;
+	spaceId: string;
+	statusId: string;
+	title: string;
+	description?: string;
+	taskNumber: number;
+	priority: string; // "NONE" | "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
+	assigneeId?: string;
+	reporterId: string;
+	dueDate?: string;
+	resolution: string; // "UNRESOLVED" | "DONE" | "WONT_DO" | "DUPLICATE"
+	position: number;
+	createdAt: string;
+	updatedAt: string;
+	space?: Space;
+	status?: TaskStatus;
+	labels?: TaskLabel[];
+	comments?: TaskComment[];
+}

@@ -10,6 +10,9 @@ export const API_ENDPOINTS = {
 	WORKSPACE_MEMBERS: (workspaceId: string) => `/workspaces/${workspaceId}/members`,
 	WORKSPACE_MEMBER: (workspaceId: string, userId: string) =>
 		`/workspaces/${workspaceId}/members/${userId}`,
+	WORKSPACE_INVITE_CREATE: (workspaceId: string) => `/workspaces/${workspaceId}/invite`,
+	WORKSPACE_INVITE_GET: (token: string) => `/workspaces/invite/${token}`,
+	WORKSPACE_INVITE_ACCEPT: (token: string) => `/workspaces/invite/${token}/accept`,
 
 	// Channels
 	CHANNELS: "/channels",
@@ -29,4 +32,24 @@ export const API_ENDPOINTS = {
 	CREATE_INVITE: (workspaceId: string) => `/workspaces/${workspaceId}/invite`,
 	GET_INVITE: (token: string) => `/workspaces/invite/${token}`,
 	ACCEPT_INVITE: (token: string) => `/workspaces/invite/${token}/accept`,
+
+	// Spaces
+	SPACES: "/spaces",
+	SPACES_BY_WORKSPACE: (workspaceId: string) => `/spaces/workspace/${workspaceId}`,
+	SPACE_BY_ID: (id: string) => `/spaces/${id}`,
+	SPACE_STATUSES: (spaceId: string) => `/spaces/${spaceId}/statuses`,
+	SPACE_STATUS: (spaceId: string, statusId: string) => `/spaces/${spaceId}/statuses/${statusId}`,
+
+	// Tasks
+	TASKS: "/tasks",
+	TASKS_BY_SPACE: (spaceId: string) => `/tasks/space/${spaceId}`,
+	TASKS_ASSIGNED_TO_ME: "/tasks/assigned-to-me",
+	TASK_BY_ID: (id: string) => `/tasks/${id}`,
+	TASK_MOVE: (id: string) => `/tasks/${id}/move`,
+	TASK_COMMENTS: (taskId: string) => `/tasks/${taskId}/comments`,
+	TASK_COMMENT: (taskId: string, commentId: string) => `/tasks/${taskId}/comments/${commentId}`,
+
+	// Messages
+	MESSAGES: "/messages",
+	MESSAGES_BY_CHANNEL: (channelId: string) => `/messages/channel/${channelId}`,
 };

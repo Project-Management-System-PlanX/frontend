@@ -35,7 +35,6 @@ export function InviteMembersDialog({
 
 		try {
 			const data = await workspaceService.createInvite(workspaceId, token || undefined);
-
 			const link = `${window.location.origin}/invite/${data.token}`;
 			setInviteLink(link);
 		} catch (err: unknown) {
@@ -132,11 +131,10 @@ export function InviteMembersDialog({
 								<button
 									type="button"
 									onClick={handleCopy}
-									className={`shrink-0 p-2 rounded-lg transition-all ${
-										copied
-											? "bg-[#0B6E4F] text-white"
-											: "bg-white border border-[#D1F2EB] text-gray-500 hover:text-[#0B6E4F] hover:border-[#50C878]"
-									}`}
+									className={`shrink-0 p-2 rounded-lg transition-all ${copied
+										? "bg-[#0B6E4F] text-white"
+										: "bg-white border border-[#D1F2EB] text-gray-500 hover:text-[#0B6E4F] hover:border-[#50C878]"
+										}`}
 								>
 									{copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
 								</button>

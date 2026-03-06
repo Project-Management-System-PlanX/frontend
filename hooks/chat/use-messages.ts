@@ -1,19 +1,39 @@
-import { useEffect, useState } from "react";
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { fetchClient } from "@/lib/api/client";
+import { API_ENDPOINTS } from "@/lib/api/config";
 
 export interface Message {
 	id: string;
-	channel_id: string;
-	user_id: string;
+	channel_id?: string;
+	channelId?: string;
+	user_id?: string;
+	userId?: string;
 	content?: string;
 	file_url?: string;
+	fileUrl?: string;
 	file_name?: string;
+	fileName?: string;
 	file_type?: string;
+	fileType?: string;
 	file_size?: number;
-	is_edited: boolean;
-	created_at: string;
-	updated_at: string;
+	fileSize?: number;
+	is_edited?: boolean;
+	isEdited?: boolean;
+	created_at?: string;
+	createdAt?: string;
+	updated_at?: string;
+	updatedAt?: string;
 	users?: {
+		firstName: string | null;
+		lastName: string | null;
+		username: string | null;
+		imageUrl: string | null;
+		email: string;
+	};
+	user?: {
 		firstName: string | null;
 		lastName: string | null;
 		username: string | null;
@@ -22,13 +42,66 @@ export interface Message {
 	};
 }
 
+// Normalize message fields between camelCase (backend) and snake_case (Supabase Realtime)
+function normalizeMessage(msg: any): Message {
+	return {
+		...msg,
+		channel_id: msg.channel_id || msg.channelId,
+		channelId: msg.channelId || msg.channel_id,
+		user_id: msg.user_id || msg.userId,
+		userId: msg.userId || msg.user_id,
+		file_url: msg.file_url || msg.fileUrl,
+		fileUrl: msg.fileUrl || msg.file_url,
+		file_name: msg.file_name || msg.fileName,
+		fileName: msg.fileName || msg.file_name,
+		file_type: msg.file_type || msg.fileType,
+		fileType: msg.fileType || msg.file_type,
+		file_size: msg.file_size || msg.fileSize,
+		fileSize: msg.fileSize || msg.file_size,
+		is_edited: msg.is_edited ?? msg.isEdited ?? false,
+		isEdited: msg.isEdited ?? msg.is_edited ?? false,
+		created_at: msg.created_at || msg.createdAt,
+		createdAt: msg.createdAt || msg.created_at,
+		updated_at: msg.updated_at || msg.updatedAt,
+		updatedAt: msg.updatedAt || msg.updated_at,
+		users: msg.users || msg.user,
+		user: msg.user || msg.users,
+	};
+}
+
 export function useMessages(channelId: string | null) {
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
+	const supabaseRef = useRef(createClient());
 
-	const supabase = createClient();
+	// Fetch messages from backend API
+	const fetchMessages = useCallback(async () => {
+		if (!channelId) {
+			setMessages([]);
+			setIsLoading(false);
+			return;
+		}
 
+		try {
+			const { data: { session } } = await supabaseRef.current.auth.getSession();
+			const token = session?.access_token;
+
+			const data = await fetchClient<any[]>(
+				API_ENDPOINTS.MESSAGES_BY_CHANNEL(channelId),
+				{ token, method: "GET" },
+			);
+
+			setMessages((data || []).map(normalizeMessage));
+		} catch (err: unknown) {
+			const message = err instanceof Error ? err.message : "Failed to load messages";
+			setError(message);
+		} finally {
+			setIsLoading(false);
+		}
+	}, [channelId]);
+
+	// Initial fetch + Supabase Realtime subscription
 	useEffect(() => {
 		if (!channelId) {
 			setMessages([]);
@@ -36,43 +109,11 @@ export function useMessages(channelId: string | null) {
 			return;
 		}
 
-		let isMounted = true;
 		setIsLoading(true);
-
-		// 1. Fetch initial message history
-		const fetchMessages = async () => {
-			try {
-				const { data, error: fetchError } = await supabase
-					.from("messages")
-					.select(`
-						*,
-						users (
-							firstName,
-							lastName,
-							username,
-							imageUrl,
-							email
-						)
-					`)
-					.eq("channel_id", channelId)
-					.order("created_at", { ascending: true });
-
-				if (fetchError) throw fetchError;
-
-				if (isMounted) {
-					setMessages((data as Message[]) || []);
-				}
-			} catch (err: unknown) {
-				const message = err instanceof Error ? err.message : "Failed to load messages";
-				if (isMounted) setError(message);
-			} finally {
-				if (isMounted) setIsLoading(false);
-			}
-		};
-
 		fetchMessages();
 
-		// 2. Subscribe to Realtime (websockets) for new messages
+		// Subscribe to Supabase Realtime for live updates from OTHER users
+		const supabase = supabaseRef.current;
 		const channel = supabase
 			.channel(`room:${channelId}`)
 			.on(
@@ -84,21 +125,18 @@ export function useMessages(channelId: string | null) {
 					filter: `channel_id=eq.${channelId}`,
 				},
 				async (payload) => {
-					// When a new message arrives, we also need the user details.
-					// Since Realtime only sends the raw table row, we fetch the sender profile:
 					const { data: userData } = await supabase
 						.from("users")
 						.select("firstName, lastName, username, imageUrl, email")
 						.eq("supabaseId", payload.new.user_id)
 						.single();
 
-					const newMessage: Message = {
+					const newMessage = normalizeMessage({
 						...(payload.new as Message),
 						users: userData || undefined,
-					};
+					});
 
 					setMessages((prev) => {
-						// Prevent duplicates (Realtime can sometimes duplicate if local optimistic UI is used)
 						if (prev.some((msg) => msg.id === newMessage.id)) return prev;
 						return [...prev, newMessage];
 					});
@@ -107,55 +145,63 @@ export function useMessages(channelId: string | null) {
 			.subscribe();
 
 		return () => {
-			isMounted = false;
 			supabase.removeChannel(channel);
 		};
-	}, [channelId, supabase]);
+	}, [channelId, fetchMessages]);
 
-	// 3. Function to send a new message
-	const sendMessage = async (
+	// Send message via backend API + immediately add to state
+	const sendMessage = useCallback(async (
 		content: string,
 		userId: string,
 		fileDetails?: { url: string; name: string; type: string; size: number },
 	) => {
 		if (!channelId || (!content.trim() && !fileDetails)) return;
 
-		// Optimistic update could go here, but for simplicity we'll let Realtime handle the insert event
-		const now = new Date().toISOString();
+		const supabase = supabaseRef.current;
+		const { data: { session } } = await supabase.auth.getSession();
+		const token = session?.access_token;
+		const userEmail = session?.user?.email || "";
+		const userMeta = session?.user?.user_metadata;
 
-		const insertData: {
-			id: string;
-			channel_id: string;
-			user_id: string;
-			content: string | null;
-			updated_at: string;
-			file_url?: string;
-			file_name?: string;
-			file_type?: string;
-			file_size?: number;
-		} = {
-			id: crypto.randomUUID(), // Explicitly provide ID since default(uuid()) might be missing in DB schema
-			channel_id: channelId,
-			user_id: userId,
+		const body: any = {
+			channelId,
 			content: content.trim() || null,
-			updated_at: now, // Explicitly provide updated_at since it violates not-null constraint
 		};
 
 		if (fileDetails) {
-			insertData.file_url = fileDetails.url;
-			insertData.file_name = fileDetails.name;
-			insertData.file_type = fileDetails.type;
-			insertData.file_size = fileDetails.size;
+			body.fileUrl = fileDetails.url;
+			body.fileName = fileDetails.name;
+			body.fileType = fileDetails.type;
+			body.fileSize = fileDetails.size;
 		}
 
-		// Insert without typed type constraint checking because we altered schema directly
-		const { error: insertError } = await supabase.from("messages").insert(insertData);
+		const result = await fetchClient<any>(
+			API_ENDPOINTS.MESSAGES,
+			{
+				token,
+				method: "POST",
+				body: JSON.stringify(body),
+			},
+		);
 
-		if (insertError) {
-			console.error("Error sending message:", insertError);
-			throw insertError;
-		}
-	};
+		const newMsg = normalizeMessage({
+			...result,
+			users: result.user || {
+				firstName: userMeta?.first_name || userMeta?.full_name?.split(' ')[0] || null,
+				lastName: userMeta?.last_name || userMeta?.full_name?.split(' ').slice(1).join(' ') || null,
+				username: userMeta?.username || null,
+				imageUrl: userMeta?.avatar_url || userMeta?.picture || null,
+				email: userEmail,
+			},
+		});
+
+		setMessages((prev) => {
+			if (prev.some((msg) => msg.id === newMsg.id)) return prev;
+			return [...prev, newMsg];
+		});
+
+		return result;
+	}, [channelId]);
 
 	return {
 		messages,

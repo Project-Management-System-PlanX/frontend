@@ -11,7 +11,8 @@ import { createClient } from "@/lib/supabase/client";
 
 interface InviteData {
 	id: string;
-	workspace_id: string;
+	workspace_id?: string;
+	workspaceId?: string;
 	token: string;
 	expires_at: string;
 	workspaces: {
@@ -60,6 +61,7 @@ export default function InvitePage() {
 					setState("error");
 					return;
 				}
+
 
 				setInvite(data as InviteData);
 				setState("preview");

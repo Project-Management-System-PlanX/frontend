@@ -29,10 +29,16 @@ import { SpaceColumnView } from "./space/SpaceColumnView";
 import { SpaceFormsView } from "./space/SpaceFormsView";
 import { SpaceListView } from "./space/SpaceListView";
 import { SpaceTimelineView } from "./space/SpaceTimelineView";
+import { useSpace } from "@/hooks/api/use-spaces";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
+import { Skeleton } from "@/components/ui/skeleton";
 
-export function Space() {
+export function Space({ spaceId }: { spaceId: string }) {
 	const [viewMode, _setViewMode] = useState<"list" | "column">("list");
-	const [activeTab, setActiveTab] = useState("List");
+	const [activeTab, setActiveTab] = useState("Board");
+
+	const { token } = useSupabaseAuth();
+	const { data: space, isLoading } = useSpace(spaceId, token || undefined);
 
 	return (
 		<div
@@ -47,14 +53,25 @@ export function Space() {
 				<div className="flex items-center justify-between">
 					{/* Title Section */}
 					<div className="flex items-center gap-3">
-						<div className="w-8 h-8 rounded flex items-center justify-center bg-[#FF9800] text-white shadow-sm shrink-0">
-							<span className="text-sm">📋</span>
-						</div>
+						{isLoading ? (
+							<Skeleton className="w-8 h-8 rounded" />
+						) : (
+							<div
+								className="w-8 h-8 rounded flex items-center justify-center text-white shadow-sm shrink-0"
+								style={{ backgroundColor: space?.color || "#0B6E4F" }}
+							>
+								<span className="text-sm">{space?.icon || "📋"}</span>
+							</div>
+						)}
 						<div>
 							<div className="flex items-center gap-2">
-								<h1 className="text-[18px] font-semibold text-slate-900 leading-tight">
-									My Sales Team
-								</h1>
+								{isLoading ? (
+									<Skeleton className="h-6 w-48" />
+								) : (
+									<h1 className="text-[18px] font-semibold text-slate-900 leading-tight">
+										{space?.name || "Space"}
+									</h1>
+								)}
 								<button type="button" className="text-slate-400 hover:text-slate-600">
 									<User className="w-4 h-4" />
 								</button>
@@ -96,9 +113,8 @@ export function Space() {
 								key={tab}
 								onClick={() => setActiveTab(tab)}
 								type="button"
-								className={`pb-2.5 text-[13px] font-medium transition-colors relative ${
-									activeTab === tab ? "text-[#0B6E4F]" : "text-slate-500 hover:text-slate-800"
-								}`}
+								className={`pb-2.5 text-[13px] font-medium transition-colors relative ${activeTab === tab ? "text-[#0B6E4F]" : "text-slate-500 hover:text-slate-800"
+									}`}
 							>
 								<div className="flex items-center gap-1.5">
 									{tab === "Summary" && <PieChart className="w-3.5 h-3.5" />}
@@ -188,7 +204,7 @@ export function Space() {
 
 			{/* View Content */}
 			{activeTab === "Board" ? (
-				<SpaceBoardView />
+				<SpaceBoardView spaceId={spaceId} />
 			) : activeTab === "Calendar" ? (
 				<SpaceCalendarView />
 			) : activeTab === "Timeline" ? (
@@ -197,8 +213,8 @@ export function Space() {
 				<SpaceFormsView />
 			) : activeTab === "Chart" ? (
 				<SpaceChartView />
-			) : viewMode === "list" ? (
-				<SpaceListView />
+			) : viewMode === "list" || activeTab === "List" ? (
+				<SpaceListView spaceId={spaceId} />
 			) : (
 				<SpaceColumnView />
 			)}

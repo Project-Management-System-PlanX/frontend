@@ -7,6 +7,7 @@ import { ProfileCompletionModal } from "@/components/modals/ProfileCompletionMod
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -18,6 +19,17 @@ const navItems = [
 
 export function IconRail() {
 	const pathname = usePathname();
+	const { user } = useSupabaseAuth();
+
+	const avatarUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.picture || undefined;
+	const firstName = user?.user_metadata?.first_name || user?.user_metadata?.full_name?.split(" ")[0] || "";
+	const lastName = user?.user_metadata?.last_name || user?.user_metadata?.full_name?.split(" ")[1] || "";
+	const email = user?.email || "";
+	const initials = firstName && lastName
+		? `${firstName[0]}${lastName[0]}`.toUpperCase()
+		: email
+			? email.substring(0, 2).toUpperCase()
+			: "?";
 
 	return (
 		<div className="w-14 bg-slate-50 border-r border-slate-200 flex flex-col items-center py-4 gap-3">
@@ -44,8 +56,6 @@ export function IconRail() {
 			<ProfileCompletionModal />
 			<TooltipProvider delayDuration={0}>
 				{navItems.map((item) => {
-					// Use /dashboard/task/for-you as the default link for Tasks
-					// but keep highlighting active for any /dashboard/task route
 					const href = item.label === "Tasks" ? "/dashboard/task/for-you" : item.href;
 
 					const Icon = item.icon;
@@ -97,8 +107,8 @@ export function IconRail() {
 			</TooltipProvider>
 
 			<Avatar className="w-9 h-9 ring-2 ring-[#0B6E4F]/20">
-				<AvatarImage src="/avatars/user.png" />
-				<AvatarFallback className="bg-[#0B6E4F] text-white text-sm font-medium">RJ</AvatarFallback>
+				<AvatarImage src={avatarUrl} />
+				<AvatarFallback className="bg-[#0B6E4F] text-white text-sm font-medium">{initials}</AvatarFallback>
 			</Avatar>
 		</div>
 	);
