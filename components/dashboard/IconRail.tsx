@@ -22,14 +22,17 @@ export function IconRail() {
 	const { user } = useSupabaseAuth();
 
 	const avatarUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.picture || undefined;
-	const firstName = user?.user_metadata?.first_name || user?.user_metadata?.full_name?.split(" ")[0] || "";
-	const lastName = user?.user_metadata?.last_name || user?.user_metadata?.full_name?.split(" ")[1] || "";
+	const firstName =
+		user?.user_metadata?.first_name || user?.user_metadata?.full_name?.split(" ")[0] || "";
+	const lastName =
+		user?.user_metadata?.last_name || user?.user_metadata?.full_name?.split(" ")[1] || "";
 	const email = user?.email || "";
-	const initials = firstName && lastName
-		? `${firstName[0]}${lastName[0]}`.toUpperCase()
-		: email
-			? email.substring(0, 2).toUpperCase()
-			: "?";
+	const initials =
+		firstName && lastName
+			? `${firstName[0]}${lastName[0]}`.toUpperCase()
+			: email
+				? email.substring(0, 2).toUpperCase()
+				: "?";
 
 	return (
 		<div className="w-14 bg-slate-50 border-r border-slate-200 flex flex-col items-center py-4 gap-3">
@@ -108,7 +111,9 @@ export function IconRail() {
 
 			<Avatar className="w-9 h-9 ring-2 ring-[#0B6E4F]/20">
 				<AvatarImage src={avatarUrl} />
-				<AvatarFallback className="bg-[#0B6E4F] text-white text-sm font-medium">{initials}</AvatarFallback>
+				<AvatarFallback className="bg-[#0B6E4F] text-white text-sm font-medium">
+					{initials}
+				</AvatarFallback>
 			</Avatar>
 		</div>
 	);

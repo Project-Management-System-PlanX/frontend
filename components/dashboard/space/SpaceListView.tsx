@@ -2,10 +2,10 @@
 
 import { CheckSquare, ChevronDown, ChevronRight, LayoutList, Plus, User } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useSpace } from "@/hooks/api/use-spaces";
 import { useTasks } from "@/hooks/api/use-tasks";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import type { Task } from "@/lib/types/models";
-import { useSpace } from "@/hooks/api/use-spaces";
 
 export function SpaceListView({ spaceId }: { spaceId: string }) {
 	const { token } = useSupabaseAuth();
@@ -88,7 +88,11 @@ function TaskRow({
 
 	// Convert standard dates
 	const createdDate = new Date(task.createdAt).toLocaleString(undefined, {
-		month: "short", day: "2-digit", year: "numeric", hour: "numeric", minute: "2-digit"
+		month: "short",
+		day: "2-digit",
+		year: "numeric",
+		hour: "numeric",
+		minute: "2-digit",
 	});
 
 	return (
@@ -132,7 +136,9 @@ function TaskRow({
 						<User className="w-3 h-3" />
 					</div>
 				)}
-				<span className="text-[13px] text-slate-600">{task.assigneeId ? "Assigned" : "Unassigned"}</span>
+				<span className="text-[13px] text-slate-600">
+					{task.assigneeId ? "Assigned" : "Unassigned"}
+				</span>
 			</div>
 
 			<div className="flex items-center gap-2">
@@ -146,10 +152,16 @@ function TaskRow({
 				{task.priority !== "NONE" ? (
 					<div className="flex items-center gap-1.5">
 						<div className="flex flex-col gap-[2px]">
-							<div className={`w-3 h-[2px] ${task.priority === "CRITICAL" || task.priority === "HIGH" ? "bg-red-500" : "bg-orange-400"}`} />
-							<div className={`w-3 h-[2px] ${task.priority === "CRITICAL" ? "bg-red-500" : "bg-orange-400"}`} />
+							<div
+								className={`w-3 h-[2px] ${task.priority === "CRITICAL" || task.priority === "HIGH" ? "bg-red-500" : "bg-orange-400"}`}
+							/>
+							<div
+								className={`w-3 h-[2px] ${task.priority === "CRITICAL" ? "bg-red-500" : "bg-orange-400"}`}
+							/>
 						</div>
-						<span className="text-[13px] text-slate-600 capitalize">{task.priority.toLowerCase()}</span>
+						<span className="text-[13px] text-slate-600 capitalize">
+							{task.priority.toLowerCase()}
+						</span>
 					</div>
 				) : (
 					<span className="text-[13px] text-slate-400">None</span>
@@ -163,10 +175,14 @@ function TaskRow({
 					{task.status?.name || "Status"}
 					{task.status?.isDone && <ChevronDown className="w-3 h-3 inline-block ml-1" />}
 				</span>
-				{!task.status?.isDone && <ChevronDown className="w-3 h-3 text-slate-400 inline-block ml-1" />}
+				{!task.status?.isDone && (
+					<ChevronDown className="w-3 h-3 text-slate-400 inline-block ml-1" />
+				)}
 			</div>
 
-			<span className="text-[13px] text-slate-600 capitalize">{task.resolution.toLowerCase().replace("_", " ")}</span>
+			<span className="text-[13px] text-slate-600 capitalize">
+				{task.resolution.toLowerCase().replace("_", " ")}
+			</span>
 			<span className="text-[13px] text-slate-600">{createdDate}</span>
 
 			<button

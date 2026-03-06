@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { fetchClient } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/config";
+import { createClient } from "@/lib/supabase/client";
 
 export interface Message {
 	id: string;
@@ -84,13 +84,15 @@ export function useMessages(channelId: string | null) {
 		}
 
 		try {
-			const { data: { session } } = await supabaseRef.current.auth.getSession();
+			const {
+				data: { session },
+			} = await supabaseRef.current.auth.getSession();
 			const token = session?.access_token;
 
-			const data = await fetchClient<any[]>(
-				API_ENDPOINTS.MESSAGES_BY_CHANNEL(channelId),
-				{ token, method: "GET" },
-			);
+			const data = await fetchClient<any[]>(API_ENDPOINTS.MESSAGES_BY_CHANNEL(channelId), {
+				token,
+				method: "GET",
+			});
 
 			setMessages((data || []).map(normalizeMessage));
 		} catch (err: unknown) {
@@ -150,58 +152,61 @@ export function useMessages(channelId: string | null) {
 	}, [channelId, fetchMessages]);
 
 	// Send message via backend API + immediately add to state
-	const sendMessage = useCallback(async (
-		content: string,
-		userId: string,
-		fileDetails?: { url: string; name: string; type: string; size: number },
-	) => {
-		if (!channelId || (!content.trim() && !fileDetails)) return;
+	const sendMessage = useCallback(
+		async (
+			content: string,
+			userId: string,
+			fileDetails?: { url: string; name: string; type: string; size: number },
+		) => {
+			if (!channelId || (!content.trim() && !fileDetails)) return;
 
-		const supabase = supabaseRef.current;
-		const { data: { session } } = await supabase.auth.getSession();
-		const token = session?.access_token;
-		const userEmail = session?.user?.email || "";
-		const userMeta = session?.user?.user_metadata;
+			const supabase = supabaseRef.current;
+			const {
+				data: { session },
+			} = await supabase.auth.getSession();
+			const token = session?.access_token;
+			const userEmail = session?.user?.email || "";
+			const userMeta = session?.user?.user_metadata;
 
-		const body: any = {
-			channelId,
-			content: content.trim() || null,
-		};
+			const body: any = {
+				channelId,
+				content: content.trim() || null,
+			};
 
-		if (fileDetails) {
-			body.fileUrl = fileDetails.url;
-			body.fileName = fileDetails.name;
-			body.fileType = fileDetails.type;
-			body.fileSize = fileDetails.size;
-		}
+			if (fileDetails) {
+				body.fileUrl = fileDetails.url;
+				body.fileName = fileDetails.name;
+				body.fileType = fileDetails.type;
+				body.fileSize = fileDetails.size;
+			}
 
-		const result = await fetchClient<any>(
-			API_ENDPOINTS.MESSAGES,
-			{
+			const result = await fetchClient<any>(API_ENDPOINTS.MESSAGES, {
 				token,
 				method: "POST",
 				body: JSON.stringify(body),
-			},
-		);
+			});
 
-		const newMsg = normalizeMessage({
-			...result,
-			users: result.user || {
-				firstName: userMeta?.first_name || userMeta?.full_name?.split(' ')[0] || null,
-				lastName: userMeta?.last_name || userMeta?.full_name?.split(' ').slice(1).join(' ') || null,
-				username: userMeta?.username || null,
-				imageUrl: userMeta?.avatar_url || userMeta?.picture || null,
-				email: userEmail,
-			},
-		});
+			const newMsg = normalizeMessage({
+				...result,
+				users: result.user || {
+					firstName: userMeta?.first_name || userMeta?.full_name?.split(" ")[0] || null,
+					lastName:
+						userMeta?.last_name || userMeta?.full_name?.split(" ").slice(1).join(" ") || null,
+					username: userMeta?.username || null,
+					imageUrl: userMeta?.avatar_url || userMeta?.picture || null,
+					email: userEmail,
+				},
+			});
 
-		setMessages((prev) => {
-			if (prev.some((msg) => msg.id === newMsg.id)) return prev;
-			return [...prev, newMsg];
-		});
+			setMessages((prev) => {
+				if (prev.some((msg) => msg.id === newMsg.id)) return prev;
+				return [...prev, newMsg];
+			});
 
-		return result;
-	}, [channelId]);
+			return result;
+		},
+		[channelId],
+	);
 
 	return {
 		messages,

@@ -132,11 +132,11 @@ export function TasksArea() {
 			{/* Tasks List Area */}
 			<ScrollArea className="flex-1">
 				<div className="p-4 space-y-4">
-					{isLoading && (
-						<div className="p-4 text-center text-slate-400">Loading tasks...</div>
-					)}
+					{isLoading && <div className="p-4 text-center text-slate-400">Loading tasks...</div>}
 					{!isLoading && tasks.length === 0 && (
-						<div className="p-4 text-center text-slate-400">No tasks currently assigned to you.</div>
+						<div className="p-4 text-center text-slate-400">
+							No tasks currently assigned to you.
+						</div>
 					)}
 					{tasks.map((task: Task) => (
 						<div
@@ -149,7 +149,9 @@ export function TasksArea() {
 										type="button"
 										className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${task.resolution === "DONE" ? "bg-[#0B6E4F] border-[#0B6E4F]" : "border-slate-300 hover:border-[#0B6E4F]"}`}
 									>
-										{task.resolution === "DONE" && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+										{task.resolution === "DONE" && (
+											<CheckCircle2 className="w-3.5 h-3.5 text-white" />
+										)}
 									</button>
 								</div>
 
@@ -190,12 +192,13 @@ export function TasksArea() {
 														<Badge
 															variant="secondary"
 															className={`h-5 px-1.5 text-[10px] uppercase font-bold
-															${task.priority === "CRITICAL" || task.priority === "HIGH"
+															${
+																task.priority === "CRITICAL" || task.priority === "HIGH"
 																	? "bg-red-50 text-red-600"
 																	: task.priority === "MEDIUM"
 																		? "bg-amber-50 text-amber-600"
 																		: "bg-blue-50 text-blue-600"
-																}`}
+															}`}
 														>
 															{task.priority.toLowerCase()}
 														</Badge>

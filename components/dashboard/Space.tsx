@@ -21,6 +21,9 @@ import {
 	Zap,
 } from "lucide-react";
 import { useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useSpace } from "@/hooks/api/use-spaces";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { ForYouHeader } from "./foryou/ForYouHeader";
 import { SpaceBoardView } from "./space/SpaceBoardView";
 import { SpaceCalendarView } from "./space/SpaceCalendarView";
@@ -29,9 +32,6 @@ import { SpaceColumnView } from "./space/SpaceColumnView";
 import { SpaceFormsView } from "./space/SpaceFormsView";
 import { SpaceListView } from "./space/SpaceListView";
 import { SpaceTimelineView } from "./space/SpaceTimelineView";
-import { useSpace } from "@/hooks/api/use-spaces";
-import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
-import { Skeleton } from "@/components/ui/skeleton";
 
 export function Space({ spaceId }: { spaceId: string }) {
 	const [viewMode, _setViewMode] = useState<"list" | "column">("list");
@@ -113,8 +113,9 @@ export function Space({ spaceId }: { spaceId: string }) {
 								key={tab}
 								onClick={() => setActiveTab(tab)}
 								type="button"
-								className={`pb-2.5 text-[13px] font-medium transition-colors relative ${activeTab === tab ? "text-[#0B6E4F]" : "text-slate-500 hover:text-slate-800"
-									}`}
+								className={`pb-2.5 text-[13px] font-medium transition-colors relative ${
+									activeTab === tab ? "text-[#0B6E4F]" : "text-slate-500 hover:text-slate-800"
+								}`}
 							>
 								<div className="flex items-center gap-1.5">
 									{tab === "Summary" && <PieChart className="w-3.5 h-3.5" />}

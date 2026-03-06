@@ -62,7 +62,6 @@ export default function InvitePage() {
 					return;
 				}
 
-
 				setInvite(data as InviteData);
 				setState("preview");
 			} catch {

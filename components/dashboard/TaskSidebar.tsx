@@ -17,11 +17,11 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { IconRail } from "./IconRail";
-import { useSpaces, useCreateSpace } from "@/hooks/api/use-spaces";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useCreateSpace, useSpaces } from "@/hooks/api/use-spaces";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useWorkspaceStore } from "@/stores/workspace-store";
-import { Skeleton } from "@/components/ui/skeleton";
+import { IconRail } from "./IconRail";
 
 interface TaskSidebarProps {
 	forYouActive?: boolean;
@@ -37,7 +37,10 @@ export function TaskSidebar(_props: TaskSidebarProps) {
 
 	const { token } = useSupabaseAuth();
 	const activeWorkspaceId = useWorkspaceStore((state) => state.activeWorkspaceId);
-	const { data: spaces, isLoading: isLoadingSpaces } = useSpaces(activeWorkspaceId as string, token || undefined);
+	const { data: spaces, isLoading: isLoadingSpaces } = useSpaces(
+		activeWorkspaceId as string,
+		token || undefined,
+	);
 	const { mutateAsync: createSpace, isPending: isCreating } = useCreateSpace(token || undefined);
 
 	const isForYouActive = pathname === "/dashboard/task/for-you";
@@ -98,10 +101,11 @@ export function TaskSidebar(_props: TaskSidebarProps) {
 						<div className="mb-4">
 							<Link
 								href="/dashboard/task/for-you"
-								className={`flex items-center gap-2 w-full px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition-colors rounded-md ${isForYouActive
-									? "text-[#0B6E4F] bg-[#0B6E4F]/8"
-									: "text-slate-500 hover:text-slate-900"
-									}`}
+								className={`flex items-center gap-2 w-full px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition-colors rounded-md ${
+									isForYouActive
+										? "text-[#0B6E4F] bg-[#0B6E4F]/8"
+										: "text-slate-500 hover:text-slate-900"
+								}`}
 							>
 								<User className="w-3.5 h-3.5" />
 								<span>FOR YOU</span>
@@ -210,10 +214,11 @@ export function TaskSidebar(_props: TaskSidebarProps) {
 													<Link
 														key={space.id}
 														href={`/dashboard/task/space/${space.id}`}
-														className={`flex items-center gap-2.5 w-full px-2 py-1.5 rounded-md text-sm transition-colors ${isSpaceActive(space.id)
-															? "bg-slate-100 text-slate-900"
-															: "text-slate-700 hover:bg-slate-100"
-															}`}
+														className={`flex items-center gap-2.5 w-full px-2 py-1.5 rounded-md text-sm transition-colors ${
+															isSpaceActive(space.id)
+																? "bg-slate-100 text-slate-900"
+																: "text-slate-700 hover:bg-slate-100"
+														}`}
 													>
 														<span
 															className="w-5 h-5 rounded flex items-center justify-center text-[10px] shrink-0"

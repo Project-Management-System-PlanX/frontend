@@ -14,7 +14,7 @@ import {
 import type { DragEvent, KeyboardEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useSpace } from "@/hooks/api/use-spaces";
-import { useTasks, useMoveTask, useCreateTask } from "@/hooks/api/use-tasks";
+import { useCreateTask, useMoveTask, useTasks } from "@/hooks/api/use-tasks";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import type { Task, TaskStatus } from "@/lib/types/models";
 
@@ -30,7 +30,11 @@ export function SpaceBoardView({ spaceId }: { spaceId: string }) {
 	const { token } = useSupabaseAuth();
 
 	const { data: space, isLoading: isSpaceLoading } = useSpace(spaceId, token || undefined);
-	const { data: serverTasks, isLoading: isTasksLoading } = useTasks(spaceId, undefined, token || undefined);
+	const { data: serverTasks, isLoading: isTasksLoading } = useTasks(
+		spaceId,
+		undefined,
+		token || undefined,
+	);
 	const { mutateAsync: createTask } = useCreateTask(token || undefined);
 	const { mutateAsync: moveTask } = useMoveTask(token || undefined);
 
@@ -90,7 +94,7 @@ export function SpaceBoardView({ spaceId }: { spaceId: string }) {
 		} catch (error) {
 			console.error("Failed to create task", error);
 			// Rollback on error handled mostly by invalidation if we refetch, but a strict rollback would filter tempId
-			setTasks((prev) => prev.filter(t => t.id !== tempId));
+			setTasks((prev) => prev.filter((t) => t.id !== tempId));
 		}
 	};
 
@@ -125,10 +129,28 @@ export function SpaceBoardView({ spaceId }: { spaceId: string }) {
 			confetti({ ...defaults, ...opts, particleCount: Math.floor(count * particleRatio) });
 		}
 
-		fire(0.25, { spread: 26, startVelocity: 55, colors: ["#0B6E4F", "#F59E0B"], shapes: ["circle"] });
+		fire(0.25, {
+			spread: 26,
+			startVelocity: 55,
+			colors: ["#0B6E4F", "#F59E0B"],
+			shapes: ["circle"],
+		});
 		fire(0.2, { spread: 60, colors: ["#3B82F6", "#EF4444"], shapes: ["square"] });
-		fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8, colors: ["#8B5CF6", "#10B981"], shapes: ["star"] });
-		fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2, colors: ["#F472B6"], shapes: ["circle"] });
+		fire(0.35, {
+			spread: 100,
+			decay: 0.91,
+			scalar: 0.8,
+			colors: ["#8B5CF6", "#10B981"],
+			shapes: ["star"],
+		});
+		fire(0.1, {
+			spread: 120,
+			startVelocity: 25,
+			decay: 0.92,
+			scalar: 1.2,
+			colors: ["#F472B6"],
+			shapes: ["circle"],
+		});
 		fire(0.1, { spread: 120, startVelocity: 45, shapes: ["circle"] });
 	};
 
@@ -140,12 +162,14 @@ export function SpaceBoardView({ spaceId }: { spaceId: string }) {
 		const task = tasks.find((t) => t.id === taskId);
 		if (task && task.statusId !== targetStatus.id) {
 			// Trigger celebration if moving to a 'Done' column
-			if (targetStatus.isDone && !columns.find(c => c.id === task.statusId)?.isDone) {
+			if (targetStatus.isDone && !columns.find((c) => c.id === task.statusId)?.isDone) {
 				triggerCelebration();
 			}
 
 			// Optimistic UI update
-			setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, statusId: targetStatus.id } : t)));
+			setTasks((prev) =>
+				prev.map((t) => (t.id === taskId ? { ...t, statusId: targetStatus.id } : t)),
+			);
 
 			// Backend update
 			try {
@@ -153,7 +177,9 @@ export function SpaceBoardView({ spaceId }: { spaceId: string }) {
 			} catch (error) {
 				console.error("Failed to move task", error);
 				// Revert on error
-				setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, statusId: task.statusId } : t)));
+				setTasks((prev) =>
+					prev.map((t) => (t.id === taskId ? { ...t, statusId: task.statusId } : t)),
+				);
 			}
 		}
 	};
@@ -183,7 +209,10 @@ export function SpaceBoardView({ spaceId }: { spaceId: string }) {
 						>
 							<div className="flex items-center justify-between mb-4 px-1">
 								<div className="flex items-center gap-2.5">
-									<div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: col.color }} />
+									<div
+										className="w-2.5 h-2.5 rounded-full"
+										style={{ backgroundColor: col.color }}
+									/>
 									<span className="text-[13px] font-bold text-slate-700">{col.name}</span>
 									<span className="px-2 py-0.5 rounded-full text-[11px] font-bold tabular-nums bg-slate-100 text-slate-500">
 										{colTasks.length}
@@ -235,13 +264,22 @@ export function SpaceBoardView({ spaceId }: { spaceId: string }) {
 										/>
 										<div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">
 											<div className="flex items-center gap-1.5">
-												<button type="button" className="p-1 rounded hover:bg-slate-100 text-slate-400">
+												<button
+													type="button"
+													className="p-1 rounded hover:bg-slate-100 text-slate-400"
+												>
 													<User className="w-3.5 h-3.5" />
 												</button>
-												<button type="button" className="p-1 rounded hover:bg-slate-100 text-slate-400">
+												<button
+													type="button"
+													className="p-1 rounded hover:bg-slate-100 text-slate-400"
+												>
 													<Calendar className="w-3.5 h-3.5" />
 												</button>
-												<button type="button" className="p-1 rounded hover:bg-slate-100 text-slate-400">
+												<button
+													type="button"
+													className="p-1 rounded hover:bg-slate-100 text-slate-400"
+												>
 													<AlertCircle className="w-3.5 h-3.5" />
 												</button>
 											</div>
@@ -310,7 +348,7 @@ function TaskCard({
 			className={`group bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all cursor-grab active:cursor-grabbing ${isDone ? "opacity-75" : ""}`}
 		>
 			<div className="p-3.5">
-				{(task.labels && task.labels.length > 0 || task.priority !== "NONE") && (
+				{((task.labels && task.labels.length > 0) || task.priority !== "NONE") && (
 					<div className="flex items-center gap-1.5 mb-2.5 flex-wrap">
 						{task.labels?.map((label) => (
 							<span
@@ -344,7 +382,9 @@ function TaskCard({
 						{task.dueDate && (
 							<div className="flex items-center gap-1 text-slate-400">
 								<Clock className="w-3 h-3" />
-								<span className="text-[10px] font-medium">{new Date(task.dueDate).toLocaleDateString()}</span>
+								<span className="text-[10px] font-medium">
+									{new Date(task.dueDate).toLocaleDateString()}
+								</span>
 							</div>
 						)}
 					</div>
@@ -364,9 +404,7 @@ function TaskCard({
 								{task.assigneeId.substring(0, 2).toUpperCase()}
 							</div>
 						) : (
-							<div
-								className="w-6 h-6 rounded-full bg-slate-100 text-slate-400 border border-slate-200 flex items-center justify-center text-[9px] font-bold"
-							>
+							<div className="w-6 h-6 rounded-full bg-slate-100 text-slate-400 border border-slate-200 flex items-center justify-center text-[9px] font-bold">
 								<User className="w-3 h-3" />
 							</div>
 						)}

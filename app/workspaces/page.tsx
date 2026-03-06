@@ -122,20 +122,22 @@ export default function WorkspacesPage() {
 								<button
 									type="button"
 									onClick={() => setView("grid")}
-									className={`w-8 flex items-center justify-center rounded transition-colors ${view === "grid"
-										? "bg-[#D1F2EB] text-[#0B6E4F]"
-										: "text-gray-400 hover:text-black"
-										}`}
+									className={`w-8 flex items-center justify-center rounded transition-colors ${
+										view === "grid"
+											? "bg-[#D1F2EB] text-[#0B6E4F]"
+											: "text-gray-400 hover:text-black"
+									}`}
 								>
 									<LayoutGrid className="w-4 h-4" />
 								</button>
 								<button
 									type="button"
 									onClick={() => setView("list")}
-									className={`w-8 flex items-center justify-center rounded transition-colors ${view === "list"
-										? "bg-[#D1F2EB] text-[#0B6E4F]"
-										: "text-gray-400 hover:text-black"
-										}`}
+									className={`w-8 flex items-center justify-center rounded transition-colors ${
+										view === "list"
+											? "bg-[#D1F2EB] text-[#0B6E4F]"
+											: "text-gray-400 hover:text-black"
+									}`}
 								>
 									<List className="w-4 h-4" />
 								</button>
@@ -199,17 +201,20 @@ export default function WorkspacesPage() {
 												setChannels([]); // Clear stale channels so they reload for the new workspace
 												router.push("/dashboard");
 											}}
-											className={`group block cursor-pointer bg-white border border-[#D1F2EB] rounded-xl hover:border-[#50C878] transition-all shadow-sm hover:shadow-md hover:shadow-[#50C878]/5 text-left outline-none focus-visible:ring-2 focus-visible:ring-[#50C878] ${view === "grid" ? "p-5" : "p-4 flex items-center justify-between gap-6"
-												}`}
+											className={`group block cursor-pointer bg-white border border-[#D1F2EB] rounded-xl hover:border-[#50C878] transition-all shadow-sm hover:shadow-md hover:shadow-[#50C878]/5 text-left outline-none focus-visible:ring-2 focus-visible:ring-[#50C878] ${
+												view === "grid" ? "p-5" : "p-4 flex items-center justify-between gap-6"
+											}`}
 										>
 											<div
 												className={`flex items-start ${view === "grid" ? "justify-between mb-4 w-full" : "gap-4 items-center"}`}
 											>
 												<div className="flex items-center gap-3">
 													<div
-														className={`rounded-xl ${WORKSPACE_COLORS[index % WORKSPACE_COLORS.length]
-															} flex items-center justify-center text-white font-bold shadow-sm ${view === "grid" ? "w-12 h-12 text-lg" : "w-10 h-10 text-base"
-															}`}
+														className={`rounded-xl ${
+															WORKSPACE_COLORS[index % WORKSPACE_COLORS.length]
+														} flex items-center justify-center text-white font-bold shadow-sm ${
+															view === "grid" ? "w-12 h-12 text-lg" : "w-10 h-10 text-base"
+														}`}
 													>
 														{workspace.name.charAt(0).toUpperCase()}
 													</div>
@@ -294,8 +299,9 @@ export default function WorkspacesPage() {
 									<button
 										type="button"
 										onClick={() => setIsCreateModalOpen(true)}
-										className={`group border-2 border-dashed border-[#D1F2EB] rounded-xl hover:border-[#50C878] hover:bg-[#D1F2EB]/10 transition-all flex flex-col items-center justify-center text-gray-400 hover:text-[#0B6E4F] ${view === "grid" ? "min-h-[160px]" : "p-4 min-h-[72px]"
-											}`}
+										className={`group border-2 border-dashed border-[#D1F2EB] rounded-xl hover:border-[#50C878] hover:bg-[#D1F2EB]/10 transition-all flex flex-col items-center justify-center text-gray-400 hover:text-[#0B6E4F] ${
+											view === "grid" ? "min-h-[160px]" : "p-4 min-h-[72px]"
+										}`}
 									>
 										<div
 											className={`flex items-center justify-center gap-3 ${view === "grid" ? "flex-col" : "flex-row w-full"}`}

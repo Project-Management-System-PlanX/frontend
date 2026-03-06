@@ -1,10 +1,10 @@
-import { useTasksAssignedToMe } from "@/hooks/api/use-tasks";
-import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
-import type { Task } from "@/lib/types/models";
 import { CheckCircle2, Clock, MessageSquare, MoreHorizontal } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useTasksAssignedToMe } from "@/hooks/api/use-tasks";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
+import type { Task } from "@/lib/types/models";
 
 export function AssignedToMeTab() {
 	const { token } = useSupabaseAuth();
@@ -28,7 +28,9 @@ export function AssignedToMeTab() {
 									type="button"
 									className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${task.resolution === "DONE" ? "bg-[#0B6E4F] border-[#0B6E4F]" : "border-slate-300 hover:border-[#0B6E4F]"}`}
 								>
-									{task.resolution === "DONE" && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+									{task.resolution === "DONE" && (
+										<CheckCircle2 className="w-3.5 h-3.5 text-white" />
+									)}
 								</button>
 							</div>
 
@@ -69,12 +71,13 @@ export function AssignedToMeTab() {
 													<Badge
 														variant="secondary"
 														className={`h-5 px-1.5 text-[10px] uppercase font-bold
-														${task.priority === "CRITICAL" || task.priority === "HIGH"
+														${
+															task.priority === "CRITICAL" || task.priority === "HIGH"
 																? "bg-red-50 text-red-600"
 																: task.priority === "MEDIUM"
 																	? "bg-amber-50 text-amber-600"
 																	: "bg-blue-50 text-blue-600"
-															}`}
+														}`}
 													>
 														{task.priority.toLowerCase()}
 													</Badge>
@@ -97,11 +100,7 @@ export function AssignedToMeTab() {
 												{task.comments.length} comments
 											</Button>
 										) : (
-											<Button
-												variant="ghost"
-												size="sm"
-												className="h-7 text-slate-500 text-xs px-2"
-											>
+											<Button variant="ghost" size="sm" className="h-7 text-slate-500 text-xs px-2">
 												Comment
 											</Button>
 										)}

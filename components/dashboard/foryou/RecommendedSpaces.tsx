@@ -2,10 +2,10 @@
 
 import { Plus, Users } from "lucide-react";
 import Link from "next/link";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useSpaces } from "@/hooks/api/use-spaces";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useWorkspaceStore } from "@/stores/workspace-store";
-import { Skeleton } from "@/components/ui/skeleton";
 
 interface RecommendedSpacesProps {
 	activeSpaceTab: string;
@@ -28,10 +28,11 @@ export function RecommendedSpaces({ activeSpaceTab, setActiveSpaceTab }: Recomme
 							key={tab}
 							type="button"
 							onClick={() => setActiveSpaceTab(tab)}
-							className={`text-[12px] font-medium px-3 py-1 rounded-full transition-all ${activeSpaceTab === tab
+							className={`text-[12px] font-medium px-3 py-1 rounded-full transition-all ${
+								activeSpaceTab === tab
 									? "bg-[#0B6E4F] text-white"
 									: "text-slate-500 hover:text-slate-700 hover:bg-slate-100"
-								}`}
+							}`}
 						>
 							{tab}
 						</button>
@@ -70,9 +71,7 @@ export function RecommendedSpaces({ activeSpaceTab, setActiveSpaceTab }: Recomme
 							{/* Stats */}
 							<div className="flex items-center gap-1.5 mt-3">
 								<Users className="w-3 h-3 text-slate-400" />
-								<span className="text-[10px] text-slate-400">
-									{space.taskCounter || 0} tasks
-								</span>
+								<span className="text-[10px] text-slate-400">{space.taskCounter || 0} tasks</span>
 							</div>
 						</Link>
 					))
