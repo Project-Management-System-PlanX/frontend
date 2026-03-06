@@ -1,7 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronRight } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useSpace } from "@/hooks/api/use-spaces";
 import { useTasks } from "@/hooks/api/use-tasks";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
@@ -71,8 +70,8 @@ interface TimelineTask {
    Component
    ═══════════════════════════════════════════════ */
 
-const ROW_HEIGHT = 40;
-const DAY_WIDTH = 7;
+const ROW_HEIGHT = 52;
+const DAY_WIDTH = 16;
 const TASK_LIST_WIDTH = 260;
 
 const STATUS_COLORS: Record<string, string> = {
@@ -150,7 +149,7 @@ export function SpaceTimelineView({ spaceId }: { spaceId: string }) {
 	const getBarStyle = (task: TimelineTask) => {
 		const startOffset = Math.max(0, daysBetween(timelineStart, task.start)) * DAY_WIDTH;
 		const duration = Math.max(1, daysBetween(task.start, task.end)) * DAY_WIDTH;
-		return { left: startOffset, width: Math.max(duration, 8) };
+		return { left: startOffset, width: Math.max(duration, 24) };
 	};
 
 	if (isLoading) {
@@ -266,33 +265,30 @@ export function SpaceTimelineView({ spaceId }: { spaceId: string }) {
 						{/* Task Bars */}
 						{timelineTasks.map((task, idx) => {
 							const { left, width } = getBarStyle(task);
-							const top = idx * ROW_HEIGHT + (ROW_HEIGHT - 22) / 2;
+							const top = idx * ROW_HEIGHT + (ROW_HEIGHT - 28) / 2;
 
 							return (
 								<div
 									key={task.id}
 									className="absolute z-10 rounded-md group cursor-pointer"
-									style={{ left, top, width, height: 22 }}
+									style={{ left, top, width, height: 28 }}
 									title={`${space?.prefix}-${task.taskNumber} ${task.text}`}
 								>
-									{/* Background */}
+									{/* Bar fill */}
 									<div
-										className="absolute inset-0 rounded-md opacity-20"
+										className="absolute inset-0 rounded-md"
 										style={{ backgroundColor: task.color }}
 									/>
-									{/* Color fill */}
-									<div
-										className="absolute inset-y-0 left-0 rounded-md"
-										style={{
-											width: "100%",
-											backgroundColor: task.color,
-											opacity: 0.85,
-										}}
-									/>
-									{/* Label */}
-									<span className="absolute inset-0 flex items-center px-2 text-[10px] font-semibold text-white mix-blend-normal truncate drop-shadow-sm">
-										{width > 60 ? `${space?.prefix}-${task.taskNumber} ${task.text}` : ""}
-									</span>
+									{/* Label (inside bar when wide enough, outside when narrow) */}
+									{width >= 80 ? (
+										<span className="absolute inset-0 flex items-center px-2.5 text-[11px] font-semibold text-white truncate drop-shadow-sm">
+											{space?.prefix}-{task.taskNumber} {task.text}
+										</span>
+									) : (
+										<span className="absolute left-full ml-1.5 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-slate-600 whitespace-nowrap">
+											{space?.prefix}-{task.taskNumber} {task.text}
+										</span>
+									)}
 									{/* Hover tooltip */}
 									<div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2.5 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-30 shadow-lg">
 										{space?.prefix}-{task.taskNumber} {task.text}

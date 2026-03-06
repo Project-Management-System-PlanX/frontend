@@ -7,7 +7,6 @@ import {
 	Clock,
 	MessageSquare,
 	MoreHorizontal,
-	Paperclip,
 	Plus,
 	User,
 } from "lucide-react";
@@ -15,6 +14,7 @@ import type { DragEvent, KeyboardEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useSpace } from "@/hooks/api/use-spaces";
 import { useCreateTask, useMoveTask, useTasks } from "@/hooks/api/use-tasks";
+import { useMemberLookup } from "@/hooks/use-member-lookup";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import type { Task, TaskStatus } from "@/lib/types/models";
 
@@ -30,7 +30,7 @@ export function SpaceBoardView({ spaceId }: { spaceId: string }) {
 	const { token } = useSupabaseAuth();
 
 	const { data: space, isLoading: isSpaceLoading } = useSpace(spaceId, token || undefined);
-	const { data: serverTasks, isLoading: isTasksLoading } = useTasks(
+	const { data: serverTasks } = useTasks(
 		spaceId,
 		undefined,
 		token || undefined,
@@ -331,6 +331,7 @@ function TaskCard({
 	onDragStart: (e: DragEvent, id: string) => void;
 	onDragEnd: (e: DragEvent) => void;
 }) {
+	const { getMember } = useMemberLookup();
 	const pri = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG.NONE;
 
 	const displayId = task.taskNumber ? `${prefix}-${task.taskNumber}` : task.id;
@@ -394,9 +395,10 @@ function TaskCard({
 
 						{task.assigneeId ? (
 							<div
+								title={getMember(task.assigneeId).name}
 								className={`w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-[9px] font-bold`}
 							>
-								{task.assigneeId.substring(0, 2).toUpperCase()}
+								{getMember(task.assigneeId).initials}
 							</div>
 						) : (
 							<div className="w-6 h-6 rounded-full bg-slate-100 text-slate-400 border border-slate-200 flex items-center justify-center text-[9px] font-bold">

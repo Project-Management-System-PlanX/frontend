@@ -5,7 +5,6 @@ import {
 	Bold,
 	CheckCircle2,
 	Clock,
-	FileText,
 	Info,
 	Italic,
 	Link as LinkIcon,
@@ -26,32 +25,8 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-interface TaskMessage {
-	id: string;
-	user: {
-		name: string;
-		avatar?: string;
-		isBot?: boolean;
-	};
-	content: string;
-	timestamp: string;
-	status?: "todo" | "in-progress" | "done";
-	priority?: "low" | "medium" | "high";
-	dueDate?: string;
-	reactions?: { emoji: string; count: number }[];
-	attachment?: {
-		name: string;
-		type: string;
-		size: string;
-	};
-	comments?: {
-		count: number;
-		lastComment: string;
-		avatars: string[];
-	};
-}
-
 import { useTasksAssignedToMe } from "@/hooks/api/use-tasks";
+import { useMemberLookup } from "@/hooks/use-member-lookup";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import type { Task } from "@/lib/types/models";
 
@@ -61,6 +36,7 @@ export function TasksArea() {
 
 	const { token } = useSupabaseAuth();
 	const { data: serverTasks, isLoading } = useTasksAssignedToMe(token || undefined);
+	const { getMember } = useMemberLookup();
 	const tasks = serverTasks || [];
 
 	return (
@@ -167,11 +143,12 @@ export function TasksArea() {
 											<div className="flex items-center gap-2 text-xs text-slate-500">
 												<div className="flex items-center gap-1.5">
 													<Avatar className="w-4 h-4">
-														<AvatarFallback className="text-[8px] bg-slate-100 uppercase">
-															{task.reporterId.charAt(0)}
-														</AvatarFallback>
-													</Avatar>
-													<span>{task.reporterId}</span>
+													<AvatarImage src={getMember(task.reporterId).imageUrl} />
+													<AvatarFallback className="text-[8px] bg-slate-100 uppercase">
+														{getMember(task.reporterId).initials}
+													</AvatarFallback>
+												</Avatar>
+												<span>{getMember(task.reporterId).name}</span>
 												</div>
 												<span>•</span>
 												<div className="flex items-center gap-1">

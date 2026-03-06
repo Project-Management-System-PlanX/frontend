@@ -3,12 +3,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useTasksAssignedToMe } from "@/hooks/api/use-tasks";
+import { useMemberLookup } from "@/hooks/use-member-lookup";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import type { Task } from "@/lib/types/models";
 
 export function AssignedToMeTab() {
 	const { token } = useSupabaseAuth();
 	const { data: serverTasks, isLoading } = useTasksAssignedToMe(token || undefined);
+	const { getMember } = useMemberLookup();
 	const tasks = serverTasks || [];
 	if (isLoading) {
 		return <div className="text-center py-16 text-slate-400">Loading assigned tasks...</div>;
@@ -46,11 +48,12 @@ export function AssignedToMeTab() {
 										<div className="flex items-center gap-2 text-xs text-slate-500">
 											<div className="flex items-center gap-1.5">
 												<Avatar className="w-4 h-4">
-													<AvatarFallback className="text-[8px] bg-slate-100 uppercase">
-														{task.reporterId.charAt(0)}
-													</AvatarFallback>
-												</Avatar>
-												<span>{task.reporterId}</span>
+												<AvatarImage src={getMember(task.reporterId).imageUrl} />
+												<AvatarFallback className="text-[8px] bg-slate-100 uppercase">
+													{getMember(task.reporterId).initials}
+												</AvatarFallback>
+											</Avatar>
+											<span>{getMember(task.reporterId).name}</span>
 											</div>
 											<span>•</span>
 											<div className="flex items-center gap-1">
