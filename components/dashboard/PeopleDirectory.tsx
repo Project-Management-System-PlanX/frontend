@@ -6,7 +6,10 @@ import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { InviteMembersDialog } from "@/components/workspaces/InviteMembersDialog";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useWorkspaceMembers } from "@/hooks/use-workspace-members";
+import { useWorkspaceStore } from "@/stores/workspace-store";
 
 const getStatusIcon = (status?: string) => {
 	switch (status) {
@@ -27,8 +30,12 @@ export function PeopleDirectory() {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [showBanner, setShowBanner] = useState(true);
 	const [displayCount, setDisplayCount] = useState(10);
+	const [inviteOpen, setInviteOpen] = useState(false);
 
+	const { user } = useSupabaseAuth();
 	const { members, currentUserProfile, isLoading } = useWorkspaceMembers();
+	const activeWorkspaceId = useWorkspaceStore((state) => state.activeWorkspaceId);
+	const activeWorkspaceName = useWorkspaceStore((state) => state.activeWorkspaceName);
 
 	// Map members to display format
 	const people = members.map((member) => {
@@ -74,7 +81,7 @@ export function PeopleDirectory() {
 			<div className="h-16 px-6 flex items-center justify-between border-b border-slate-200 bg-white shrink-0">
 				<h1 className="text-2xl font-semibold text-slate-900">People</h1>
 				<Button
-					onClick={() => setShowBanner(true)}
+					onClick={() => setInviteOpen(true)}
 					className="gap-2 bg-[#0B6E4F] hover:bg-[#0B6E4F]/90 text-white"
 				>
 					<span>+</span>
@@ -84,81 +91,89 @@ export function PeopleDirectory() {
 
 			{/* Invite Banner */}
 			{showBanner && (
-				<div className="relative bg-gradient-to-r from-slate-900 to-slate-800 px-8 py-12 shrink-0">
+				<div className="relative bg-slate-900 px-8 py-10 shrink-0">
 					<button
 						type="button"
 						onClick={() => setShowBanner(false)}
-						className="absolute top-4 right-4 text-white hover:text-slate-300"
+						className="absolute top-4 right-4 text-slate-400 hover:text-white hover:bg-white/10 p-1 rounded-lg transition-colors"
 					>
-						<X className="w-6 h-6" />
+						<X className="w-5 h-5" />
 					</button>
-					<h2 className="text-2xl font-semibold text-white mb-2">Invite your team to Team UP</h2>
-					<p className="text-slate-300 text-sm mb-6 max-w-xl">
-						Bring your team members into Team UP to start working better together. Send invites via
-						email, or get a handy link to share.
-					</p>
-					<Button
-						onClick={() => setShowBanner(false)}
-						className="bg-slate-700 hover:bg-slate-600 text-white font-semibold"
-					>
-						Invite people
-					</Button>
+					<div className="max-w-5xl mx-auto">
+						<h2 className="text-2xl font-bold text-white mb-2">Invite your team to Team UP</h2>
+						<p className="text-slate-400 text-sm mb-6 max-w-2xl">
+							Bring your team members into Team UP to start working better together. Send invites
+							via email, or get a handy link to share.
+						</p>
+						<Button
+							onClick={() => setInviteOpen(true)}
+							className="bg-slate-800 hover:bg-slate-700 text-white font-medium border border-slate-700"
+						>
+							Invite people
+						</Button>
+					</div>
 				</div>
 			)}
 
 			{/* Search Bar */}
-			<div className="px-8 py-4 flex items-center gap-4 bg-slate-50 border-b border-slate-200 shrink-0">
-				<div className="flex-1 max-w-2xl relative">
+			<div className="px-8 py-4 flex items-center gap-4 bg-white shrink-0 max-w-5xl mx-auto w-full">
+				<div className="flex-1 relative">
 					<div className="relative">
 						<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
 						<Input
 							placeholder="Search for people"
 							value={searchQuery}
 							onChange={(e) => setSearchQuery(e.target.value)}
-							className="pl-10 bg-white border-slate-300 rounded-lg"
+							className="pl-10 bg-white border-slate-200 rounded-md h-10 w-full"
 						/>
 					</div>
 				</div>
 			</div>
 
 			{/* Filters and Sort */}
-			<div className="px-8 py-6 flex items-center justify-between gap-4 border-b border-slate-200 bg-white shrink-0">
+			<div className="px-8 py-2 flex items-center justify-between gap-4 bg-white shrink-0 max-w-5xl mx-auto w-full mb-2">
 				<div className="flex items-center gap-2">
 					<Button
 						variant="outline"
 						size="sm"
-						className="bg-white border-slate-200 text-slate-600 text-xs hover:bg-slate-50"
+						className="bg-slate-50 border-transparent hover:bg-slate-100 text-slate-700 text-xs font-medium h-8"
 					>
-						Title <ChevronDown className="w-3 h-3 ml-1" />
+						All people <ChevronDown className="w-3 h-3 ml-1 opacity-50" />
 					</Button>
 					<Button
 						variant="outline"
 						size="sm"
-						className="bg-white border-slate-200 text-slate-600 text-xs hover:bg-slate-50"
+						className="bg-slate-50 border-transparent hover:bg-slate-100 text-slate-700 text-xs font-medium h-8"
 					>
-						Location <ChevronDown className="w-3 h-3 ml-1" />
+						Title <ChevronDown className="w-3 h-3 ml-1 opacity-50" />
 					</Button>
-					<div className="w-px h-6 bg-slate-200 mx-2" />
+					<Button
+						variant="outline"
+						size="sm"
+						className="bg-slate-50 border-transparent hover:bg-slate-100 text-slate-700 text-xs font-medium h-8"
+					>
+						Location <ChevronDown className="w-3 h-3 ml-1 opacity-50" />
+					</Button>
 					<Button
 						size="sm"
-						className="text-[#0B6E4F] bg-transparent hover:bg-slate-100 text-xs font-semibold flex items-center gap-1 px-3 py-1.5"
+						className="text-[#0B6E4F] bg-transparent hover:bg-slate-50 text-xs font-medium flex items-center gap-1 h-8 px-2"
 					>
-						<Search className="w-4 h-4" />
+						<Search className="w-3.5 h-3.5" />
 						Filters
 					</Button>
 				</div>
 				<Button
 					variant="outline"
 					size="sm"
-					className="bg-white border-slate-200 text-slate-600 text-xs hover:bg-slate-50"
+					className="bg-transparent border-slate-200 text-slate-700 text-xs font-medium h-8"
 				>
-					Most recommended <ChevronDown className="w-3 h-3 ml-1" />
+					Most recommended <ChevronDown className="w-3 h-3 ml-1 opacity-50" />
 				</Button>
 			</div>
 
 			{/* People Grid */}
 			<div className="flex-1 overflow-y-auto">
-				<div className="p-8">
+				<div className="p-8 max-w-5xl mx-auto">
 					{isLoading ? (
 						<div className="flex items-center justify-center h-64">
 							<Loader2 className="w-6 h-6 animate-spin text-[#0B6E4F]" />
@@ -234,6 +249,17 @@ export function PeopleDirectory() {
 					)}
 				</div>
 			</div>
+
+			{/* Invite Members Dialog */}
+			{activeWorkspaceId && (
+				<InviteMembersDialog
+					isOpen={inviteOpen}
+					onClose={() => setInviteOpen(false)}
+					workspaceId={activeWorkspaceId}
+					workspaceName={activeWorkspaceName || "Team UP"}
+					userId={user?.id ?? ""}
+				/>
+			)}
 		</div>
 	);
 }

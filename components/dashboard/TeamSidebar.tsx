@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { InviteMembersDialog } from "@/components/workspaces/InviteMembersDialog";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useWorkspaceChannels } from "@/hooks/use-workspace-channels";
 import { useWorkspaceMembers } from "@/hooks/use-workspace-members";
@@ -15,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { type Channel, useChannelStore } from "@/stores/channel-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { CreateChannelDialog } from "./CreateChannelDialog";
+import { DirectoriesSection } from "./DirectoriesSection";
 import { IconRail } from "./IconRail";
 
 interface TeamSidebarProps {
@@ -25,7 +27,7 @@ interface TeamSidebarProps {
 export function TeamSidebar(_props: TeamSidebarProps) {
 	const pathname = usePathname();
 	const router = useRouter();
-	const { token } = useSupabaseAuth();
+	const { token, user } = useSupabaseAuth();
 	const { channels, isLoaded, activeWorkspaceId } = useWorkspaceChannels();
 	const { members, currentUserProfile } = useWorkspaceMembers();
 	const { addChannel } = useChannelStore();
@@ -33,6 +35,7 @@ export function TeamSidebar(_props: TeamSidebarProps) {
 	const [channelsExpanded, setChannelsExpanded] = useState(true);
 	const [dmsExpanded, setDmsExpanded] = useState(true);
 	const [createChannelOpen, setCreateChannelOpen] = useState(false);
+	const [inviteOpen, setInviteOpen] = useState(false);
 
 	const isChannelActive = (channelId: string) => {
 		return pathname === `/dashboard/chat/channel/${channelId}`;
@@ -255,6 +258,9 @@ export function TeamSidebar(_props: TeamSidebarProps) {
 								</div>
 							)}
 						</div>
+
+						{/* Directories */}
+						<DirectoriesSection />
 					</div>
 				</ScrollArea>
 
@@ -263,12 +269,24 @@ export function TeamSidebar(_props: TeamSidebarProps) {
 					<Button
 						variant="ghost"
 						className="w-full justify-start gap-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+						onClick={() => setInviteOpen(true)}
 					>
 						<UserPlus className="w-4 h-4" />
 						<span className="text-sm">Invite Teammates</span>
 					</Button>
 				</div>
 			</div>
+
+			{/* Invite Members Dialog */}
+			{activeWorkspaceId && (
+				<InviteMembersDialog
+					isOpen={inviteOpen}
+					onClose={() => setInviteOpen(false)}
+					workspaceId={activeWorkspaceId}
+					workspaceName={activeWorkspaceName || "Team UP"}
+					userId={user?.id ?? ""}
+				/>
+			)}
 
 			{/* Create Channel Dialog */}
 			<CreateChannelDialog
