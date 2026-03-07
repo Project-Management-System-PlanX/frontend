@@ -11,10 +11,9 @@ import { createClient } from "@/lib/supabase/client";
 
 interface InviteData {
 	id: string;
-	workspace_id?: string;
-	workspaceId?: string;
+	workspaceId: string;
 	token: string;
-	expires_at: string;
+	expiresAt: string;
 	workspace: {
 		id: string;
 		name: string;
@@ -56,7 +55,7 @@ export default function InvitePage() {
 					return;
 				}
 
-				if (new Date(data.expires_at) < new Date()) {
+				if (new Date(data.expiresAt) < new Date()) {
 					setError("This invite link has expired.");
 					setState("error");
 					return;
