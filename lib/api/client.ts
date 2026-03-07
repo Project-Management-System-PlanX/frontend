@@ -4,14 +4,15 @@ import { API_BASE_URL } from "./config";
 interface RequestConfig extends RequestInit {
 	token?: string;
 	queryParams?: Record<string, string>;
+	baseUrl?: string;
 }
 
 export async function fetchClient<T>(
 	endpoint: string,
-	{ token, queryParams, headers: customHeaders, ...customConfig }: RequestConfig = {},
+	{ token, queryParams, headers: customHeaders, baseUrl, ...customConfig }: RequestConfig = {},
 ): Promise<T> {
 	// Build query string if provided
-	let url = `${API_BASE_URL}${endpoint}`;
+	let url = `${baseUrl ?? API_BASE_URL}${endpoint}`;
 	if (queryParams && Object.keys(queryParams).length > 0) {
 		const searchParams = new URLSearchParams();
 		Object.entries(queryParams).forEach(([key, value]) => {

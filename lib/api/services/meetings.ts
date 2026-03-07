@@ -14,7 +14,7 @@ export interface JoinMeetingPayload {
 	username?: string;
 }
 
-const _MEETING_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
+const _MEETING_BASE = "/api";
 
 // Meeting service endpoints go through the Next.js rewrite to /api/meetings/*
 export const meetingService = {
@@ -25,6 +25,7 @@ export const meetingService = {
 				token,
 				method: "POST",
 				body: JSON.stringify(data),
+				baseUrl: _MEETING_BASE,
 			},
 		);
 		return res.data;
@@ -37,6 +38,7 @@ export const meetingService = {
 				token,
 				method: "POST",
 				body: JSON.stringify({ username }),
+				baseUrl: _MEETING_BASE,
 			},
 		);
 		return res.data;
@@ -46,6 +48,7 @@ export const meetingService = {
 		await fetchClient<{ success: boolean }>(API_ENDPOINTS.MEETINGS_LEAVE(meetingId), {
 			token,
 			method: "POST",
+			baseUrl: _MEETING_BASE,
 		});
 	},
 
@@ -53,6 +56,7 @@ export const meetingService = {
 		await fetchClient<{ success: boolean }>(API_ENDPOINTS.MEETINGS_END(meetingId), {
 			token,
 			method: "POST",
+			baseUrl: _MEETING_BASE,
 		});
 	},
 
@@ -64,6 +68,7 @@ export const meetingService = {
 				token,
 				method: "GET",
 				queryParams,
+				baseUrl: _MEETING_BASE,
 			},
 		);
 		return res.data;
@@ -75,6 +80,7 @@ export const meetingService = {
 			{
 				token,
 				method: "GET",
+				baseUrl: _MEETING_BASE,
 			},
 		);
 		return res.data;
@@ -86,6 +92,7 @@ export const meetingService = {
 			{
 				token,
 				method: "GET",
+				baseUrl: _MEETING_BASE,
 			},
 		);
 		return res.data;
