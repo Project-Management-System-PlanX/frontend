@@ -21,6 +21,7 @@ import {
 	X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { StartMeetingButton } from "@/components/meeting/StartMeetingButton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -200,6 +201,13 @@ export function ChatArea({
 					<div className="w-px h-6 bg-[#e5e7eb] mx-2" />
 
 					<TooltipProvider delayDuration={0}>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<StartMeetingButton channelId={channelName} channelName={displayName} />
+							</TooltipTrigger>
+							<TooltipContent>Start a call</TooltipContent>
+						</Tooltip>
+
 						<Tooltip>
 							<TooltipTrigger asChild>
 								<Button

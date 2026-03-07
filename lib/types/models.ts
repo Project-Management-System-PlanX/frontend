@@ -166,3 +166,51 @@ export interface TaskLink {
 	toTaskId: string;
 	linkType: string;
 }
+
+// ─── Meetings ───
+
+export type MeetingType = "VIDEO" | "AUDIO";
+export type MeetingStatus = "ACTIVE" | "ENDED";
+
+export interface Meeting {
+	id: string;
+	roomId: string;
+	title: string;
+	type: MeetingType;
+	status: MeetingStatus;
+	groupId?: string | null;
+	channelId?: string | null;
+	workspaceId?: string | null;
+	createdById: string;
+	startedAt: string;
+	endedAt?: string | null;
+	duration?: number | null;
+	createdAt: string;
+	participantCount?: number;
+}
+
+export interface MeetingParticipant {
+	id: string;
+	meetingId: string;
+	userId: string;
+	joinedAt: string;
+	leftAt?: string | null;
+	duration?: number | null;
+}
+
+export interface JoinMeetingResponse {
+	token: string;
+	url: string;
+	meeting: Meeting;
+}
+
+export interface MeetingNotification {
+	meetingId: string;
+	title: string;
+	type: MeetingType;
+	createdById: string;
+	createdByName: string;
+	channelId?: string;
+	channelName?: string;
+	workspaceId?: string;
+}
