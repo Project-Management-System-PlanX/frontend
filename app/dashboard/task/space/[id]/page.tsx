@@ -2,7 +2,6 @@
 
 import { use } from "react";
 import { Space } from "@/components/dashboard/Space";
-import { TasksArea } from "@/components/dashboard/TasksArea";
 
 export default function SpacePage({ params }: { params: Promise<{ id: string }> }) {
 	const { id } = use(params);

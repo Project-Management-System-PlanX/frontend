@@ -13,6 +13,7 @@ export function SpaceChartView() {
 						stroke="currentColor"
 						strokeWidth={2}
 					>
+						<title>Chart icon</title>
 						<path strokeLinecap="round" strokeLinejoin="round" d="M3 3v18h18" />
 						<path
 							strokeLinecap="round"

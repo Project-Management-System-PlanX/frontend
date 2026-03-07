@@ -333,6 +333,8 @@ function TaskCard({
 	return (
 		<div
 			draggable
+			role="button"
+			tabIndex={0}
 			onDragStart={(e) => onDragStart(e, task.id)}
 			onDragEnd={onDragEnd}
 			className={`group bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all cursor-grab active:cursor-grabbing ${isDone ? "opacity-75" : ""}`}

@@ -8,7 +8,7 @@ const supabaseKey =
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 console.log("Subscribing to realtime messages...");
-const channel = supabase
+const _channel = supabase
 	.channel("room:test")
 	.on("postgres_changes", { event: "*", schema: "public", table: "messages" }, (payload) => {
 		console.log("Realtime event received! Payload:", payload);

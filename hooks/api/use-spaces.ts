@@ -35,7 +35,7 @@ export const useCreateSpace = (token?: string) => {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: (data: CreateSpacePayload) => spacesService.create(data, token),
-		onSuccess: (data) => {
+		onSuccess: (_data) => {
 			queryClient.invalidateQueries({ queryKey: spaceKeys.lists() });
 		},
 	});
