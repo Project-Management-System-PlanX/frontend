@@ -352,6 +352,12 @@ function TaskCard({
 			onDragStart={(e) => onDragStart(e, task.id)}
 			onDragEnd={onDragEnd}
 			onClick={onClick}
+			onKeyDown={(e) => {
+				if (e.key === "Enter" || e.key === " ") {
+					e.preventDefault();
+					onClick();
+				}
+			}}
 			className={`group bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all cursor-pointer active:cursor-grabbing ${isDone ? "opacity-75" : ""}`}
 		>
 			<div className="p-3.5">

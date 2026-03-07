@@ -168,14 +168,23 @@ export function TaskDetailModal({
 					<div className="flex items-center gap-4 text-[12px] text-slate-500">
 						<span>Created {format(new Date(task.createdAt), "MMM d, yyyy")}</span>
 						<div className="flex items-center gap-1.5">
-							<button type="button" className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white hover:bg-slate-50 border border-slate-200 transition-colors text-slate-700 font-medium shadow-sm">
+							<button
+								type="button"
+								className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white hover:bg-slate-50 border border-slate-200 transition-colors text-slate-700 font-medium shadow-sm"
+							>
 								<Sparkles className="w-3.5 h-3.5 text-blue-600" />
 								Ask AI
 							</button>
-							<button type="button" className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-500">
+							<button
+								type="button"
+								className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-500"
+							>
 								<MoreHorizontal className="w-4 h-4" />
 							</button>
-							<button type="button" className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-500">
+							<button
+								type="button"
+								className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-500"
+							>
 								<Maximize2 className="w-4 h-4" />
 							</button>
 						</div>
@@ -467,10 +476,16 @@ export function TaskDetailModal({
 								)}
 							</span>
 							<div className="flex items-center gap-1.5 text-slate-400">
-								<button type="button" className="p-1 hover:bg-slate-100 rounded transition-colors text-slate-500">
+								<button
+									type="button"
+									className="p-1 hover:bg-slate-100 rounded transition-colors text-slate-500"
+								>
 									<Search className="w-3.5 h-3.5" />
 								</button>
-								<button type="button" className="p-1 hover:bg-slate-100 rounded transition-colors text-slate-500">
+								<button
+									type="button"
+									className="p-1 hover:bg-slate-100 rounded transition-colors text-slate-500"
+								>
 									<AlignLeft className="w-3.5 h-3.5" />
 								</button>
 							</div>

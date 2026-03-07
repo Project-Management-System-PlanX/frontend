@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarIcon, Flag, Loader2, Paperclip, Plus, Upload, X } from "lucide-react";
+import { CalendarIcon, Loader2, Paperclip, Plus, Upload, X } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -674,7 +674,7 @@ export function CreateTaskModal({
 							<div className="space-y-1.5 mb-1">
 								{subtaskTitles.map((title, idx) => (
 									<div
-										key={idx}
+										key={`subtask-${title}`}
 										className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md"
 									>
 										<span className="w-4 h-4 rounded-full bg-slate-300 text-slate-600 flex items-center justify-center text-[10px] font-bold shrink-0">

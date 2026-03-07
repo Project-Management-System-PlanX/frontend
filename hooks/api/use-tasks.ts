@@ -12,7 +12,8 @@ import { spaceKeys } from "./use-spaces";
 export const taskKeys = {
 	all: ["tasks"] as const,
 	lists: () => [...taskKeys.all, "list"] as const,
-	list: (spaceId: string, filters?: Record<string, unknown>) => [...taskKeys.all, "list", { spaceId, filters }] as const,
+	list: (spaceId: string, filters?: Record<string, unknown>) =>
+		[...taskKeys.all, "list", { spaceId, filters }] as const,
 	assignedToMe: () => [...taskKeys.all, "assignedToMe"] as const,
 	workedOn: () => [...taskKeys.all, "workedOn"] as const,
 	details: () => [...taskKeys.all, "detail"] as const,
