@@ -48,12 +48,12 @@ export function AssignedToMeTab() {
 										<div className="flex items-center gap-2 text-xs text-slate-500">
 											<div className="flex items-center gap-1.5">
 												<Avatar className="w-4 h-4">
-												<AvatarImage src={getMember(task.reporterId).imageUrl} />
-												<AvatarFallback className="text-[8px] bg-slate-100 uppercase">
-													{getMember(task.reporterId).initials}
-												</AvatarFallback>
-											</Avatar>
-											<span>{getMember(task.reporterId).name}</span>
+													<AvatarImage src={getMember(task.reporterId).imageUrl} />
+													<AvatarFallback className="text-[8px] bg-slate-100 uppercase">
+														{getMember(task.reporterId).initials}
+													</AvatarFallback>
+												</Avatar>
+												<span>{getMember(task.reporterId).name}</span>
 											</div>
 											<span>•</span>
 											<div className="flex items-center gap-1">

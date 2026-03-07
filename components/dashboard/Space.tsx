@@ -64,7 +64,9 @@ export function Space({ spaceId }: { spaceId: string }) {
 								className="w-8 h-8 rounded flex items-center justify-center text-white shadow-sm shrink-0"
 								style={{ backgroundColor: space?.color || "#0B6E4F" }}
 							>
-								<span className="text-sm font-bold">{space?.icon || space?.prefix?.charAt(0) || "P"}</span>
+								<span className="text-sm font-bold">
+									{space?.icon || space?.prefix?.charAt(0) || "P"}
+								</span>
 							</div>
 						)}
 						<div>

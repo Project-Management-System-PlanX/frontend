@@ -1,11 +1,6 @@
 "use client";
 
-import {
-	ChevronDown,
-	ChevronRight,
-	MoreHorizontal,
-	User,
-} from "lucide-react";
+import { ChevronDown, ChevronRight, MoreHorizontal, User } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSpace } from "@/hooks/api/use-spaces";
 import { useTasks } from "@/hooks/api/use-tasks";
@@ -50,31 +45,19 @@ export function SpaceListView({ spaceId }: { spaceId: string }) {
 							<div className="p-4 text-center text-sm text-slate-400">Loading tasks...</div>
 						) : tasks && tasks.length > 0 ? (
 							tasks.map((task) => (
-								<TaskRow
-									key={task.id}
-									task={task}
-									prefix={space?.prefix || ""}
-								/>
+								<TaskRow key={task.id} task={task} prefix={space?.prefix || ""} />
 							))
 						) : (
 							<div className="p-4 text-center text-sm text-slate-400">No tasks in this space</div>
 						)}
 					</div>
 				</div>
-
-
 			</div>
 		</ScrollArea>
 	);
 }
 
-function TaskRow({
-	task,
-	prefix,
-}: {
-	task: Task;
-	prefix: string;
-}) {
+function TaskRow({ task, prefix }: { task: Task; prefix: string }) {
 	const { getMember } = useMemberLookup();
 	const displayId = task.taskNumber ? `${prefix}-${task.taskNumber}` : task.id;
 
@@ -134,7 +117,12 @@ function TaskRow({
 
 				{/* Type icon (Epic purple, Task blue, etc.) */}
 				<div className="w-5 h-5 bg-purple-600 rounded-sm flex items-center justify-center shrink-0">
-					<svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+					<svg
+						className="w-3 h-3 text-white"
+						fill="currentColor"
+						viewBox="0 0 16 16"
+						aria-hidden="true"
+					>
 						<path d="M13 2H3a1 1 0 00-1 1v10a1 1 0 001 1h10a1 1 0 001-1V3a1 1 0 00-1-1zM3 1a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V3a2 2 0 00-2-2H3z" />
 						<path d="M5 8h6v1H5V8z" />
 					</svg>
@@ -153,7 +141,9 @@ function TaskRow({
 						<div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-[10px] text-white font-bold shrink-0">
 							{getMember(task.assigneeId).initials}
 						</div>
-						<span className="text-[13px] text-slate-600 truncate">{getMember(task.assigneeId).name}</span>
+						<span className="text-[13px] text-slate-600 truncate">
+							{getMember(task.assigneeId).name}
+						</span>
 					</>
 				) : (
 					<>
@@ -168,11 +158,11 @@ function TaskRow({
 			{/* Reporter */}
 			<div className="px-3 py-2.5 flex items-center gap-2 min-w-0">
 				<div className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center text-white shrink-0">
-					<span className="text-[10px] font-bold">
-						{getMember(task.reporterId).initials}
-					</span>
+					<span className="text-[10px] font-bold">{getMember(task.reporterId).initials}</span>
 				</div>
-				<span className="text-[13px] text-slate-600 truncate">{getMember(task.reporterId).name}</span>
+				<span className="text-[13px] text-slate-600 truncate">
+					{getMember(task.reporterId).name}
+				</span>
 			</div>
 
 			{/* Priority */}

@@ -44,7 +44,12 @@ export function DashboardHome() {
 					{/* ──── Stat Cards ──── */}
 					<div className="grid grid-cols-4 gap-4">
 						{[
-							{ label: "Total Messages", icon: MessageSquare, color: "#0B6E4F", bg: "bg-emerald-50" },
+							{
+								label: "Total Messages",
+								icon: MessageSquare,
+								color: "#0B6E4F",
+								bg: "bg-emerald-50",
+							},
 							{ label: "Active Tasks", icon: CheckSquare, color: "#3B82F6", bg: "bg-blue-50" },
 							{ label: "Team Members", icon: Users, color: "#8B5CF6", bg: "bg-violet-50" },
 							{ label: "Files Shared", icon: FileText, color: "#F59E0B", bg: "bg-amber-50" },
@@ -56,7 +61,9 @@ export function DashboardHome() {
 									className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-5 hover:shadow-lg hover:border-slate-300 transition-all group cursor-pointer"
 								>
 									<div className="flex items-center justify-between mb-3">
-										<div className={`w-10 h-10 rounded-xl ${stat.bg} flex items-center justify-center`}>
+										<div
+											className={`w-10 h-10 rounded-xl ${stat.bg} flex items-center justify-center`}
+										>
 											<Icon className="w-5 h-5" style={{ color: stat.color }} />
 										</div>
 									</div>

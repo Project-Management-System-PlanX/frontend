@@ -155,7 +155,7 @@ export function useMessages(channelId: string | null) {
 						console.log("Adding new message to state.");
 						return [...prev, newMessage];
 					});
-				}
+				},
 			)
 			.subscribe((status, err) => {
 				console.log("Supabase Realtime Status:", status);

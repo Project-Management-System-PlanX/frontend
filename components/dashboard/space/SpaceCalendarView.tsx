@@ -172,92 +172,91 @@ export function SpaceCalendarView({ spaceId }: { spaceId: string }) {
 				</div>
 
 				{/* Weeks Grid */}
-			{isLoading ? (
-				<div className="flex-1 flex items-center justify-center text-sm text-slate-400">
-					Loading tasks...
-				</div>
-			) : (
-				<div className="flex-1 grid grid-rows-6 min-h-0 overflow-hidden">
-					{weeks.map((week) => {
-						const weekKey = week.map((d) => d?.toISOString() || "null").join(",");
-						return (
-							<div key={weekKey} className="grid grid-cols-7 border-b border-slate-100 min-h-0">
-								{week.map((date) => {
-									if (!date) return <div key="null" className="bg-slate-50/30" />;
+				{isLoading ? (
+					<div className="flex-1 flex items-center justify-center text-sm text-slate-400">
+						Loading tasks...
+					</div>
+				) : (
+					<div className="flex-1 grid grid-rows-6 min-h-0 overflow-hidden">
+						{weeks.map((week) => {
+							const weekKey = week.map((d) => d?.toISOString() || "null").join(",");
+							return (
+								<div key={weekKey} className="grid grid-cols-7 border-b border-slate-100 min-h-0">
+									{week.map((date) => {
+										if (!date) return <div key="null" className="bg-slate-50/30" />;
 
-									const isCurrentMonth = date.getMonth() === month;
-									const isToday = isSameDate(date, today);
-									const dateTasks = getTasksForDate(date);
-									const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+										const isCurrentMonth = date.getMonth() === month;
+										const isToday = isSameDate(date, today);
+										const dateTasks = getTasksForDate(date);
+										const isWeekend = date.getDay() === 0 || date.getDay() === 6;
 
-									return (
-										<div
-											key={date.toISOString()}
-											className={`border-r border-slate-100 last:border-r-0 p-1.5 flex flex-col min-h-0 overflow-hidden group transition-colors ${
-												isWeekend ? "bg-slate-50/40" : ""
-											} ${!isCurrentMonth ? "opacity-40" : ""} ${
-												isToday ? "bg-emerald-50/40" : ""
-											} hover:bg-slate-50`}
-										>
-											{/* Date number + Add button */}
-											<div className="flex items-center justify-between mb-1 shrink-0">
-												<span
-													className={`w-6 h-6 flex items-center justify-center text-[12px] font-semibold rounded-full ${
-														isToday
-															? "bg-[#0B6E4F] text-white shadow-sm"
-															: isCurrentMonth
-																? "text-slate-700"
-																: "text-slate-300"
-													}`}
-												>
-													{date.getDate()}
-												</span>
-												<button
-													type="button"
-													className="w-5 h-5 flex items-center justify-center rounded-md text-slate-300 opacity-0 group-hover:opacity-100 hover:bg-slate-200 hover:text-slate-500 transition-all"
-												>
-													<Plus className="w-3 h-3" />
-												</button>
-											</div>
-
-											{/* Tasks */}
-											<div className="flex-1 overflow-hidden space-y-0.5">
-												{dateTasks.slice(0, 3).map((task) => {
-													const taskColor = getStatusColor(task);
-													return (
-														<div
-															key={task.id}
-															className="flex items-center gap-1 px-1.5 py-[3px] rounded-md cursor-pointer hover:brightness-95 transition-all truncate"
-															style={{ backgroundColor: `${taskColor}15` }}
-														>
-															<div
-																className="w-1.5 h-1.5 rounded-full shrink-0"
-																style={{ backgroundColor: taskColor }}
-															/>
-															<span
-																className="text-[10px] font-medium truncate leading-tight"
-																style={{ color: taskColor }}
-															>
-																{space?.prefix}-{task.taskNumber}{" "}
-																{task.title}
-															</span>
-														</div>
-													);
-												})}
-												{dateTasks.length > 3 && (
-													<span className="text-[9px] font-semibold text-slate-400 pl-1.5">
-														+{dateTasks.length - 3} more
+										return (
+											<div
+												key={date.toISOString()}
+												className={`border-r border-slate-100 last:border-r-0 p-1.5 flex flex-col min-h-0 overflow-hidden group transition-colors ${
+													isWeekend ? "bg-slate-50/40" : ""
+												} ${!isCurrentMonth ? "opacity-40" : ""} ${
+													isToday ? "bg-emerald-50/40" : ""
+												} hover:bg-slate-50`}
+											>
+												{/* Date number + Add button */}
+												<div className="flex items-center justify-between mb-1 shrink-0">
+													<span
+														className={`w-6 h-6 flex items-center justify-center text-[12px] font-semibold rounded-full ${
+															isToday
+																? "bg-[#0B6E4F] text-white shadow-sm"
+																: isCurrentMonth
+																	? "text-slate-700"
+																	: "text-slate-300"
+														}`}
+													>
+														{date.getDate()}
 													</span>
-												)}
+													<button
+														type="button"
+														className="w-5 h-5 flex items-center justify-center rounded-md text-slate-300 opacity-0 group-hover:opacity-100 hover:bg-slate-200 hover:text-slate-500 transition-all"
+													>
+														<Plus className="w-3 h-3" />
+													</button>
+												</div>
+
+												{/* Tasks */}
+												<div className="flex-1 overflow-hidden space-y-0.5">
+													{dateTasks.slice(0, 3).map((task) => {
+														const taskColor = getStatusColor(task);
+														return (
+															<div
+																key={task.id}
+																className="flex items-center gap-1 px-1.5 py-[3px] rounded-md cursor-pointer hover:brightness-95 transition-all truncate"
+																style={{ backgroundColor: `${taskColor}15` }}
+															>
+																<div
+																	className="w-1.5 h-1.5 rounded-full shrink-0"
+																	style={{ backgroundColor: taskColor }}
+																/>
+																<span
+																	className="text-[10px] font-medium truncate leading-tight"
+																	style={{ color: taskColor }}
+																>
+																	{space?.prefix}-{task.taskNumber} {task.title}
+																</span>
+															</div>
+														);
+													})}
+													{dateTasks.length > 3 && (
+														<span className="text-[9px] font-semibold text-slate-400 pl-1.5">
+															+{dateTasks.length - 3} more
+														</span>
+													)}
+												</div>
 											</div>
-										</div>
-									);
-								})}
-							</div>
-						);
-					})}
-				</div>
-			)}
+										);
+									})}
+								</div>
+							);
+						})}
+					</div>
+				)}
 			</div>
 		</div>
 	);

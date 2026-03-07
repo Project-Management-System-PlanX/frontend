@@ -122,10 +122,7 @@ export const useDeleteComment = (token?: string) => {
 export const useCreateAttachment = (token?: string) => {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: ({
-			taskId,
-			data,
-		}: { taskId: string; data: CreateTaskAttachmentPayload }) =>
+		mutationFn: ({ taskId, data }: { taskId: string; data: CreateTaskAttachmentPayload }) =>
 			tasksService.createAttachment(taskId, data, token),
 		onSuccess: (_, variables) => {
 			queryClient.invalidateQueries({ queryKey: taskKeys.detail(variables.taskId) });
@@ -136,10 +133,7 @@ export const useCreateAttachment = (token?: string) => {
 export const useDeleteAttachment = (token?: string) => {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: ({
-			taskId,
-			attachmentId,
-		}: { taskId: string; attachmentId: string }) =>
+		mutationFn: ({ taskId, attachmentId }: { taskId: string; attachmentId: string }) =>
 			tasksService.deleteAttachment(taskId, attachmentId, token),
 		onSuccess: (_, variables) => {
 			queryClient.invalidateQueries({ queryKey: taskKeys.detail(variables.taskId) });

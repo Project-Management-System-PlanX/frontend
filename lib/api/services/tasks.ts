@@ -101,5 +101,7 @@ export const tasksService = {
 		apiClient.get<TaskAttachment[]>(API_ENDPOINTS.TASK_ATTACHMENTS(taskId), { token }),
 
 	deleteAttachment: async (taskId: string, attachmentId: string, token?: string) =>
-		apiClient.delete<TaskAttachment>(API_ENDPOINTS.TASK_ATTACHMENT(taskId, attachmentId), { token }),
+		apiClient.delete<TaskAttachment>(API_ENDPOINTS.TASK_ATTACHMENT(taskId, attachmentId), {
+			token,
+		}),
 };

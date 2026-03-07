@@ -200,8 +200,7 @@ export function SpaceTimelineView({ spaceId }: { spaceId: string }) {
 									style={{ backgroundColor: task.color }}
 								/>
 								<span className="text-sm text-slate-600 truncate">
-									{space?.prefix}-{task.taskNumber}{" "}
-									{task.text}
+									{space?.prefix}-{task.taskNumber} {task.text}
 								</span>
 							</div>
 						))}

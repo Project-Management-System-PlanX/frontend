@@ -30,11 +30,7 @@ export function SpaceBoardView({ spaceId }: { spaceId: string }) {
 	const { token } = useSupabaseAuth();
 
 	const { data: space, isLoading: isSpaceLoading } = useSpace(spaceId, token || undefined);
-	const { data: serverTasks } = useTasks(
-		spaceId,
-		undefined,
-		token || undefined,
-	);
+	const { data: serverTasks } = useTasks(spaceId, undefined, token || undefined);
 	const { mutateAsync: createTask } = useCreateTask(token || undefined);
 	const { mutateAsync: moveTask } = useMoveTask(token || undefined);
 
@@ -311,8 +307,6 @@ export function SpaceBoardView({ spaceId }: { spaceId: string }) {
 						</ul>
 					);
 				})}
-
-
 			</div>
 		</div>
 	);

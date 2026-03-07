@@ -44,14 +44,14 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { useCreateTask } from "@/hooks/api/use-tasks";
 import { useSpaces } from "@/hooks/api/use-spaces";
+import { useCreateTask } from "@/hooks/api/use-tasks";
 import { useTeams } from "@/hooks/api/use-teams";
 import { useWorkspaceMembers } from "@/hooks/api/use-workspaces";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
+import type { Space, TaskStatus } from "@/lib/types/models";
 import { useAppStore } from "@/stores/app-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
-import type { Space, TaskStatus } from "@/lib/types/models";
 
 const WORK_TYPES = [
 	{ value: "TASK", label: "Task", icon: "T", color: "bg-green-500" },
@@ -227,9 +227,7 @@ export function CreateTaskModal({ open, onOpenChange, defaultSpaceId }: CreateTa
 								))}
 							</SelectContent>
 						</Select>
-						{errors.spaceId && (
-							<p className="text-xs text-red-500">{errors.spaceId}</p>
-						)}
+						{errors.spaceId && <p className="text-xs text-red-500">{errors.spaceId}</p>}
 					</div>
 
 					{/* Work Type * */}
@@ -245,7 +243,12 @@ export function CreateTaskModal({ open, onOpenChange, defaultSpaceId }: CreateTa
 								{WORK_TYPES.map((wt) => (
 									<SelectItem key={wt.value} value={wt.value}>
 										<span className="flex items-center gap-2">
-											<span className={`w-4 h-4 rounded text-[9px] font-bold text-white flex items-center justify-center ${wt.color}`}>{wt.icon}</span> {wt.label}
+											<span
+												className={`w-4 h-4 rounded text-[9px] font-bold text-white flex items-center justify-center ${wt.color}`}
+											>
+												{wt.icon}
+											</span>{" "}
+											{wt.label}
 										</span>
 									</SelectItem>
 								))}
@@ -264,9 +267,7 @@ export function CreateTaskModal({ open, onOpenChange, defaultSpaceId }: CreateTa
 							placeholder="Short title of the task"
 							className={errors.summary ? "border-red-500" : ""}
 						/>
-						{errors.summary && (
-							<p className="text-xs text-red-500">{errors.summary}</p>
-						)}
+						{errors.summary && <p className="text-xs text-red-500">{errors.summary}</p>}
 					</div>
 
 					{/* Description — full width */}
@@ -297,15 +298,19 @@ export function CreateTaskModal({ open, onOpenChange, defaultSpaceId }: CreateTa
 									const name = u
 										? [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username || u.email
 										: m.userId.slice(0, 8);
-									const initials = u?.firstName?.charAt(0)?.toUpperCase() || name.charAt(0)?.toUpperCase() || "?";
+									const initials =
+										u?.firstName?.charAt(0)?.toUpperCase() || name.charAt(0)?.toUpperCase() || "?";
 									const isMe = m.userId === user?.id;
 									return (
 										<SelectItem key={m.userId} value={m.userId}>
 											<span className="flex items-center gap-2">
-												<span className={`w-5 h-5 rounded-full ${isMe ? "bg-orange-500" : "bg-slate-500"} text-white flex items-center justify-center text-[9px] font-bold`}>
+												<span
+													className={`w-5 h-5 rounded-full ${isMe ? "bg-orange-500" : "bg-slate-500"} text-white flex items-center justify-center text-[9px] font-bold`}
+												>
 													{initials}
 												</span>
-												{name}{isMe ? " (me)" : ""}
+												{name}
+												{isMe ? " (me)" : ""}
 											</span>
 										</SelectItem>
 									);
@@ -325,9 +330,7 @@ export function CreateTaskModal({ open, onOpenChange, defaultSpaceId }: CreateTa
 								{PRIORITIES.map((p) => (
 									<SelectItem key={p.value} value={p.value}>
 										<span className="flex items-center gap-2">
-											<span
-												className={`w-2 h-2 rounded-full ${p.color}`}
-											/>
+											<span className={`w-2 h-2 rounded-full ${p.color}`} />
 											{p.label}
 										</span>
 									</SelectItem>
@@ -341,22 +344,13 @@ export function CreateTaskModal({ open, onOpenChange, defaultSpaceId }: CreateTa
 						<Label className="text-sm font-medium">Start Date</Label>
 						<Popover>
 							<PopoverTrigger asChild>
-								<Button
-									variant="outline"
-									className="justify-start text-left font-normal"
-								>
+								<Button variant="outline" className="justify-start text-left font-normal">
 									<CalendarIcon className="mr-2 h-4 w-4" />
-									{startDate
-										? startDate.toLocaleDateString()
-										: "Pick a date"}
+									{startDate ? startDate.toLocaleDateString() : "Pick a date"}
 								</Button>
 							</PopoverTrigger>
 							<PopoverContent className="w-auto p-0" align="start">
-								<Calendar
-									mode="single"
-									selected={startDate}
-									onSelect={setStartDate}
-								/>
+								<Calendar mode="single" selected={startDate} onSelect={setStartDate} />
 							</PopoverContent>
 						</Popover>
 					</div>
@@ -366,22 +360,13 @@ export function CreateTaskModal({ open, onOpenChange, defaultSpaceId }: CreateTa
 						<Label className="text-sm font-medium">Due Date</Label>
 						<Popover>
 							<PopoverTrigger asChild>
-								<Button
-									variant="outline"
-									className="justify-start text-left font-normal"
-								>
+								<Button variant="outline" className="justify-start text-left font-normal">
 									<CalendarIcon className="mr-2 h-4 w-4" />
-									{dueDate
-										? dueDate.toLocaleDateString()
-										: "Pick a date"}
+									{dueDate ? dueDate.toLocaleDateString() : "Pick a date"}
 								</Button>
 							</PopoverTrigger>
 							<PopoverContent className="w-auto p-0" align="start">
-								<Calendar
-									mode="single"
-									selected={dueDate}
-									onSelect={setDueDate}
-								/>
+								<Calendar mode="single" selected={dueDate} onSelect={setDueDate} />
 							</PopoverContent>
 						</Popover>
 					</div>
@@ -439,12 +424,7 @@ export function CreateTaskModal({ open, onOpenChange, defaultSpaceId }: CreateTa
 								placeholder="Type a label and press Enter"
 								className="flex-1"
 							/>
-							<Button
-								type="button"
-								variant="outline"
-								size="sm"
-								onClick={handleAddLabel}
-							>
+							<Button type="button" variant="outline" size="sm" onClick={handleAddLabel}>
 								<Plus className="w-3 h-3" />
 							</Button>
 						</div>
@@ -458,9 +438,7 @@ export function CreateTaskModal({ open, onOpenChange, defaultSpaceId }: CreateTa
 										{label}
 										<button
 											type="button"
-											onClick={() =>
-												setLabels(labels.filter((l) => l !== label))
-											}
+											onClick={() => setLabels(labels.filter((l) => l !== label))}
 											className="hover:text-red-500"
 										>
 											<X className="w-3 h-3" />
@@ -487,9 +465,7 @@ export function CreateTaskModal({ open, onOpenChange, defaultSpaceId }: CreateTa
 						<Label className="text-sm font-medium">Restrict To</Label>
 						<Select
 							value={restrictTo || "none"}
-							onValueChange={(v) =>
-								setRestrictTo(v === "none" ? undefined : v)
-							}
+							onValueChange={(v) => setRestrictTo(v === "none" ? undefined : v)}
 						>
 							<SelectTrigger>
 								<SelectValue placeholder="Select role" />
@@ -524,8 +500,7 @@ export function CreateTaskModal({ open, onOpenChange, defaultSpaceId }: CreateTa
 							/>
 							<Upload className="w-5 h-5 text-slate-400 mx-auto mb-1" />
 							<p className="text-xs text-slate-500">
-								Drag & drop or{" "}
-								<span className="text-[#0B6E4F] font-medium">browse</span>
+								Drag & drop or <span className="text-[#0B6E4F] font-medium">browse</span>
 							</p>
 						</div>
 						{files.length > 0 && (
@@ -544,9 +519,7 @@ export function CreateTaskModal({ open, onOpenChange, defaultSpaceId }: CreateTa
 										</div>
 										<button
 											type="button"
-											onClick={() =>
-												setFiles(files.filter((_, i) => i !== idx))
-											}
+											onClick={() => setFiles(files.filter((_, i) => i !== idx))}
 											className="text-slate-400 hover:text-red-500"
 										>
 											<X className="w-3.5 h-3.5" />
@@ -584,14 +557,10 @@ export function CreateTaskModal({ open, onOpenChange, defaultSpaceId }: CreateTa
 					{/* Flagged — full width */}
 					<div className="col-span-2 flex items-center justify-between rounded-lg border border-slate-200 p-3">
 						<div className="flex items-center gap-2">
-							<Flag
-								className={`w-4 h-4 ${flagged ? "text-red-500" : "text-slate-400"}`}
-							/>
+							<Flag className={`w-4 h-4 ${flagged ? "text-red-500" : "text-slate-400"}`} />
 							<div>
 								<Label className="text-sm font-medium">Flagged</Label>
-								<p className="text-xs text-slate-400">
-									Mark as impediment
-								</p>
+								<p className="text-xs text-slate-400">Mark as impediment</p>
 							</div>
 						</div>
 						<Switch checked={flagged} onCheckedChange={setFlagged} />
@@ -601,10 +570,7 @@ export function CreateTaskModal({ open, onOpenChange, defaultSpaceId }: CreateTa
 				{/* Footer */}
 				<DialogFooter className="flex items-center justify-between gap-2 pt-4 border-t border-slate-200">
 					<label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
-						<Checkbox
-							checked={createAnother}
-							onCheckedChange={(v) => setCreateAnother(!!v)}
-						/>
+						<Checkbox checked={createAnother} onCheckedChange={(v) => setCreateAnother(!!v)} />
 						Create another
 					</label>
 					<div className="flex items-center gap-2">
