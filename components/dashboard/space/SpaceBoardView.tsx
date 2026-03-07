@@ -347,6 +347,8 @@ function TaskCard({
 	return (
 		<div
 			draggable
+			role="button"
+			tabIndex={0}
 			onDragStart={(e) => onDragStart(e, task.id)}
 			onDragEnd={onDragEnd}
 			onClick={onClick}

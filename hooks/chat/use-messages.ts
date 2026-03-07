@@ -128,7 +128,7 @@ export function useMessages(channelId: string | null) {
 				},
 				async (payload: any) => {
 					console.log("Realtime event received:", payload);
-					let userData;
+					let userData: Record<string, unknown> | null = null;
 					try {
 						const res = await supabase
 							.from("users")
@@ -172,7 +172,7 @@ export function useMessages(channelId: string | null) {
 	const sendMessage = useCallback(
 		async (
 			content: string,
-			userId: string,
+			_userId: string,
 			fileDetails?: { url: string; name: string; type: string; size: number },
 		) => {
 			if (!channelId || (!content.trim() && !fileDetails)) return;

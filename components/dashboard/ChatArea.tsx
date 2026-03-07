@@ -253,6 +253,7 @@ export function ChatArea({
 									stroke="currentColor"
 									strokeWidth={2}
 								>
+									<title>Chat icon</title>
 									<path
 										strokeLinecap="round"
 										strokeLinejoin="round"

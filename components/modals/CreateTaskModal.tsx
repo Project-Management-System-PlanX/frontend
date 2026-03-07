@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarIcon, Loader2, Paperclip, Plus, Upload, X } from "lucide-react";
+import { CalendarIcon, Flag, Loader2, Paperclip, Plus, Upload, X } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -29,7 +29,7 @@ import { useCreateTask } from "@/hooks/api/use-tasks";
 import { useAddTeamMember, useCreateTeam, useTeams } from "@/hooks/api/use-teams";
 import { useWorkspaceMembers } from "@/hooks/api/use-workspaces";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
-import type { Space } from "@/lib/types/models";
+import type { Space, WorkspaceMember } from "@/lib/types/models";
 import { useAppStore } from "@/stores/app-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 
@@ -219,8 +219,9 @@ export function CreateTaskModal({
 	}, []);
 
 	const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-		if (e.target.files) {
-			setFiles((prev) => [...prev, ...Array.from(e.target.files!)]);
+		const selectedFiles = e.target.files;
+		if (selectedFiles) {
+			setFiles((prev) => [...prev, ...Array.from(selectedFiles)]);
 		}
 	}, []);
 
@@ -325,13 +326,24 @@ export function CreateTaskModal({
 							</SelectTrigger>
 							<SelectContent>
 								<SelectItem value="__none">Unassigned</SelectItem>
-								{(members as any[])?.map((m: any) => {
+								{(
+									members as (WorkspaceMember & {
+										user?: {
+											firstName?: string;
+											lastName?: string;
+											username?: string;
+											email?: string;
+										};
+									})[]
+								)?.map((m) => {
 									const u = m.user;
 									const name = u
 										? [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username || u.email
 										: m.userId.slice(0, 8);
 									const initials =
-										u?.firstName?.charAt(0)?.toUpperCase() || name.charAt(0)?.toUpperCase() || "?";
+										u?.firstName?.charAt(0)?.toUpperCase() ||
+										(name ?? "").charAt(0)?.toUpperCase() ||
+										"?";
 									const isMe = m.userId === (supabaseUser?.id || user?.id);
 									return (
 										<SelectItem key={m.userId} value={m.userId}>
@@ -602,6 +614,8 @@ export function CreateTaskModal({
 					<div className="col-span-2 grid gap-1.5">
 						<Label className="text-sm font-medium">Attachment</Label>
 						<div
+							role="button"
+							tabIndex={0}
 							onDrop={handleFileDrop}
 							onDragOver={(e) => e.preventDefault()}
 							className="border-2 border-dashed border-slate-200 rounded-lg p-3 text-center hover:border-[#0B6E4F] hover:bg-[#0B6E4F]/5 transition-colors cursor-pointer"
@@ -624,9 +638,9 @@ export function CreateTaskModal({
 						</div>
 						{files.length > 0 && (
 							<div className="space-y-1 mt-1">
-								{files.map((file, idx) => (
+								{files.map((file) => (
 									<div
-										key={`${file.name}-${idx}`}
+										key={`${file.name}-${file.size}-${file.lastModified}`}
 										className="flex items-center justify-between px-2 py-1.5 bg-slate-50 rounded text-sm"
 									>
 										<div className="flex items-center gap-2 min-w-0">
@@ -638,7 +652,7 @@ export function CreateTaskModal({
 										</div>
 										<button
 											type="button"
-											onClick={() => setFiles(files.filter((_, i) => i !== idx))}
+											onClick={() => setFiles(files.filter((f) => f !== file))}
 											className="text-slate-400 hover:text-red-500"
 										>
 											<X className="w-3.5 h-3.5" />
@@ -742,10 +756,16 @@ export function CreateTaskModal({
 
 				{/* Footer */}
 				<DialogFooter className="flex items-center justify-between gap-2 pt-4 border-t border-slate-200">
-					<label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
-						<Checkbox checked={createAnother} onCheckedChange={(v) => setCreateAnother(!!v)} />
-						Create another
-					</label>
+					<div className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+						<Checkbox
+							id="create-another"
+							checked={createAnother}
+							onCheckedChange={(v) => setCreateAnother(!!v)}
+						/>
+						<Label htmlFor="create-another" className="text-sm text-slate-600 cursor-pointer">
+							Create another
+						</Label>
+					</div>
 					<div className="flex items-center gap-2">
 						<Button
 							variant="outline"

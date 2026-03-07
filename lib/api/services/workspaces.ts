@@ -69,8 +69,8 @@ export const workspaceService = {
 		apiClient.get<{
 			id: string;
 			token: string;
-			workspace_id: string;
-			expires_at: string;
+			workspaceId: string;
+			expiresAt: string;
 			workspace: { id: string; name: string; slug: string; avatar: string | null };
 		}>(API_ENDPOINTS.GET_INVITE(inviteToken)),
 
