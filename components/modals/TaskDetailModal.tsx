@@ -10,9 +10,7 @@ import {
 	Flag,
 	ListTodo,
 	Lock,
-	Maximize2,
 	MoreHorizontal,
-	Plus,
 	Search,
 	Send,
 	Sparkles,
@@ -21,6 +19,7 @@ import {
 	X,
 } from "lucide-react";
 import { useRef, useState } from "react";
+import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useSpace } from "@/hooks/api/use-spaces";
@@ -50,7 +49,7 @@ export function TaskDetailModal({
 }: TaskDetailModalProps) {
 	const { getMember } = useMemberLookup();
 	const { token, user } = useSupabaseAuth();
-	const [isCreatingSubtask, setIsCreatingSubtask] = useState(false);
+	const [_isCreatingSubtask, setIsCreatingSubtask] = useState(false);
 	const [subtaskTitle, setSubtaskTitle] = useState("");
 	const [commentText, setCommentText] = useState("");
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -129,7 +128,7 @@ export function TaskDetailModal({
 		}
 	};
 
-	const handleSubtaskKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+	const _handleSubtaskKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
 		if (e.key === "Enter") {
 			e.preventDefault();
 			handleCreateSubtask();
@@ -143,6 +142,7 @@ export function TaskDetailModal({
 	return (
 		<Dialog open={isOpen} onOpenChange={(val) => !val && onClose()}>
 			<DialogContent
+				showCloseButton={false}
 				className="max-w-[1200px] w-[95vw] h-[85vh] p-0 bg-white border-slate-200 text-slate-800 flex flex-col overflow-hidden rounded-xl shadow-2xl"
 				style={{ fontFamily: "var(--font-figtree), Figtree" }}
 			>
@@ -182,10 +182,11 @@ export function TaskDetailModal({
 								<MoreHorizontal className="w-4 h-4" />
 							</button>
 							<button
+								onClick={onClose}
 								type="button"
 								className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-500"
 							>
-								<Maximize2 className="w-4 h-4" />
+								<X className="w-4 h-4" />
 							</button>
 						</div>
 					</div>
@@ -267,14 +268,32 @@ export function TaskDetailModal({
 									</MetaRow>
 
 									<MetaRow label="Due date" icon={<CalendarIcon className="w-3.5 h-3.5" />}>
-										{task.dueDate ? (
-											<span className="flex items-center gap-1.5 text-blue-600 font-medium bg-blue-50 px-2 py-0.5 rounded border border-blue-100 text-[13px]">
-												<CalendarIcon className="w-3.5 h-3.5" />
-												{format(new Date(task.dueDate), "MMM d, yyyy")}
-											</span>
-										) : (
-											<span className="text-[13px] text-slate-400">Not set</span>
-										)}
+										<Popover>
+											<PopoverTrigger asChild>
+												<button
+													type="button"
+													className="flex items-center gap-1.5 text-blue-600 font-medium bg-blue-50 px-2 py-0.5 rounded border border-blue-100 text-[13px] hover:bg-blue-100 transition-colors"
+												>
+													<CalendarIcon className="w-3.5 h-3.5" />
+													{task.dueDate ? format(new Date(task.dueDate), "MMM d, yyyy") : "Not set"}
+												</button>
+											</PopoverTrigger>
+											<PopoverContent className="w-auto p-0 bg-white" align="start">
+												<Calendar
+													mode="single"
+													selected={task.dueDate ? new Date(task.dueDate) : undefined}
+													onSelect={(date) => {
+														const iso = date
+															? new Date(
+																	date.getTime() - date.getTimezoneOffset() * 60000,
+																).toISOString()
+															: null;
+														updateTask({ id: task.id, data: { dueDate: iso } });
+													}}
+													initialFocus
+												/>
+											</PopoverContent>
+										</Popover>
 									</MetaRow>
 
 									{task.parent && (
@@ -416,50 +435,6 @@ export function TaskDetailModal({
 									</div>
 								</>
 							)}
-
-							{/* Inline Add subtask */}
-							<div className="mt-4">
-								{isCreatingSubtask ? (
-									<div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-blue-300 bg-blue-50/50 ring-2 ring-blue-100">
-										<ListTodo className="w-4 h-4 text-blue-500 shrink-0" />
-										<input
-											autoFocus
-											value={subtaskTitle}
-											onChange={(e) => setSubtaskTitle(e.target.value)}
-											onKeyDown={handleSubtaskKeyDown}
-											placeholder="Subtask title… (Enter to save, Esc to cancel)"
-											className="flex-1 bg-transparent text-[13px] text-slate-800 placeholder:text-slate-400 outline-none"
-										/>
-										<button
-											type="button"
-											onClick={handleCreateSubtask}
-											disabled={!subtaskTitle.trim() || isCreatingSubtaskTask}
-											className="px-2.5 py-1 text-[12px] font-semibold bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-40"
-										>
-											{isCreatingSubtaskTask ? "Saving…" : "Save"}
-										</button>
-										<button
-											type="button"
-											onClick={() => {
-												setIsCreatingSubtask(false);
-												setSubtaskTitle("");
-											}}
-											className="p-1 hover:bg-red-100 text-slate-400 hover:text-red-500 rounded transition-colors"
-										>
-											<X className="w-3.5 h-3.5" />
-										</button>
-									</div>
-								) : (
-									<button
-										type="button"
-										onClick={() => setIsCreatingSubtask(true)}
-										className="flex items-center gap-2 px-3 py-2 text-[13px] text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors w-full font-medium border border-dashed border-slate-300 hover:border-slate-400"
-									>
-										<Plus className="w-4 h-4" />
-										Add subtask
-									</button>
-								)}
-							</div>
 						</div>
 					</div>
 

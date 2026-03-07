@@ -38,6 +38,30 @@ export const workspaceService = {
 	delete: async (id: string, token?: string) =>
 		apiClient.delete<Workspace>(API_ENDPOINTS.WORKSPACE_BY_ID(id), { token }),
 
+	getAnalytics: async (id: string, token?: string) =>
+		apiClient.get<{
+			teamMembers: number;
+			activeTasks: number;
+			completedTasks: number;
+			totalMessages: number;
+			filesShared: number;
+			weeklyActivity: { day: string; count: number }[];
+			activeChannels: { id: string; name: string; _count: { messages: number } }[];
+			upcomingDeadlines: {
+				id: string;
+				title: string;
+				dueDate: string;
+				space: { prefix: string };
+			}[];
+			recentActivity: {
+				id: string;
+				content: string;
+				createdAt: string;
+				user: { firstName: string | null; email: string };
+				channel: { name: string; type: string };
+			}[];
+		}>(`${API_ENDPOINTS.WORKSPACE_BY_ID(id)}/analytics`, { token }),
+
 	// Member Management
 	addMember: async (workspaceId: string, data: AddWorkspaceMemberPayload, token?: string) =>
 		apiClient.post<WorkspaceMember>(API_ENDPOINTS.WORKSPACE_MEMBERS(workspaceId), data, { token }),

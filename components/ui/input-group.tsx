@@ -45,6 +45,7 @@ function InputGroupAddon({
 	...props
 }: React.ComponentProps<"div"> & VariantProps<typeof inputGroupAddonVariants>) {
 	return (
+		// biome-ignore lint/a11y/noStaticElementInteractions: presentation div focuses input on click
 		<div
 			role="presentation"
 			data-slot="input-group-addon"

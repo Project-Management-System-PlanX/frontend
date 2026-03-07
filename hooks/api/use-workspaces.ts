@@ -70,3 +70,11 @@ export const useWorkspaceMembers = (workspaceId: string, token?: string) => {
 		enabled: !!workspaceId,
 	});
 };
+
+export const useWorkspaceAnalytics = (workspaceId: string, token?: string) => {
+	return useQuery({
+		queryKey: [...workspaceKeys.detail(workspaceId), "analytics"],
+		queryFn: () => workspaceService.getAnalytics(workspaceId, token),
+		enabled: !!workspaceId && !!token,
+	});
+};

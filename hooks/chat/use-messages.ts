@@ -43,6 +43,7 @@ export interface Message {
 }
 
 // Normalize message fields between camelCase (backend) and snake_case (Supabase Realtime)
+// biome-ignore lint/suspicious/noExplicitAny: normalizes between camelCase and snake_case from different sources
 function normalizeMessage(msg: any): Message {
 	return {
 		...msg,
@@ -89,6 +90,7 @@ export function useMessages(channelId: string | null) {
 			} = await supabaseRef.current.auth.getSession();
 			const token = session?.access_token;
 
+			// biome-ignore lint/suspicious/noExplicitAny: API returns untyped array
 			const data = await fetchClient<any[]>(API_ENDPOINTS.MESSAGES_BY_CHANNEL(channelId), {
 				token,
 				method: "GET",
@@ -126,6 +128,7 @@ export function useMessages(channelId: string | null) {
 					table: "messages",
 					filter: `channel_id=eq.${channelId}`,
 				},
+				// biome-ignore lint/suspicious/noExplicitAny: Supabase realtime payload type
 				async (payload: any) => {
 					console.log("Realtime event received:", payload);
 					let userData: Record<string, unknown> | null = null;
@@ -185,6 +188,7 @@ export function useMessages(channelId: string | null) {
 			const userEmail = session?.user?.email || "";
 			const userMeta = session?.user?.user_metadata;
 
+			// biome-ignore lint/suspicious/noExplicitAny: message body built dynamically
 			const body: any = {
 				channelId,
 				content: content.trim() || null,
@@ -197,6 +201,7 @@ export function useMessages(channelId: string | null) {
 				body.fileSize = fileDetails.size;
 			}
 
+			// biome-ignore lint/suspicious/noExplicitAny: API response type
 			const result = await fetchClient<any>(API_ENDPOINTS.MESSAGES, {
 				token,
 				method: "POST",

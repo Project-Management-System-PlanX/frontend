@@ -180,8 +180,12 @@ export function CreateTaskModal({
 				workType,
 				priority,
 				assigneeId: resolvedAssigneeId,
-				dueDate: dueDate?.toISOString(),
-				startDate: startDate?.toISOString(),
+				dueDate: dueDate
+					? new Date(dueDate.getTime() - dueDate.getTimezoneOffset() * 60000).toISOString()
+					: undefined,
+				startDate: startDate
+					? new Date(startDate.getTime() - startDate.getTimezoneOffset() * 60000).toISOString()
+					: undefined,
 				teamId: finalTeamId || undefined,
 				parentId: parentId,
 			});
@@ -388,13 +392,13 @@ export function CreateTaskModal({
 						<Label className="text-sm font-medium">Start Date</Label>
 						<Popover>
 							<PopoverTrigger asChild>
-								<Button variant="outline" className="justify-start text-left font-normal">
+								<Button variant="outline" className="justify-start text-left font-normal bg-white">
 									<CalendarIcon className="mr-2 h-4 w-4" />
 									{startDate ? startDate.toLocaleDateString() : "Pick a date"}
 								</Button>
 							</PopoverTrigger>
-							<PopoverContent className="w-auto p-0" align="start">
-								<Calendar mode="single" selected={startDate} onSelect={setStartDate} />
+							<PopoverContent className="w-auto p-0 bg-white" align="start">
+								<Calendar mode="single" selected={startDate} onSelect={setStartDate} initialFocus />
 							</PopoverContent>
 						</Popover>
 					</div>
@@ -404,13 +408,13 @@ export function CreateTaskModal({
 						<Label className="text-sm font-medium">Due Date</Label>
 						<Popover>
 							<PopoverTrigger asChild>
-								<Button variant="outline" className="justify-start text-left font-normal">
+								<Button variant="outline" className="justify-start text-left font-normal bg-white">
 									<CalendarIcon className="mr-2 h-4 w-4" />
 									{dueDate ? dueDate.toLocaleDateString() : "Pick a date"}
 								</Button>
 							</PopoverTrigger>
-							<PopoverContent className="w-auto p-0" align="start">
-								<Calendar mode="single" selected={dueDate} onSelect={setDueDate} />
+							<PopoverContent className="w-auto p-0 bg-white" align="start">
+								<Calendar mode="single" selected={dueDate} onSelect={setDueDate} initialFocus />
 							</PopoverContent>
 						</Popover>
 					</div>
@@ -459,6 +463,7 @@ export function CreateTaskModal({
 											<SelectValue placeholder="Add members..." />
 										</SelectTrigger>
 										<SelectContent>
+											{/* biome-ignore lint/suspicious/noExplicitAny: members include nested user from API */}
 											{(members as any[])
 												?.filter(
 													(m) =>
@@ -484,6 +489,7 @@ export function CreateTaskModal({
 									{newTeamMembers.length > 0 && (
 										<div className="flex flex-wrap gap-1.5 mt-1">
 											{newTeamMembers.map((memberId) => {
+												// biome-ignore lint/suspicious/noExplicitAny: members include nested user from API
 												const m = (members as any[])?.find((x) => x.userId === memberId);
 												const u = m?.user;
 												const name = u
@@ -595,6 +601,7 @@ export function CreateTaskModal({
 							</div>
 							<span className="text-slate-700">
 								{(() => {
+									// biome-ignore lint/suspicious/noExplicitAny: members include nested user from API
 									const m = (members as any[])?.find(
 										(x) => x.userId === (supabaseUser?.id || user?.id),
 									);

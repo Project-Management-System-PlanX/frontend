@@ -17,7 +17,9 @@ export function SpaceListView({ spaceId }: { spaceId: string }) {
 	const { token, user } = useSupabaseAuth();
 	const { data: space } = useSpace(spaceId, token || undefined);
 	const { data: tasks, isLoading } = useTasks(spaceId, { assignee: user?.id }, token || undefined);
-	const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+	const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+
+	const selectedTask = tasks?.find((t) => t.id === selectedTaskId) || null;
 
 	return (
 		<>
@@ -54,7 +56,7 @@ export function SpaceListView({ spaceId }: { spaceId: string }) {
 										key={task.id}
 										task={task}
 										prefix={space?.prefix || ""}
-										onClick={() => setSelectedTask(task)}
+										onClick={() => setSelectedTaskId(task.id)}
 									/>
 								))
 							) : (
@@ -67,8 +69,8 @@ export function SpaceListView({ spaceId }: { spaceId: string }) {
 
 			<TaskDetailModal
 				task={selectedTask}
-				isOpen={!!selectedTask}
-				onClose={() => setSelectedTask(null)}
+				isOpen={!!selectedTaskId}
+				onClose={() => setSelectedTaskId(null)}
 				spaceName={space?.name}
 			/>
 		</>
@@ -110,9 +112,15 @@ function TaskRow({ task, prefix, onClick }: { task: Task; prefix: string; onClic
 	})();
 
 	return (
-		<button
-			type="button"
+		// biome-ignore lint/a11y/noStaticElementInteractions: Row click handler
+		<div
 			onClick={onClick}
+			onKeyDown={(e) => {
+				if (e.key === "Enter" || e.key === " ") {
+					e.preventDefault();
+					onClick();
+				}
+			}}
 			className={`grid ${COL_GRID} w-full text-left gap-0 items-center hover:bg-slate-50/80 transition-colors group cursor-pointer border-none bg-transparent p-0 m-0`}
 		>
 			{/* Checkbox */}
@@ -246,6 +254,6 @@ function TaskRow({ task, prefix, onClick }: { task: Task; prefix: string; onClic
 					<MoreHorizontal className="w-4 h-4 text-slate-400" />
 				</button>
 			</div>
-		</button>
+		</div>
 	);
 }
