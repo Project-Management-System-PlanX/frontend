@@ -104,4 +104,16 @@ export const workspaceService = {
 			undefined,
 			{ token },
 		),
+
+	inviteByEmail: async (
+		workspaceId: string,
+		data: { emails: string[]; channelIds?: string[] },
+		token?: string,
+	) =>
+		apiClient.post<{
+			inviteToken: string;
+			sent: string[];
+			failed: string[];
+			channelIds: string[];
+		}>(API_ENDPOINTS.INVITE_BY_EMAIL(workspaceId), data, { token }),
 };

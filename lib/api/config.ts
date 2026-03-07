@@ -30,6 +30,7 @@ export const API_ENDPOINTS = {
 
 	// Invites
 	CREATE_INVITE: (workspaceId: string) => `/workspaces/${workspaceId}/invite`,
+	INVITE_BY_EMAIL: (workspaceId: string) => `/workspaces/${workspaceId}/invite-email`,
 	GET_INVITE: (token: string) => `/workspaces/invite/${token}`,
 	ACCEPT_INVITE: (token: string) => `/workspaces/invite/${token}/accept`,
 
