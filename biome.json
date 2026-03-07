@@ -57,5 +57,13 @@
 				"organizeImports": "on"
 			}
 		}
-	}
+	},
+	"overrides": [
+		{
+			"includes": ["public/svar-grid.css"],
+			"linter": {
+				"enabled": false
+			}
+		}
+	]
 }

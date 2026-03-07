@@ -12,7 +12,7 @@ import "@livekit/components-styles";
 import { type Participant, Track, type TrackPublication } from "livekit-client";
 import { Loader2, Mic, MicOff, MonitorUp, PhoneOff, Users, Video, VideoOff } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { useEndMeeting, useLeaveMeeting } from "@/hooks/api/use-meetings";
+import { useLeaveMeeting } from "@/hooks/api/use-meetings";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useMeetingStore } from "@/stores/meeting-store";
 
@@ -147,16 +147,8 @@ function MeetingTimer() {
 
 // ─── Room Content (inside LiveKitRoom) ────────────────────────────────────────
 
-function RoomContent({
-	meetingId,
-	isCreator,
-	onLeave,
-}: {
-	meetingId: string;
-	isCreator?: boolean;
-	onLeave: () => void;
-}) {
-	const room = useRoomContext();
+function RoomContent({ isCreator, onLeave }: { isCreator?: boolean; onLeave: () => void }) {
+	useRoomContext();
 	const { localParticipant } = useLocalParticipant();
 	const participants = useParticipants();
 	const [isCamOn, setIsCamOn] = useState(true);
@@ -170,8 +162,6 @@ function RoomContent({
 			.getTrackPublications()
 			.some((t: TrackPublication) => t.source === Track.Source.ScreenShare && t.track),
 	);
-
-	const remoteParticipants = participants.filter((p) => !p.isLocal);
 
 	// Toggle camera
 	const toggleCamera = useCallback(async () => {
@@ -414,7 +404,6 @@ export function VideoRoom({ meetingId, isCreator }: VideoRoomProps) {
 	const leaveCallStore = useMeetingStore((s) => s.leaveCall);
 
 	const { mutateAsync: leaveMeeting } = useLeaveMeeting(token);
-	const { mutateAsync: endMeeting } = useEndMeeting(token);
 	const [isLeaving, setIsLeaving] = useState(false);
 
 	const handleDisconnect = useCallback(async () => {
@@ -453,7 +442,7 @@ export function VideoRoom({ meetingId, isCreator }: VideoRoomProps) {
 				style={{ width: "100%", height: "100%" }}
 			>
 				<RoomAudioRenderer />
-				<RoomContent meetingId={meetingId} isCreator={isCreator} onLeave={handleDisconnect} />
+				<RoomContent isCreator={isCreator} onLeave={handleDisconnect} />
 			</LiveKitRoom>
 		</div>
 	);

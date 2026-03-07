@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageSquare, Lock, Users, Hash } from "lucide-react";
+import { Hash, Lock, MessageSquare, Users } from "lucide-react";
 
 export default function ChatPage() {
 	return (
@@ -23,8 +23,7 @@ export default function ChatPage() {
 				</h2>
 
 				<p className="text-sm text-slate-500 leading-relaxed mb-8">
-					Select a channel or direct message from the sidebar to start chatting
-					with your team.
+					Select a channel or direct message from the sidebar to start chatting with your team.
 				</p>
 
 				{/* Feature pills */}
@@ -64,9 +63,7 @@ export default function ChatPage() {
 									<Icon className={`w-4.5 h-4.5 ${item.color}`} />
 								</div>
 								<div className="text-left">
-									<p className="text-sm font-semibold text-slate-700">
-										{item.label}
-									</p>
+									<p className="text-sm font-semibold text-slate-700">{item.label}</p>
 									<p className="text-xs text-slate-400">{item.desc}</p>
 								</div>
 							</div>
