@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import type { DragEvent, KeyboardEvent } from "react";
 import { useEffect, useRef, useState } from "react";
+import { TaskDetailModal } from "@/components/modals/TaskDetailModal";
 import { useSpace } from "@/hooks/api/use-spaces";
 import { useCreateTask, useMoveTask, useTasks } from "@/hooks/api/use-tasks";
 import { useMemberLookup } from "@/hooks/use-member-lookup";
@@ -27,14 +28,15 @@ const PRIORITY_CONFIG: Record<string, { label: string; color: string; bg: string
 };
 
 export function SpaceBoardView({ spaceId }: { spaceId: string }) {
-	const { token } = useSupabaseAuth();
+	const { token, user } = useSupabaseAuth();
 
 	const { data: space, isLoading: isSpaceLoading } = useSpace(spaceId, token || undefined);
-	const { data: serverTasks } = useTasks(spaceId, undefined, token || undefined);
+	const { data: serverTasks } = useTasks(spaceId, { assignee: user?.id }, token || undefined);
 	const { mutateAsync: createTask } = useCreateTask(token || undefined);
 	const { mutateAsync: moveTask } = useMoveTask(token || undefined);
 
 	const [tasks, setTasks] = useState<Task[]>([]);
+	const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 	const [isCreating, setIsCreating] = useState<string | null>(null);
 	const [newTitle, setNewTitle] = useState("");
 	const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -190,125 +192,135 @@ export function SpaceBoardView({ spaceId }: { spaceId: string }) {
 	}
 
 	return (
-		<div
-			className="flex-1 overflow-x-auto bg-slate-50/50 animate-[fadeInUp_0.3s_ease-out]"
-			style={{ fontFamily: "var(--font-figtree), Figtree" }}
-		>
-			<div className="p-6 flex gap-5 min-h-full min-w-max">
-				{columns.map((col: TaskStatus) => {
-					const colTasks = getColumnTasks(col.id);
-					return (
-						<ul
-							key={col.id}
-							className="w-[300px] flex flex-col shrink-0 list-none p-0 m-0"
-							aria-label={`${col.name} tasks`}
-							onDrop={(e) => handleDrop(e, col)}
-							onDragOver={handleDragOver}
-						>
-							<div className="flex items-center justify-between mb-4 px-1">
-								<div className="flex items-center gap-2.5">
-									<div
-										className="w-2.5 h-2.5 rounded-full"
-										style={{ backgroundColor: col.color }}
-									/>
-									<span className="text-[13px] font-bold text-slate-700">{col.name}</span>
-									<span className="px-2 py-0.5 rounded-full text-[11px] font-bold tabular-nums bg-slate-100 text-slate-500">
-										{colTasks.length}
-									</span>
-								</div>
-								<div className="flex items-center gap-1">
-									<button
-										type="button"
-										onClick={() => setIsCreating(col.id)}
-										className="p-1 rounded-md hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors"
-									>
-										<Plus className="w-4 h-4" />
-									</button>
-									<button
-										type="button"
-										className="p-1 rounded-md hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors"
-									>
-										<MoreHorizontal className="w-4 h-4" />
-									</button>
-								</div>
-							</div>
-
-							<div className="h-[3px] rounded-full mb-3" style={{ backgroundColor: col.color }} />
-
-							<div className="flex flex-col gap-2.5 flex-1 min-h-[80px]">
-								{colTasks.map((task) => (
-									<TaskCard
-										key={task.id}
-										task={task}
-										isDone={col.isDone}
-										prefix={space?.prefix || ""}
-										onDragStart={handleDragStart}
-										onDragEnd={handleDragEnd}
-									/>
-								))}
-
-								{isCreating === col.id && (
-									<div className="bg-white p-3 rounded-xl border-2 border-[#0B6E4F] shadow-md animate-[fadeIn_0.15s_ease-out]">
-										<textarea
-											ref={inputRef}
-											value={newTitle}
-											onChange={(e) => setNewTitle(e.target.value)}
-											onKeyDown={(e) => handleKeyDown(e, col.id)}
-											onBlur={() => {
-												if (!newTitle.trim()) setIsCreating(null);
-											}}
-											placeholder="What needs to be done?"
-											className="w-full text-[13px] text-slate-800 placeholder:text-slate-400 resize-none outline-none bg-transparent min-h-[44px]"
+		<>
+			<div
+				className="flex-1 overflow-x-auto bg-slate-50/50 animate-[fadeInUp_0.3s_ease-out]"
+				style={{ fontFamily: "var(--font-figtree), Figtree" }}
+			>
+				<div className="p-6 flex gap-5 min-h-full min-w-max">
+					{columns.map((col: TaskStatus) => {
+						const colTasks = getColumnTasks(col.id);
+						return (
+							<ul
+								key={col.id}
+								className="w-[300px] flex flex-col shrink-0 list-none p-0 m-0"
+								aria-label={`${col.name} tasks`}
+								onDrop={(e) => handleDrop(e, col)}
+								onDragOver={handleDragOver}
+							>
+								<div className="flex items-center justify-between mb-4 px-1">
+									<div className="flex items-center gap-2.5">
+										<div
+											className="w-2.5 h-2.5 rounded-full"
+											style={{ backgroundColor: col.color }}
 										/>
-										<div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">
-											<div className="flex items-center gap-1.5">
-												<button
-													type="button"
-													className="p-1 rounded hover:bg-slate-100 text-slate-400"
-												>
-													<User className="w-3.5 h-3.5" />
-												</button>
-												<button
-													type="button"
-													className="p-1 rounded hover:bg-slate-100 text-slate-400"
-												>
-													<Calendar className="w-3.5 h-3.5" />
-												</button>
-												<button
-													type="button"
-													className="p-1 rounded hover:bg-slate-100 text-slate-400"
-												>
-													<AlertCircle className="w-3.5 h-3.5" />
-												</button>
-											</div>
-											<div className="flex items-center gap-1.5">
-												<button
-													type="button"
-													onClick={() => {
-														setIsCreating(null);
-														setNewTitle("");
-													}}
-													className="px-2.5 py-1 text-[11px] font-medium text-slate-500 hover:text-slate-700 rounded-md hover:bg-slate-100"
-												>
-													Cancel
-												</button>
-												<button
-													type="button"
-													onClick={() => handleCreateTask(col.id)}
-													className="px-3 py-1 text-[11px] font-semibold text-white bg-[#0B6E4F] rounded-md hover:bg-[#095C42] transition-colors"
-												>
-													Add
-												</button>
+										<span className="text-[13px] font-bold text-slate-700">{col.name}</span>
+										<span className="px-2 py-0.5 rounded-full text-[11px] font-bold tabular-nums bg-slate-100 text-slate-500">
+											{colTasks.length}
+										</span>
+									</div>
+									<div className="flex items-center gap-1">
+										<button
+											type="button"
+											onClick={() => setIsCreating(col.id)}
+											className="p-1 rounded-md hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors"
+										>
+											<Plus className="w-4 h-4" />
+										</button>
+										<button
+											type="button"
+											className="p-1 rounded-md hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors"
+										>
+											<MoreHorizontal className="w-4 h-4" />
+										</button>
+									</div>
+								</div>
+
+								<div className="h-[3px] rounded-full mb-3" style={{ backgroundColor: col.color }} />
+
+								<div className="flex flex-col gap-2.5 flex-1 min-h-[80px]">
+									{colTasks.map((task) => (
+										<TaskCard
+											key={task.id}
+											task={task}
+											isDone={col.isDone}
+											prefix={space?.prefix || ""}
+											onDragStart={handleDragStart}
+											onDragEnd={handleDragEnd}
+											onClick={() => setSelectedTask(task)}
+										/>
+									))}
+
+									{isCreating === col.id && (
+										<div className="bg-white p-3 rounded-xl border-2 border-[#0B6E4F] shadow-md animate-[fadeIn_0.15s_ease-out]">
+											<textarea
+												ref={inputRef}
+												value={newTitle}
+												onChange={(e) => setNewTitle(e.target.value)}
+												onKeyDown={(e) => handleKeyDown(e, col.id)}
+												onBlur={() => {
+													if (!newTitle.trim()) setIsCreating(null);
+												}}
+												placeholder="What needs to be done?"
+												className="w-full text-[13px] text-slate-800 placeholder:text-slate-400 resize-none outline-none bg-transparent min-h-[44px]"
+											/>
+											<div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">
+												<div className="flex items-center gap-1.5">
+													<button
+														type="button"
+														className="p-1 rounded hover:bg-slate-100 text-slate-400"
+													>
+														<User className="w-3.5 h-3.5" />
+													</button>
+													<button
+														type="button"
+														className="p-1 rounded hover:bg-slate-100 text-slate-400"
+													>
+														<Calendar className="w-3.5 h-3.5" />
+													</button>
+													<button
+														type="button"
+														className="p-1 rounded hover:bg-slate-100 text-slate-400"
+													>
+														<AlertCircle className="w-3.5 h-3.5" />
+													</button>
+												</div>
+												<div className="flex items-center gap-1.5">
+													<button
+														type="button"
+														onClick={() => {
+															setIsCreating(null);
+															setNewTitle("");
+														}}
+														className="px-2.5 py-1 text-[11px] font-medium text-slate-500 hover:text-slate-700 rounded-md hover:bg-slate-100"
+													>
+														Cancel
+													</button>
+													<button
+														type="button"
+														onClick={() => handleCreateTask(col.id)}
+														className="px-3 py-1 text-[11px] font-semibold text-white bg-[#0B6E4F] rounded-md hover:bg-[#095C42] transition-colors"
+													>
+														Add
+													</button>
+												</div>
 											</div>
 										</div>
-									</div>
-								)}
-							</div>
-						</ul>
-					);
-				})}
+									)}
+								</div>
+							</ul>
+						);
+					})}
+				</div>
 			</div>
-		</div>
+
+			<TaskDetailModal
+				task={selectedTask}
+				isOpen={!!selectedTask}
+				onClose={() => setSelectedTask(null)}
+				spaceName={space?.name}
+			/>
+		</>
 	);
 }
 
@@ -318,12 +330,14 @@ function TaskCard({
 	prefix,
 	onDragStart,
 	onDragEnd,
+	onClick,
 }: {
 	task: Task;
 	isDone: boolean;
 	prefix: string;
 	onDragStart: (e: DragEvent, id: string) => void;
 	onDragEnd: (e: DragEvent) => void;
+	onClick: () => void;
 }) {
 	const { getMember } = useMemberLookup();
 	const pri = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG.NONE;
@@ -335,7 +349,8 @@ function TaskCard({
 			draggable
 			onDragStart={(e) => onDragStart(e, task.id)}
 			onDragEnd={onDragEnd}
-			className={`group bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all cursor-grab active:cursor-grabbing ${isDone ? "opacity-75" : ""}`}
+			onClick={onClick}
+			className={`group bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all cursor-pointer active:cursor-grabbing ${isDone ? "opacity-75" : ""}`}
 		>
 			<div className="p-3.5">
 				{((task.labels && task.labels.length > 0) || task.priority !== "NONE") && (

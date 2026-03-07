@@ -89,9 +89,9 @@ function getTaskColor(task: Task): string {
 }
 
 export function SpaceTimelineView({ spaceId }: { spaceId: string }) {
-	const { token } = useSupabaseAuth();
+	const { token, user } = useSupabaseAuth();
 	const { data: space } = useSpace(spaceId, token || undefined);
-	const { data: tasks, isLoading } = useTasks(spaceId, undefined, token || undefined);
+	const { data: tasks, isLoading } = useTasks(spaceId, { assignee: user?.id }, token || undefined);
 
 	// Map real tasks → timeline tasks (only those with at least a start or due date)
 	const timelineTasks: TimelineTask[] = useMemo(() => {

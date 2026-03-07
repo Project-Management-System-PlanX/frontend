@@ -1,29 +1,10 @@
 "use client";
 
-import {
-	AlertTriangle,
-	CalendarIcon,
-	ChevronDown,
-	Flag,
-	LinkIcon,
-	Loader2,
-	Paperclip,
-	Plus,
-	Upload,
-	X,
-} from "lucide-react";
+import { CalendarIcon, Loader2, Paperclip, Plus, Upload, X } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-	Command,
-	CommandEmpty,
-	CommandGroup,
-	CommandInput,
-	CommandItem,
-	CommandList,
-} from "@/components/ui/command";
 import {
 	Dialog,
 	DialogContent,
@@ -42,14 +23,13 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useSpaces } from "@/hooks/api/use-spaces";
 import { useCreateTask } from "@/hooks/api/use-tasks";
-import { useTeams } from "@/hooks/api/use-teams";
+import { useAddTeamMember, useCreateTeam, useTeams } from "@/hooks/api/use-teams";
 import { useWorkspaceMembers } from "@/hooks/api/use-workspaces";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
-import type { Space, TaskStatus } from "@/lib/types/models";
+import type { Space } from "@/lib/types/models";
 import { useAppStore } from "@/stores/app-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 
@@ -73,10 +53,16 @@ interface CreateTaskModalProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	defaultSpaceId?: string;
+	parentTaskId?: string;
 }
 
-export function CreateTaskModal({ open, onOpenChange, defaultSpaceId }: CreateTaskModalProps) {
-	const { token } = useSupabaseAuth();
+export function CreateTaskModal({
+	open,
+	onOpenChange,
+	defaultSpaceId,
+	parentTaskId,
+}: CreateTaskModalProps) {
+	const { token, user: supabaseUser } = useSupabaseAuth();
 	const user = useAppStore((s) => s.user);
 	const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
 
@@ -84,7 +70,11 @@ export function CreateTaskModal({ open, onOpenChange, defaultSpaceId }: CreateTa
 	const { data: spaces } = useSpaces(activeWorkspaceId || "", token || undefined);
 	const { data: members } = useWorkspaceMembers(activeWorkspaceId || "", token || undefined);
 	const { data: teams } = useTeams(activeWorkspaceId || "", token || undefined);
-	const { mutateAsync: createTask, isPending } = useCreateTask(token || undefined);
+	const { mutateAsync: createTask, isPending: isCreatingTask } = useCreateTask(token || undefined);
+	const { mutateAsync: createTeam, isPending: isCreatingTeamService } = useCreateTeam(
+		token || undefined,
+	);
+	const { mutateAsync: addTeamMember } = useAddTeamMember(token || undefined);
 
 	// Form state
 	const [spaceId, setSpaceId] = useState(defaultSpaceId || "");
@@ -93,21 +83,27 @@ export function CreateTaskModal({ open, onOpenChange, defaultSpaceId }: CreateTa
 	const [description, setDescription] = useState("");
 	const [assigneeId, setAssigneeId] = useState<string | undefined>(undefined);
 	const [priority, setPriority] = useState("MEDIUM");
-	const [parentId, setParentId] = useState<string | undefined>(undefined);
 	const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
 	const [startDate, setStartDate] = useState<Date | undefined>(undefined);
 	const [labelInput, setLabelInput] = useState("");
 	const [labels, setLabels] = useState<string[]>([]);
 	const [teamId, setTeamId] = useState<string | undefined>(undefined);
-	const [flagged, setFlagged] = useState(false);
-	const [restrictTo, setRestrictTo] = useState<string | undefined>(undefined);
+	const [parentId, setParentId] = useState<string | undefined>(parentTaskId);
+	const [subtaskTitles, setSubtaskTitles] = useState<string[]>([]);
+	const [subtaskInput, setSubtaskInput] = useState("");
+
+	// Team creation state inline
+	const [isCreatingNewTeam, setIsCreatingNewTeam] = useState(false);
+	const [newTeamName, setNewTeamName] = useState("");
+	const [newTeamMembers, setNewTeamMembers] = useState<string[]>([]);
+
 	const [linkedWorkItem, setLinkedWorkItem] = useState("");
 	const [createAnother, setCreateAnother] = useState(false);
 	const [files, setFiles] = useState<File[]>([]);
 	const [errors, setErrors] = useState<Record<string, string>>({});
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
-	const selectedSpace = spaces?.find((s: Space) => s.id === spaceId);
+	const _selectedSpace = spaces?.find((s: Space) => s.id === spaceId);
 
 	const resetForm = useCallback(() => {
 		if (!createAnother) {
@@ -118,23 +114,27 @@ export function CreateTaskModal({ open, onOpenChange, defaultSpaceId }: CreateTa
 		setDescription("");
 		setAssigneeId(undefined);
 		setPriority("MEDIUM");
-		setParentId(undefined);
 		setDueDate(undefined);
 		setStartDate(undefined);
 		setLabelInput("");
 		setLabels([]);
 		setTeamId(undefined);
-		setFlagged(false);
-		setRestrictTo(undefined);
+		setParentId(parentTaskId);
+		setSubtaskTitles([]);
+		setSubtaskInput("");
+		setIsCreatingNewTeam(false);
+		setNewTeamName("");
+		setNewTeamMembers([]);
 		setLinkedWorkItem("");
 		setFiles([]);
 		setErrors({});
-	}, [createAnother, defaultSpaceId]);
+	}, [createAnother, defaultSpaceId, parentTaskId]);
 
 	const validate = () => {
 		const newErrors: Record<string, string> = {};
 		if (!spaceId) newErrors.spaceId = "Space is required";
 		if (!summary.trim()) newErrors.summary = "Summary is required";
+		if (isCreatingNewTeam && !newTeamName.trim()) newErrors.newTeamName = "Team name is required";
 		setErrors(newErrors);
 		return Object.keys(newErrors).length === 0;
 	};
@@ -145,7 +145,35 @@ export function CreateTaskModal({ open, onOpenChange, defaultSpaceId }: CreateTa
 		const resolvedAssigneeId = assigneeId || undefined;
 
 		try {
-			await createTask({
+			let finalTeamId = teamId;
+			if (isCreatingNewTeam && newTeamName.trim()) {
+				// Create the team first
+				const newTeam = await createTeam({
+					workspaceId: activeWorkspaceId || "",
+					name: newTeamName.trim(),
+				});
+				finalTeamId = newTeam?.id;
+
+				if (finalTeamId) {
+					// Implicitly include the current user who is creating the task/team
+					const currentUserId = supabaseUser?.id || user?.id;
+					const membersToProcess = Array.from(
+						new Set([...(currentUserId ? [currentUserId] : []), ...newTeamMembers]),
+					);
+
+					// Add members to the new team
+					await Promise.all(
+						membersToProcess.map((memberId) =>
+							addTeamMember({
+								teamId: finalTeamId as string,
+								data: { userId: memberId, role: "MEMBER" },
+							}),
+						),
+					);
+				}
+			}
+
+			const createdTask = await createTask({
 				spaceId,
 				title: summary.trim(),
 				description: description.trim() || undefined,
@@ -154,12 +182,16 @@ export function CreateTaskModal({ open, onOpenChange, defaultSpaceId }: CreateTa
 				assigneeId: resolvedAssigneeId,
 				dueDate: dueDate?.toISOString(),
 				startDate: startDate?.toISOString(),
-				parentId: parentId || undefined,
-				teamId: teamId || undefined,
-				flagged,
-				restrictTo: restrictTo || undefined,
-				labels: labels.length > 0 ? labels : undefined,
+				teamId: finalTeamId || undefined,
+				parentId: parentId,
 			});
+
+			// Create subtasks after main task
+			if (subtaskTitles.length > 0 && createdTask?.id) {
+				await Promise.all(
+					subtaskTitles.map((title) => createTask({ spaceId, title, parentId: createdTask.id })),
+				);
+			}
 
 			if (createAnother) {
 				resetForm();
@@ -281,9 +313,9 @@ export function CreateTaskModal({ open, onOpenChange, defaultSpaceId }: CreateTa
 						/>
 					</div>
 
-					{/* Assignee */}
+					{/* Assigned To */}
 					<div className="grid gap-1.5">
-						<Label className="text-sm font-medium">Assignee</Label>
+						<Label className="text-sm font-medium">Assigned To</Label>
 						<Select
 							value={assigneeId || "__none"}
 							onValueChange={(v) => setAssigneeId(v === "__none" ? undefined : v)}
@@ -300,7 +332,7 @@ export function CreateTaskModal({ open, onOpenChange, defaultSpaceId }: CreateTa
 										: m.userId.slice(0, 8);
 									const initials =
 										u?.firstName?.charAt(0)?.toUpperCase() || name.charAt(0)?.toUpperCase() || "?";
-									const isMe = m.userId === user?.id;
+									const isMe = m.userId === (supabaseUser?.id || user?.id);
 									return (
 										<SelectItem key={m.userId} value={m.userId}>
 											<span className="flex items-center gap-2">
@@ -371,41 +403,122 @@ export function CreateTaskModal({ open, onOpenChange, defaultSpaceId }: CreateTa
 						</Popover>
 					</div>
 
-					{/* Parent */}
-					<div className="grid gap-1.5">
-						<Label className="text-sm font-medium">Parent</Label>
-						<Select
-							value={parentId || "none"}
-							onValueChange={(v) => setParentId(v === "none" ? undefined : v)}
-						>
-							<SelectTrigger>
-								<SelectValue placeholder="Select parent work item" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="none">None</SelectItem>
-							</SelectContent>
-						</Select>
-					</div>
-
 					{/* Team */}
-					<div className="grid gap-1.5">
-						<Label className="text-sm font-medium">Team</Label>
-						<Select
-							value={teamId || "none"}
-							onValueChange={(v) => setTeamId(v === "none" ? undefined : v)}
-						>
-							<SelectTrigger>
-								<SelectValue placeholder="Select a team" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="none">None</SelectItem>
-								{teams?.map((t) => (
-									<SelectItem key={t.id} value={t.id}>
-										{t.name}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
+					<div className="col-span-2 grid gap-1.5">
+						<div className="flex items-center justify-between">
+							<Label className="text-sm font-medium">Team</Label>
+							<Button
+								type="button"
+								variant="ghost"
+								size="sm"
+								onClick={() => setIsCreatingNewTeam(!isCreatingNewTeam)}
+								className="h-6 text-xs text-[#0B6E4F]"
+							>
+								{isCreatingNewTeam ? "Select Existing Team" : "Create New Team"}
+							</Button>
+						</div>
+
+						{isCreatingNewTeam ? (
+							<div className="space-y-3 p-3 bg-slate-50 border border-slate-200 rounded-md">
+								<div className="grid gap-1.5">
+									<Label className="text-xs text-slate-500">New Team Name</Label>
+									<Input
+										value={newTeamName}
+										onChange={(e) => setNewTeamName(e.target.value)}
+										placeholder="e.g. Frontend Team"
+										className={errors.newTeamName ? "border-red-500 bg-white" : "bg-white"}
+									/>
+									{errors.newTeamName && (
+										<p className="text-xs text-red-500">{errors.newTeamName}</p>
+									)}
+								</div>
+
+								<div className="grid gap-1.5">
+									<Label className="text-xs text-slate-500">Initial Team Members</Label>
+									<Select
+										value=""
+										onValueChange={(v) => {
+											if (v && !newTeamMembers.includes(v)) {
+												setNewTeamMembers([...newTeamMembers, v]);
+											}
+										}}
+									>
+										<SelectTrigger className="bg-white">
+											<SelectValue placeholder="Add members..." />
+										</SelectTrigger>
+										<SelectContent>
+											{(members as any[])
+												?.filter(
+													(m) =>
+														!newTeamMembers.includes(m.userId) &&
+														m.userId !== (supabaseUser?.id || user?.id),
+												)
+												.map((m: any) => {
+													const u = m.user;
+													const name = u
+														? [u.firstName, u.lastName].filter(Boolean).join(" ") ||
+															u.username ||
+															u.email
+														: m.userId.slice(0, 8);
+													return (
+														<SelectItem key={m.userId} value={m.userId}>
+															{name}
+														</SelectItem>
+													);
+												})}
+										</SelectContent>
+									</Select>
+
+									{newTeamMembers.length > 0 && (
+										<div className="flex flex-wrap gap-1.5 mt-1">
+											{newTeamMembers.map((memberId) => {
+												const m = (members as any[])?.find((x) => x.userId === memberId);
+												const u = m?.user;
+												const name = u
+													? [u.firstName, u.lastName].filter(Boolean).join(" ") ||
+														u.username ||
+														u.email
+													: memberId.slice(0, 8);
+												return (
+													<span
+														key={memberId}
+														className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-white border border-slate-200 text-slate-700 rounded-full"
+													>
+														{name}
+														<button
+															type="button"
+															onClick={() =>
+																setNewTeamMembers(newTeamMembers.filter((id) => id !== memberId))
+															}
+															className="hover:text-red-500"
+														>
+															<X className="w-3 h-3" />
+														</button>
+													</span>
+												);
+											})}
+										</div>
+									)}
+								</div>
+							</div>
+						) : (
+							<Select
+								value={teamId || "none"}
+								onValueChange={(v) => setTeamId(v === "none" ? undefined : v)}
+							>
+								<SelectTrigger>
+									<SelectValue placeholder="Select a team" />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="none">None</SelectItem>
+									{teams?.map((t) => (
+										<SelectItem key={t.id} value={t.id}>
+											{t.name}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						)}
 					</div>
 
 					{/* Labels — full width */}
@@ -454,29 +567,35 @@ export function CreateTaskModal({ open, onOpenChange, defaultSpaceId }: CreateTa
 						<Label className="text-sm font-medium">Reporter</Label>
 						<div className="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-md text-sm">
 							<div className="w-5 h-5 rounded-full bg-orange-500 text-white flex items-center justify-center text-[9px] font-bold">
-								{user?.name?.charAt(0)?.toUpperCase() || "U"}
+								{(() => {
+									const m = (members as any[])?.find(
+										(x) => x.userId === (supabaseUser?.id || user?.id),
+									);
+									const u = m?.user;
+									const name = u
+										? [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username || u.email
+										: (user as any)?.user_metadata?.full_name ||
+											(user as any)?.user_metadata?.name ||
+											user?.email ||
+											"Current User";
+									return name.charAt(0).toUpperCase() || "U";
+								})()}
 							</div>
-							<span className="text-slate-700">{user?.name || user?.email || "Current User"}</span>
+							<span className="text-slate-700">
+								{(() => {
+									const m = (members as any[])?.find(
+										(x) => x.userId === (supabaseUser?.id || user?.id),
+									);
+									const u = m?.user;
+									return u
+										? [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username || u.email
+										: (user as any)?.user_metadata?.full_name ||
+												(user as any)?.user_metadata?.name ||
+												user?.email ||
+												"Current User";
+								})()}
+							</span>
 						</div>
-					</div>
-
-					{/* Restrict To */}
-					<div className="grid gap-1.5">
-						<Label className="text-sm font-medium">Restrict To</Label>
-						<Select
-							value={restrictTo || "none"}
-							onValueChange={(v) => setRestrictTo(v === "none" ? undefined : v)}
-						>
-							<SelectTrigger>
-								<SelectValue placeholder="Select role" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="none">No restriction</SelectItem>
-								<SelectItem value="ADMIN">Admin</SelectItem>
-								<SelectItem value="MEMBER">Member</SelectItem>
-								<SelectItem value="OWNER">Owner</SelectItem>
-							</SelectContent>
-						</Select>
 					</div>
 
 					{/* Attachment — full width */}
@@ -530,6 +649,72 @@ export function CreateTaskModal({ open, onOpenChange, defaultSpaceId }: CreateTa
 						)}
 					</div>
 
+					{/* Subtasks — full width */}
+					<div className="col-span-2 grid gap-2">
+						<Label className="text-sm font-medium">
+							Subtasks <span className="text-slate-400 font-normal">(optional)</span>
+						</Label>
+
+						{/* Existing subtask list */}
+						{subtaskTitles.length > 0 && (
+							<div className="space-y-1.5 mb-1">
+								{subtaskTitles.map((title, idx) => (
+									<div
+										key={idx}
+										className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md"
+									>
+										<span className="w-4 h-4 rounded-full bg-slate-300 text-slate-600 flex items-center justify-center text-[10px] font-bold shrink-0">
+											{idx + 1}
+										</span>
+										<span className="flex-1 text-sm text-slate-700">{title}</span>
+										<button
+											type="button"
+											onClick={() => setSubtaskTitles((prev) => prev.filter((_, i) => i !== idx))}
+											className="text-slate-400 hover:text-red-500 transition-colors"
+										>
+											<X className="w-3.5 h-3.5" />
+										</button>
+									</div>
+								))}
+							</div>
+						)}
+
+						{/* Input to add new subtask */}
+						<div className="flex items-center gap-2">
+							<Input
+								value={subtaskInput}
+								onChange={(e) => setSubtaskInput(e.target.value)}
+								onKeyDown={(e) => {
+									if (e.key === "Enter") {
+										e.preventDefault();
+										const t = subtaskInput.trim();
+										if (t) {
+											setSubtaskTitles((prev) => [...prev, t]);
+											setSubtaskInput("");
+										}
+									}
+								}}
+								placeholder="Type a subtask title and press Enter…"
+								className="flex-1"
+							/>
+							<button
+								type="button"
+								onClick={() => {
+									const t = subtaskInput.trim();
+									if (t) {
+										setSubtaskTitles((prev) => [...prev, t]);
+										setSubtaskInput("");
+									}
+								}}
+								disabled={!subtaskInput.trim()}
+								className="flex items-center gap-1 px-3 py-2 text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md border border-slate-200 transition-colors disabled:opacity-40"
+							>
+								<Plus className="w-3.5 h-3.5" />
+								Add
+							</button>
+						</div>
+					</div>
+
 					{/* Linked Work Items — full width */}
 					<div className="col-span-2 grid gap-1.5">
 						<Label className="text-sm font-medium">Linked Work Items</Label>
@@ -553,18 +738,6 @@ export function CreateTaskModal({ open, onOpenChange, defaultSpaceId }: CreateTa
 							/>
 						</div>
 					</div>
-
-					{/* Flagged — full width */}
-					<div className="col-span-2 flex items-center justify-between rounded-lg border border-slate-200 p-3">
-						<div className="flex items-center gap-2">
-							<Flag className={`w-4 h-4 ${flagged ? "text-red-500" : "text-slate-400"}`} />
-							<div>
-								<Label className="text-sm font-medium">Flagged</Label>
-								<p className="text-xs text-slate-400">Mark as impediment</p>
-							</div>
-						</div>
-						<Switch checked={flagged} onCheckedChange={setFlagged} />
-					</div>
 				</div>
 
 				{/* Footer */}
@@ -585,10 +758,12 @@ export function CreateTaskModal({ open, onOpenChange, defaultSpaceId }: CreateTa
 						</Button>
 						<Button
 							onClick={handleSubmit}
-							disabled={isPending}
+							disabled={isCreatingTask || isCreatingTeamService}
 							className="bg-[#0B6E4F] hover:bg-[#095C42] text-white"
 						>
-							{isPending && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
+							{(isCreatingTask || isCreatingTeamService) && (
+								<Loader2 className="w-4 h-4 mr-1 animate-spin" />
+							)}
 							Create
 						</Button>
 					</div>

@@ -1,6 +1,8 @@
 "use client";
 
 import { ChevronDown, ChevronRight, MoreHorizontal, User } from "lucide-react";
+import { useState } from "react";
+import { TaskDetailModal } from "@/components/modals/TaskDetailModal";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSpace } from "@/hooks/api/use-spaces";
 import { useTasks } from "@/hooks/api/use-tasks";
@@ -9,55 +11,71 @@ import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import type { Task } from "@/lib/types/models";
 
 const COL_GRID =
-	"grid-cols-[auto_minmax(260px,1fr)_120px_120px_80px_110px_100px_150px_150px_110px_36px]";
+	"grid-cols-[auto_minmax(260px,1fr)_120px_120px_120px_80px_110px_100px_150px_150px_110px_36px]";
 
 export function SpaceListView({ spaceId }: { spaceId: string }) {
-	const { token } = useSupabaseAuth();
+	const { token, user } = useSupabaseAuth();
 	const { data: space } = useSpace(spaceId, token || undefined);
-	const { data: tasks, isLoading } = useTasks(spaceId, undefined, token || undefined);
+	const { data: tasks, isLoading } = useTasks(spaceId, { assignee: user?.id }, token || undefined);
+	const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
 	return (
-		<ScrollArea className="flex-1">
-			<div className="pb-10 animate-[fadeInUp_0.35s_ease-out]">
-				<div className="border-y border-slate-200 overflow-hidden">
-					{/* ── Table Header ── */}
-					<div
-						className={`grid ${COL_GRID} gap-0 items-center bg-[#f8f8f8] border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider select-none`}
-					>
-						<div className="px-3 py-2 flex items-center justify-center">
-							<div className="w-4 h-4 border border-slate-300 rounded bg-white" />
+		<>
+			<ScrollArea className="flex-1">
+				<div className="pb-10 animate-[fadeInUp_0.35s_ease-out]">
+					<div className="border-y border-slate-200 overflow-hidden">
+						{/* ── Table Header ── */}
+						<div
+							className={`grid ${COL_GRID} gap-0 items-center bg-[#f8f8f8] border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider select-none`}
+						>
+							<div className="px-3 py-2 flex items-center justify-center">
+								<div className="w-4 h-4 border border-slate-300 rounded bg-white" />
+							</div>
+							<div className="px-3 py-2 pl-8">Work</div>
+							<div className="px-3 py-2">Assignee</div>
+							<div className="px-3 py-2">Reporter</div>
+							<div className="px-3 py-2">Team</div>
+							<div className="px-3 py-2">Priority</div>
+							<div className="px-3 py-2">Status</div>
+							<div className="px-3 py-2">Resolution</div>
+							<div className="px-3 py-2">Created</div>
+							<div className="px-3 py-2">Updated</div>
+							<div className="px-3 py-2">Due date</div>
+							<div className="px-1 py-2" />
 						</div>
-						<div className="px-3 py-2 pl-8">Work</div>
-						<div className="px-3 py-2">Assignee</div>
-						<div className="px-3 py-2">Reporter</div>
-						<div className="px-3 py-2">Priority</div>
-						<div className="px-3 py-2">Status</div>
-						<div className="px-3 py-2">Resolution</div>
-						<div className="px-3 py-2">Created</div>
-						<div className="px-3 py-2">Updated</div>
-						<div className="px-3 py-2">Due date</div>
-						<div className="px-1 py-2" />
-					</div>
 
-					{/* ── Rows ── */}
-					<div className="divide-y divide-slate-100 bg-white">
-						{isLoading ? (
-							<div className="p-4 text-center text-sm text-slate-400">Loading tasks...</div>
-						) : tasks && tasks.length > 0 ? (
-							tasks.map((task) => (
-								<TaskRow key={task.id} task={task} prefix={space?.prefix || ""} />
-							))
-						) : (
-							<div className="p-4 text-center text-sm text-slate-400">No tasks in this space</div>
-						)}
+						{/* ── Rows ── */}
+						<div className="divide-y divide-slate-100 bg-white">
+							{isLoading ? (
+								<div className="p-4 text-center text-sm text-slate-400">Loading tasks...</div>
+							) : tasks && tasks.length > 0 ? (
+								tasks.map((task) => (
+									<TaskRow
+										key={task.id}
+										task={task}
+										prefix={space?.prefix || ""}
+										onClick={() => setSelectedTask(task)}
+									/>
+								))
+							) : (
+								<div className="p-4 text-center text-sm text-slate-400">No tasks in this space</div>
+							)}
+						</div>
 					</div>
 				</div>
-			</div>
-		</ScrollArea>
+			</ScrollArea>
+
+			<TaskDetailModal
+				task={selectedTask}
+				isOpen={!!selectedTask}
+				onClose={() => setSelectedTask(null)}
+				spaceName={space?.name}
+			/>
+		</>
 	);
 }
 
-function TaskRow({ task, prefix }: { task: Task; prefix: string }) {
+function TaskRow({ task, prefix, onClick }: { task: Task; prefix: string; onClick: () => void }) {
 	const { getMember } = useMemberLookup();
 	const displayId = task.taskNumber ? `${prefix}-${task.taskNumber}` : task.id;
 
@@ -92,8 +110,10 @@ function TaskRow({ task, prefix }: { task: Task; prefix: string }) {
 	})();
 
 	return (
-		<div
-			className={`grid ${COL_GRID} gap-0 items-center hover:bg-slate-50/80 transition-colors group`}
+		<button
+			type="button"
+			onClick={onClick}
+			className={`grid ${COL_GRID} w-full text-left gap-0 items-center hover:bg-slate-50/80 transition-colors group cursor-pointer border-none bg-transparent p-0 m-0`}
 		>
 			{/* Checkbox */}
 			<div className="px-3 py-2.5 flex items-center justify-center">
@@ -165,6 +185,15 @@ function TaskRow({ task, prefix }: { task: Task; prefix: string }) {
 				</span>
 			</div>
 
+			{/* Team */}
+			<div className="px-3 py-2.5 flex items-center gap-2 min-w-0">
+				{task.team ? (
+					<span className="text-[13px] text-slate-600 truncate font-medium">{task.team.name}</span>
+				) : (
+					<span className="text-[13px] text-slate-400 truncate">—</span>
+				)}
+			</div>
+
 			{/* Priority */}
 			<div className="px-3 py-2.5">
 				{task.priority !== "NONE" ? (
@@ -217,6 +246,6 @@ function TaskRow({ task, prefix }: { task: Task; prefix: string }) {
 					<MoreHorizontal className="w-4 h-4 text-slate-400" />
 				</button>
 			</div>
-		</div>
+		</button>
 	);
 }

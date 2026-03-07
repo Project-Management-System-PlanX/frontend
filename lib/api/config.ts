@@ -44,6 +44,7 @@ export const API_ENDPOINTS = {
 	TASKS: "/tasks",
 	TASKS_BY_SPACE: (spaceId: string) => `/tasks/space/${spaceId}`,
 	TASKS_ASSIGNED_TO_ME: "/tasks/assigned-to-me",
+	TASKS_WORKED_ON: "/tasks/worked-on",
 	TASK_BY_ID: (id: string) => `/tasks/${id}`,
 	TASK_MOVE: (id: string) => `/tasks/${id}/move`,
 	TASK_COMMENTS: (taskId: string) => `/tasks/${taskId}/comments`,
@@ -53,7 +54,9 @@ export const API_ENDPOINTS = {
 		`/tasks/${taskId}/attachments/${attachmentId}`,
 
 	// Teams
+	TEAMS: "/teams",
 	TEAMS_BY_WORKSPACE: (workspaceId: string) => `/teams/workspace/${workspaceId}`,
+	TEAM_MEMBERS: (teamId: string) => `/teams/${teamId}/members`,
 
 	// Messages
 	MESSAGES: "/messages",

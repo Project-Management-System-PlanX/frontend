@@ -12,14 +12,15 @@ import { spaceKeys } from "./use-spaces";
 export const taskKeys = {
 	all: ["tasks"] as const,
 	lists: () => [...taskKeys.all, "list"] as const,
-	list: (spaceId: string, filters?: any) => [...taskKeys.lists(), { spaceId, filters }] as const,
+	list: (spaceId: string, filters?: Record<string, unknown>) => [...taskKeys.all, "list", { spaceId, filters }] as const,
 	assignedToMe: () => [...taskKeys.all, "assignedToMe"] as const,
+	workedOn: () => [...taskKeys.all, "workedOn"] as const,
 	details: () => [...taskKeys.all, "detail"] as const,
 	detail: (id: string) => [...taskKeys.details(), id] as const,
 	comments: (id: string) => [...taskKeys.detail(id), "comments"] as const,
 };
 
-export const useTasks = (spaceId: string, filters?: any, token?: string) => {
+export const useTasks = (spaceId: string, filters?: Record<string, unknown>, token?: string) => {
 	return useQuery({
 		queryKey: taskKeys.list(spaceId, filters),
 		queryFn: () => tasksService.listBySpace(spaceId, filters, token),
@@ -31,6 +32,14 @@ export const useTasksAssignedToMe = (token?: string) => {
 	return useQuery({
 		queryKey: taskKeys.assignedToMe(),
 		queryFn: () => tasksService.listAssignedToMe(token),
+		enabled: !!token,
+	});
+};
+
+export const useTasksWorkedOn = (token?: string) => {
+	return useQuery({
+		queryKey: taskKeys.workedOn(),
+		queryFn: () => tasksService.listWorkedOn(token),
 		enabled: !!token,
 	});
 };
@@ -50,6 +59,7 @@ export const useCreateTask = (token?: string) => {
 		onSuccess: (data) => {
 			queryClient.invalidateQueries({ queryKey: taskKeys.lists() });
 			queryClient.invalidateQueries({ queryKey: taskKeys.assignedToMe() });
+			queryClient.invalidateQueries({ queryKey: taskKeys.workedOn() });
 			queryClient.invalidateQueries({ queryKey: spaceKeys.detail(data.spaceId) });
 		},
 	});
@@ -88,8 +98,17 @@ export const useDeleteTask = (token?: string) => {
 		onSuccess: (_, id) => {
 			queryClient.invalidateQueries({ queryKey: taskKeys.lists() });
 			queryClient.invalidateQueries({ queryKey: taskKeys.assignedToMe() });
+			queryClient.invalidateQueries({ queryKey: taskKeys.workedOn() });
 			queryClient.removeQueries({ queryKey: taskKeys.detail(id) });
 		},
+	});
+};
+
+export const useTaskComments = (taskId: string, token?: string) => {
+	return useQuery({
+		queryKey: taskKeys.comments(taskId),
+		queryFn: () => tasksService.listComments(taskId, token),
+		enabled: !!taskId && !!token,
 	});
 };
 

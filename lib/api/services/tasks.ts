@@ -71,6 +71,9 @@ export const tasksService = {
 	listAssignedToMe: async (token?: string) =>
 		apiClient.get<Task[]>(API_ENDPOINTS.TASKS_ASSIGNED_TO_ME, { token }),
 
+	listWorkedOn: async (token?: string) =>
+		apiClient.get<Task[]>(API_ENDPOINTS.TASKS_WORKED_ON, { token }),
+
 	getById: async (id: string, token?: string) =>
 		apiClient.get<Task>(API_ENDPOINTS.TASK_BY_ID(id), { token }),
 
