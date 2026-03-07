@@ -19,7 +19,7 @@ export default function ChatPage() {
 					className="text-2xl font-bold text-slate-800 mb-2"
 					style={{ fontFamily: "var(--font-figtree), Figtree" }}
 				>
-					PlanX Chat
+					Teamup Chat
 				</h2>
 
 				<p className="text-sm text-slate-500 leading-relaxed mb-8">
