@@ -1,3 +1,4 @@
+import DOMPurify from "dompurify";
 import { format } from "date-fns";
 import type { Message } from "@/hooks/chat/use-messages";
 
@@ -5,6 +6,10 @@ interface MessageBubbleProps {
 	message: Message;
 	isOwnMessage: boolean;
 	showAvatar?: boolean;
+}
+
+function isHtmlContent(content: string): boolean {
+	return /<[a-z][\s\S]*>/i.test(content);
 }
 
 export function MessageBubble({ message, isOwnMessage, showAvatar = true }: MessageBubbleProps) {
@@ -17,6 +22,9 @@ export function MessageBubble({ message, isOwnMessage, showAvatar = true }: Mess
 		new Date(message.created_at || message.createdAt || Date.now()),
 		"h:mm a",
 	);
+
+	const content = message.content || "";
+	const hasHtml = isHtmlContent(content);
 
 	return (
 		<div className={`flex w-full ${isOwnMessage ? "justify-end" : "justify-start"} mb-4 px-4`}>
@@ -54,13 +62,41 @@ export function MessageBubble({ message, isOwnMessage, showAvatar = true }: Mess
 						}`}
 						style={{ wordBreak: "break-word" }}
 					>
-						{(message.content || "").split("\n").map((line, i) => (
-							// biome-ignore lint/suspicious/noArrayIndexKey: Safe for simple text lines
-							<span key={i}>
-								{line}
-								{i !== (message.content || "").split("\n").length - 1 && <br />}
-							</span>
-						))}
+						{hasHtml ? (
+							<div
+								className={`prose prose-sm max-w-none [&_p]:my-0 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0 ${
+									isOwnMessage
+										? "[&_a]:text-emerald-200 [&_strong]:text-white [&_em]:text-white/90"
+										: "[&_a]:text-blue-500"
+								}`}
+								// biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized via DOMPurify
+								dangerouslySetInnerHTML={{
+									__html: DOMPurify.sanitize(content, {
+										ALLOWED_TAGS: [
+											"p",
+											"br",
+											"strong",
+											"em",
+											"u",
+											"s",
+											"a",
+											"ul",
+											"ol",
+											"li",
+										],
+										ALLOWED_ATTR: ["href", "target", "rel", "style", "class"],
+									}),
+								}}
+							/>
+						) : (
+							content.split("\n").map((line, i) => (
+								// biome-ignore lint/suspicious/noArrayIndexKey: Safe for simple text lines
+								<span key={i}>
+									{line}
+									{i !== content.split("\n").length - 1 && <br />}
+								</span>
+							))
+						)}
 					</div>
 
 					{/* Time footer */}

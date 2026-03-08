@@ -93,6 +93,7 @@ export function ChatArea({ channelId, channelName }: ChatAreaProps) {
 						if (user?.id) await sendMessage(content, user.id);
 					}}
 					disabled={isLoading || !!error}
+					channelName={channelName}
 				/>
 			</div>
 		</div>

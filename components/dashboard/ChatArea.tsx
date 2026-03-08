@@ -115,6 +115,7 @@ export function ChatArea({
 	const [mentionQuery, setMentionQuery] = useState<string | null>(null);
 	const [mentionIndex, setMentionIndex] = useState(0);
 	const mentionRangeRef = useRef<{ from: number; to: number } | null>(null);
+	const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
@@ -562,7 +563,17 @@ export function ChatArea({
 													message.created_at || message.createdAt || new Date().toISOString(),
 												)}
 											</span>
-										</div>
+										{isOwnMessage && !isDeleted && (
+											<button
+												type="button"
+												onClick={() => setDeleteConfirmId(message.id)}
+												className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-red-50 text-[#9a9a9a] hover:text-red-500"
+												title="Delete message"
+											>
+												<Trash2 className="w-3.5 h-3.5" />
+											</button>
+										)}
+									</div>
 
 										{isDeleted ? (
 											<p className="text-[#9a9a9a] mt-1 italic text-sm">This message was deleted</p>
@@ -635,19 +646,27 @@ export function ChatArea({
 										)}
 											</>
 										)}
-									</div>
 
-									{/* Delete button — only for own messages, hidden when deleted */}
-									{isOwnMessage && !isDeleted && (
-										<button
-											type="button"
-											onClick={() => deleteMessage(message.id)}
-											className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-md hover:bg-red-50 text-[#9a9a9a] hover:text-red-500"
-											title="Delete message"
-										>
-											<Trash2 className="w-4 h-4" />
-										</button>
-									)}
+										{deleteConfirmId === message.id && (
+											<div className="mt-2 flex items-center gap-2 p-2 rounded-lg bg-red-50 border border-red-200">
+												<span className="text-sm text-red-700">Delete this message?</span>
+												<button
+													type="button"
+													onClick={() => { deleteMessage(message.id); setDeleteConfirmId(null); }}
+													className="px-2.5 py-1 text-xs font-medium rounded bg-red-500 text-white hover:bg-red-600 transition-colors"
+												>
+													Delete
+												</button>
+												<button
+													type="button"
+													onClick={() => setDeleteConfirmId(null)}
+													className="px-2.5 py-1 text-xs font-medium rounded bg-white border border-[#e5e7eb] text-[#404040] hover:bg-[#f5f5f5] transition-colors"
+												>
+													Cancel
+												</button>
+											</div>
+										)}
+									</div>
 								</div>
 							</div>
 							);
