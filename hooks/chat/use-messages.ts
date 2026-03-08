@@ -20,6 +20,7 @@ export interface Message {
 	fileType?: string;
 	file_size?: number;
 	fileSize?: number;
+	duration?: number;
 	is_edited?: boolean;
 	isEdited?: boolean;
 	deleted_at?: string | null;
@@ -61,6 +62,7 @@ function normalizeMessage(msg: any): Message {
 		fileType: msg.fileType || msg.file_type,
 		file_size: msg.file_size || msg.fileSize,
 		fileSize: msg.fileSize || msg.file_size,
+		duration: msg.duration ?? undefined,
 		is_edited: msg.is_edited ?? msg.isEdited ?? false,
 		isEdited: msg.isEdited ?? msg.is_edited ?? false,
 		deleted_at: msg.deleted_at || msg.deletedAt || null,
@@ -196,7 +198,7 @@ export function useMessages(channelId: string | null) {
 		async (
 			content: string,
 			_userId: string,
-			fileDetails?: { url: string; name: string; type: string; size: number },
+			fileDetails?: { url: string; name: string; type: string; size: number; duration?: number },
 		) => {
 			if (!channelId || (!content.trim() && !fileDetails)) return;
 
@@ -219,6 +221,9 @@ export function useMessages(channelId: string | null) {
 				body.fileName = fileDetails.name;
 				body.fileType = fileDetails.type;
 				body.fileSize = fileDetails.size;
+				if (fileDetails.duration != null) {
+					body.duration = fileDetails.duration;
+				}
 			}
 
 			// biome-ignore lint/suspicious/noExplicitAny: API response type
@@ -283,6 +288,7 @@ export function useMessages(channelId: string | null) {
 								fileType: undefined,
 								file_size: undefined,
 								fileSize: undefined,
+								duration: undefined,
 							}
 						: msg,
 				),

@@ -44,6 +44,7 @@ export const API_ENDPOINTS = {
 
 	// Tasks
 	TASKS: "/tasks",
+	TASKS_BULK: "/tasks/bulk",
 	TASKS_BY_SPACE: (spaceId: string) => `/tasks/space/${spaceId}`,
 	TASKS_ASSIGNED_TO_ME: "/tasks/assigned-to-me",
 	TASKS_WORKED_ON: "/tasks/worked-on",

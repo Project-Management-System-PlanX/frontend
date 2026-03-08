@@ -17,6 +17,7 @@ import {
 	Plus,
 	Search,
 	Share2,
+	Sparkles,
 	User,
 	Zap,
 } from "lucide-react";
@@ -27,6 +28,7 @@ import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useTasksRealtime } from "@/hooks/use-tasks-realtime";
 import { CreateTaskModal } from "../modals/CreateTaskModal";
 import { ForYouHeader } from "./foryou/ForYouHeader";
+import { AskAIPanel } from "./space/AskAIPanel";
 import { SpaceBoardView } from "./space/SpaceBoardView";
 import { SpaceCalendarView } from "./space/SpaceCalendarView";
 import { SpaceChartView } from "./space/SpaceChartView";
@@ -39,6 +41,7 @@ export function Space({ spaceId }: { spaceId: string }) {
 	const [viewMode, _setViewMode] = useState<"list" | "column">("list");
 	const [activeTab, setActiveTab] = useState("Board");
 	const [showCreateTask, setShowCreateTask] = useState(false);
+	const [showAskAI, setShowAskAI] = useState(false);
 
 	const { token } = useSupabaseAuth();
 	const { data: space, isLoading } = useSpace(spaceId, token || undefined);
@@ -176,6 +179,17 @@ export function Space({ spaceId }: { spaceId: string }) {
 							>
 								<Filter className="w-3.5 h-3.5 text-slate-500" /> Filter
 							</button>
+							<button
+								type="button"
+								onClick={() => setShowAskAI((v) => !v)}
+								className={`flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium rounded-[4px] transition-colors ml-1 ${
+									showAskAI
+										? "bg-[#0B6E4F] text-white shadow-sm"
+										: "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+								}`}
+							>
+								<Sparkles className="w-3.5 h-3.5" /> Ask AI
+							</button>
 						</div>
 
 						{/* Right: Actions */}
@@ -231,6 +245,8 @@ export function Space({ spaceId }: { spaceId: string }) {
 				onOpenChange={setShowCreateTask}
 				defaultSpaceId={spaceId}
 			/>
+
+			<AskAIPanel open={showAskAI} onClose={() => setShowAskAI(false)} spaceId={spaceId} />
 		</div>
 	);
 }

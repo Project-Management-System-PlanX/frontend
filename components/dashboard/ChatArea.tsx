@@ -80,6 +80,8 @@ const StartMeetingButton = dynamic(
 	{ ssr: false },
 );
 
+import { VoicePlayer } from "@/components/chat/VoicePlayer";
+import { VoiceRecorder } from "@/components/chat/VoiceRecorder";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -114,6 +116,7 @@ export function ChatArea({
 	const [mentionIndex, setMentionIndex] = useState(0);
 	const mentionRangeRef = useRef<{ from: number; to: number } | null>(null);
 	const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+	const [isRecording, setIsRecording] = useState(false);
 
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
@@ -256,6 +259,42 @@ export function ChatArea({
 			setIsUploading(false);
 		}
 	}, [editor, user?.id, isUploading, attachment, channelName, supabase.storage, sendMessage]);
+
+	// Handle sending a voice message after recording
+	const handleVoiceSend = useCallback(
+		async (audioBlob: Blob, durationSeconds: number) => {
+			if (!user?.id) return;
+
+			try {
+				setIsUploading(true);
+				const fileName = `voice-${crypto.randomUUID()}.webm`;
+				const filePath = `${channelName}/${fileName}`;
+
+				const { error: uploadError } = await supabase.storage
+					.from("voice-messages")
+					.upload(filePath, audioBlob);
+
+				if (uploadError) throw uploadError;
+
+				const { data } = supabase.storage.from("voice-messages").getPublicUrl(filePath);
+
+				await sendMessage("", user.id, {
+					url: data.publicUrl,
+					name: fileName,
+					type: "audio/webm",
+					size: audioBlob.size,
+					duration: durationSeconds,
+				});
+
+				setIsRecording(false);
+			} catch (err) {
+				console.error("Failed to send voice message:", err);
+			} finally {
+				setIsUploading(false);
+			}
+		},
+		[user?.id, channelName, supabase.storage, sendMessage],
+	);
 
 	// Re-bind handleSendMessage to the editor's keydown handler when dependencies change
 	useEffect(() => {
@@ -642,7 +681,9 @@ export function ChatArea({
 
 													{message.file_url && (
 														<div className="mt-2">
-															{message.file_type?.startsWith("image/") ? (
+															{message.file_type?.startsWith("audio/") ? (
+																<VoicePlayer src={message.file_url} duration={message.duration} />
+															) : message.file_type?.startsWith("image/") ? (
 																<a href={message.file_url} target="_blank" rel="noreferrer">
 																	{/* biome-ignore lint/performance/noImgElement: user content image */}
 																	<img
@@ -941,90 +982,97 @@ export function ChatArea({
 
 					{/* Bottom Actions */}
 					<div className="flex items-center justify-between px-3 py-2 border-t border-[#e5e7eb]">
-						<div className="flex items-center gap-1">
-							<TooltipProvider delayDuration={0}>
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<Button
-											variant="ghost"
-											size="icon"
-											onClick={() => fileInputRef.current?.click()}
-											className="w-8 h-8 text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"
-										>
-											<PlusCircle className="w-4 h-4" />
-										</Button>
-									</TooltipTrigger>
-									<TooltipContent>Attach</TooltipContent>
-								</Tooltip>
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<Button
-											variant="ghost"
-											size="icon"
-											onClick={() => {
-												editor?.chain().focus().insertContent("@").run();
-											}}
-											className="w-8 h-8 text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"
-										>
-											<AtSign className="w-4 h-4" />
-										</Button>
-									</TooltipTrigger>
-									<TooltipContent>Mention</TooltipContent>
-								</Tooltip>
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<div className="relative" ref={emojiRef}>
-											<Button
-												variant="ghost"
-												size="icon"
-												onClick={() => setShowEmoji((prev) => !prev)}
-												className={`w-8 h-8 ${showEmoji ? "text-[#0B6E4F] bg-emerald-50" : "text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"}`}
-											>
-												<Smile className="w-4 h-4" />
-											</Button>
-											{showEmoji && (
-												<div className="absolute bottom-10 left-0 z-50 shadow-xl rounded-xl overflow-hidden">
-													<Picker
-														data={data}
-														onEmojiSelect={handleEmojiSelect}
-														theme="light"
-														previewPosition="none"
-														skinTonePosition="none"
-														maxFrequentRows={2}
-													/>
+						{isRecording ? (
+							<VoiceRecorder onSend={handleVoiceSend} onCancel={() => setIsRecording(false)} />
+						) : (
+							<>
+								<div className="flex items-center gap-1">
+									<TooltipProvider delayDuration={0}>
+										<Tooltip>
+											<TooltipTrigger asChild>
+												<Button
+													variant="ghost"
+													size="icon"
+													onClick={() => fileInputRef.current?.click()}
+													className="w-8 h-8 text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"
+												>
+													<PlusCircle className="w-4 h-4" />
+												</Button>
+											</TooltipTrigger>
+											<TooltipContent>Attach</TooltipContent>
+										</Tooltip>
+										<Tooltip>
+											<TooltipTrigger asChild>
+												<Button
+													variant="ghost"
+													size="icon"
+													onClick={() => {
+														editor?.chain().focus().insertContent("@").run();
+													}}
+													className="w-8 h-8 text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"
+												>
+													<AtSign className="w-4 h-4" />
+												</Button>
+											</TooltipTrigger>
+											<TooltipContent>Mention</TooltipContent>
+										</Tooltip>
+										<Tooltip>
+											<TooltipTrigger asChild>
+												<div className="relative" ref={emojiRef}>
+													<Button
+														variant="ghost"
+														size="icon"
+														onClick={() => setShowEmoji((prev) => !prev)}
+														className={`w-8 h-8 ${showEmoji ? "text-[#0B6E4F] bg-emerald-50" : "text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"}`}
+													>
+														<Smile className="w-4 h-4" />
+													</Button>
+													{showEmoji && (
+														<div className="absolute bottom-10 left-0 z-50 shadow-xl rounded-xl overflow-hidden">
+															<Picker
+																data={data}
+																onEmojiSelect={handleEmojiSelect}
+																theme="light"
+																previewPosition="none"
+																skinTonePosition="none"
+																maxFrequentRows={2}
+															/>
+														</div>
+													)}
 												</div>
-											)}
-										</div>
-									</TooltipTrigger>
-									<TooltipContent>Emoji</TooltipContent>
-								</Tooltip>
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<Button
-											variant="ghost"
-											size="icon"
-											className="w-8 h-8 text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"
-										>
-											<Mic className="w-4 h-4" />
-										</Button>
-									</TooltipTrigger>
-									<TooltipContent>Record audio</TooltipContent>
-								</Tooltip>
-							</TooltipProvider>
-						</div>
+											</TooltipTrigger>
+											<TooltipContent>Emoji</TooltipContent>
+										</Tooltip>
+										<Tooltip>
+											<TooltipTrigger asChild>
+												<Button
+													variant="ghost"
+													size="icon"
+													onClick={() => setIsRecording(true)}
+													className="w-8 h-8 text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"
+												>
+													<Mic className="w-4 h-4" />
+												</Button>
+											</TooltipTrigger>
+											<TooltipContent>Record audio</TooltipContent>
+										</Tooltip>
+									</TooltipProvider>
+								</div>
 
-						<Button
-							size="icon"
-							className="w-9 h-9 rounded-lg bg-[#0B6E4F] hover:bg-[#0B6E4F]/90 text-white"
-							disabled={(!editor?.getText().trim() && !attachment) || isUploading}
-							onClick={handleSendMessage}
-						>
-							{isUploading ? (
-								<Loader2 className="w-4 h-4 animate-spin text-white" />
-							) : (
-								<Send className="w-4 h-4" />
-							)}
-						</Button>
+								<Button
+									size="icon"
+									className="w-9 h-9 rounded-lg bg-[#0B6E4F] hover:bg-[#0B6E4F]/90 text-white"
+									disabled={(!editor?.getText().trim() && !attachment) || isUploading}
+									onClick={handleSendMessage}
+								>
+									{isUploading ? (
+										<Loader2 className="w-4 h-4 animate-spin text-white" />
+									) : (
+										<Send className="w-4 h-4" />
+									)}
+								</Button>
+							</>
+						)}
 					</div>
 				</div>
 			</div>

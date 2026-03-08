@@ -69,9 +69,9 @@ function getCalendarDays(year: number, month: number): (Date | null)[] {
    ═══════════════════════════════════════════════ */
 
 export function SpaceCalendarView({ spaceId }: { spaceId: string }) {
-	const { token, user } = useSupabaseAuth();
+	const { token } = useSupabaseAuth();
 	const { data: space } = useSpace(spaceId, token || undefined);
-	const { data: tasks, isLoading } = useTasks(spaceId, { assignee: user?.id }, token || undefined);
+	const { data: tasks, isLoading } = useTasks(spaceId, undefined, token || undefined);
 
 	const [currentDate, setCurrentDate] = useState(new Date());
 	const year = currentDate.getFullYear();
@@ -96,12 +96,34 @@ export function SpaceCalendarView({ spaceId }: { spaceId: string }) {
 		});
 	};
 
-	const getStatusColor = (task: Task) => {
+	const CALENDAR_PALETTE = [
+		"#6366F1", // indigo
+		"#F59E0B", // amber
+		"#EC4899", // pink
+		"#14B8A6", // teal
+		"#8B5CF6", // violet
+		"#F97316", // orange
+		"#06B6D4", // cyan
+		"#84CC16", // lime
+	];
+
+	const PRIORITY_COLOR_MAP: Record<string, string> = {
+		CRITICAL: "#EF4444",
+		HIGH: "#F97316",
+		MEDIUM: "#F59E0B",
+		LOW: "#3B82F6",
+	};
+
+	const getTaskColor = (task: Task) => {
 		if (task.status?.isDone) return "#10B981";
 		const s = (task.status?.name || "").toLowerCase();
 		if (s.includes("progress")) return "#3B82F6";
 		if (s.includes("review")) return "#F59E0B";
-		return task.status?.color || "#94A3B8";
+		if (task.priority && task.priority !== "NONE" && PRIORITY_COLOR_MAP[task.priority]) {
+			return PRIORITY_COLOR_MAP[task.priority];
+		}
+		const hash = (task.taskNumber ?? task.title.length) % CALENDAR_PALETTE.length;
+		return CALENDAR_PALETTE[hash];
 	};
 
 	return (
@@ -223,7 +245,7 @@ export function SpaceCalendarView({ spaceId }: { spaceId: string }) {
 												{/* Tasks */}
 												<div className="flex-1 overflow-hidden space-y-0.5">
 													{dateTasks.slice(0, 3).map((task) => {
-														const taskColor = getStatusColor(task);
+														const taskColor = getTaskColor(task);
 														return (
 															<div
 																key={task.id}
