@@ -58,6 +58,9 @@ export const tasksService = {
 	create: async (data: CreateTaskPayload, token?: string) =>
 		apiClient.post<Task>(API_ENDPOINTS.TASKS, data, { token }),
 
+	bulkCreate: async (tasks: CreateTaskPayload[], token?: string) =>
+		apiClient.post<Task[]>(API_ENDPOINTS.TASKS_BULK, { tasks }, { token }),
+
 	listBySpace: async (
 		spaceId: string,
 		filters?: { status?: string; assignee?: string; priority?: string },

@@ -1,14 +1,25 @@
 "use client";
 
-import { ChevronDown, ChevronRight, MoreHorizontal, User } from "lucide-react";
-import { useState } from "react";
+import { Check, ChevronDown, ChevronRight, MoreHorizontal, Search, Trash2, User } from "lucide-react";
+import { useRef, useState } from "react";
 import { TaskDetailModal } from "@/components/modals/TaskDetailModal";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSpace } from "@/hooks/api/use-spaces";
-import { useTasks } from "@/hooks/api/use-tasks";
+import { useTasks, useDeleteTask, useUpdateTask } from "@/hooks/api/use-tasks";
 import { useMemberLookup } from "@/hooks/use-member-lookup";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
+import { useWorkspaceMembers } from "@/hooks/use-workspace-members";
 import type { Task } from "@/lib/types/models";
+
+/* ── Priority colour config ── */
+const PRIORITY_STYLE: Record<string, { bg: string; text: string; dot: string }> = {
+	CRITICAL: { bg: "bg-red-50", text: "text-red-700", dot: "bg-red-500" },
+	HIGH: { bg: "bg-orange-50", text: "text-orange-700", dot: "bg-orange-500" },
+	MEDIUM: { bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-400" },
+	LOW: { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500" },
+	NONE: { bg: "bg-slate-50", text: "text-slate-400", dot: "bg-slate-300" },
+};
 
 const COL_GRID =
 	"grid-cols-[auto_minmax(260px,1fr)_120px_120px_120px_80px_110px_100px_150px_150px_110px_36px]";
@@ -16,7 +27,7 @@ const COL_GRID =
 export function SpaceListView({ spaceId }: { spaceId: string }) {
 	const { token, user } = useSupabaseAuth();
 	const { data: space } = useSpace(spaceId, token || undefined);
-	const { data: tasks, isLoading } = useTasks(spaceId, { assignee: user?.id }, token || undefined);
+	const { data: tasks, isLoading } = useTasks(spaceId, undefined, token || undefined);
 	const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
 	const selectedTask = tasks?.find((t) => t.id === selectedTaskId) || null;
@@ -79,6 +90,14 @@ export function SpaceListView({ spaceId }: { spaceId: string }) {
 
 function TaskRow({ task, prefix, onClick }: { task: Task; prefix: string; onClick: () => void }) {
 	const { getMember } = useMemberLookup();
+	const { token } = useSupabaseAuth();
+	const { members } = useWorkspaceMembers();
+	const updateTask = useUpdateTask(token || undefined);
+	const deleteTask = useDeleteTask(token || undefined);
+	const [assigneeOpen, setAssigneeOpen] = useState(false);
+	const [memberSearch, setMemberSearch] = useState("");
+	const [confirmDelete, setConfirmDelete] = useState(false);
+	const [actionsOpen, setActionsOpen] = useState(false);
 	const displayId = task.taskNumber ? `${prefix}-${task.taskNumber}` : task.id;
 
 	const fmtDate = (iso: string) =>
@@ -163,24 +182,95 @@ function TaskRow({ task, prefix, onClick }: { task: Task; prefix: string; onClic
 			</div>
 
 			{/* Assignee */}
-			<div className="px-3 py-2.5 flex items-center gap-2 min-w-0">
-				{task.assigneeId ? (
-					<>
-						<div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-[10px] text-white font-bold shrink-0">
-							{getMember(task.assigneeId).initials}
+			<div className="px-3 py-2.5 flex items-center gap-2 min-w-0" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+				<Popover open={assigneeOpen} onOpenChange={setAssigneeOpen}>
+					<PopoverTrigger asChild>
+						<button
+							type="button"
+							className="flex items-center gap-2 min-w-0 rounded-md px-1 py-0.5 -mx-1 hover:bg-slate-100 transition-colors w-full text-left"
+						>
+							{task.assigneeId ? (
+								<>
+									<div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-[10px] text-white font-bold shrink-0">
+										{getMember(task.assigneeId).initials}
+									</div>
+									<span className="text-[13px] text-slate-600 truncate">
+										{getMember(task.assigneeId).name}
+									</span>
+								</>
+							) : (
+								<>
+									<div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 shrink-0">
+										<User className="w-3 h-3" />
+									</div>
+									<span className="text-[13px] text-slate-400">Assign</span>
+								</>
+							)}
+						</button>
+					</PopoverTrigger>
+					<PopoverContent className="w-56 p-0" align="start" sideOffset={4} onClick={(e) => e.stopPropagation()}>
+						<div className="p-2 border-b border-slate-100">
+							<div className="flex items-center gap-2 rounded-md bg-slate-50 px-2 py-1.5">
+								<Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+								<input
+									type="text"
+									placeholder="Search members…"
+									className="text-[12px] bg-transparent outline-none w-full text-slate-700 placeholder:text-slate-400"
+									value={memberSearch}
+									onChange={(e) => setMemberSearch(e.target.value)}
+								/>
+							</div>
 						</div>
-						<span className="text-[13px] text-slate-600 truncate">
-							{getMember(task.assigneeId).name}
-						</span>
-					</>
-				) : (
-					<>
-						<div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 shrink-0">
-							<User className="w-3 h-3" />
+						<div className="max-h-48 overflow-y-auto py-1">
+							{/* Unassign option */}
+							{task.assigneeId && (
+								<button
+									type="button"
+									className="flex items-center gap-2 w-full px-3 py-1.5 text-left hover:bg-slate-50 transition-colors"
+									onClick={() => {
+										updateTask.mutate({ id: task.id, data: { assigneeId: undefined } });
+										setAssigneeOpen(false);
+										setMemberSearch("");
+									}}
+								>
+									<div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-slate-400 shrink-0">
+										<User className="w-3 h-3" />
+									</div>
+									<span className="text-[12px] text-slate-500">Unassign</span>
+								</button>
+							)}
+							{members
+								.filter((m) => {
+									if (!memberSearch) return true;
+									const name = `${m.profile?.firstName ?? ""} ${m.profile?.lastName ?? ""}`.toLowerCase();
+									return name.includes(memberSearch.toLowerCase());
+								})
+								.map((m) => {
+									const isSelected = m.userId === task.assigneeId;
+									const initials = `${(m.profile?.firstName ?? "")[0] ?? ""}${(m.profile?.lastName ?? "")[0] ?? ""}`.toUpperCase() || "?";
+									const name = [m.profile?.firstName, m.profile?.lastName].filter(Boolean).join(" ") || m.profile?.email || "Unknown";
+									return (
+										<button
+											key={m.id}
+											type="button"
+											className={`flex items-center gap-2 w-full px-3 py-1.5 text-left hover:bg-slate-50 transition-colors ${isSelected ? "bg-blue-50" : ""}`}
+											onClick={() => {
+												updateTask.mutate({ id: task.id, data: { assigneeId: m.userId } });
+												setAssigneeOpen(false);
+												setMemberSearch("");
+											}}
+										>
+											<div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-[10px] text-white font-bold shrink-0">
+												{initials}
+											</div>
+											<span className="text-[12px] text-slate-700 truncate flex-1">{name}</span>
+											{isSelected && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
+										</button>
+									);
+								})}
 						</div>
-						<span className="text-[13px] text-slate-500">Unassigned</span>
-					</>
-				)}
+					</PopoverContent>
+				</Popover>
 			</div>
 
 			{/* Reporter */}
@@ -204,13 +294,17 @@ function TaskRow({ task, prefix, onClick }: { task: Task; prefix: string; onClic
 
 			{/* Priority */}
 			<div className="px-3 py-2.5">
-				{task.priority !== "NONE" ? (
-					<span className="text-[13px] text-slate-600 capitalize">
-						{task.priority.toLowerCase()}
-					</span>
-				) : (
-					<span className="text-[13px] text-slate-400">None</span>
-				)}
+				{(() => {
+					const p = PRIORITY_STYLE[task.priority] ?? PRIORITY_STYLE.NONE;
+					return (
+						<span
+							className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2 py-0.5 rounded-full ${p.bg} ${p.text}`}
+						>
+							<span className={`w-1.5 h-1.5 rounded-full ${p.dot}`} />
+							{task.priority !== "NONE" ? task.priority.charAt(0) + task.priority.slice(1).toLowerCase() : "None"}
+						</span>
+					);
+				})()}
 			</div>
 
 			{/* Status */}
@@ -246,13 +340,53 @@ function TaskRow({ task, prefix, onClick }: { task: Task; prefix: string; onClic
 			</div>
 
 			{/* Actions */}
-			<div className="px-1 py-2.5">
-				<button
-					type="button"
-					className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-slate-200 rounded"
-				>
-					<MoreHorizontal className="w-4 h-4 text-slate-400" />
-				</button>
+			<div className="px-1 py-2.5" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+				<Popover open={actionsOpen} onOpenChange={(open) => { setActionsOpen(open); if (!open) setConfirmDelete(false); }}>
+					<PopoverTrigger asChild>
+						<button
+							type="button"
+							className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-slate-200 rounded"
+						>
+							<MoreHorizontal className="w-4 h-4 text-slate-400" />
+						</button>
+					</PopoverTrigger>
+					<PopoverContent className="w-44 p-1" align="end" sideOffset={4}>
+						{!confirmDelete ? (
+							<button
+								type="button"
+								className="flex items-center gap-2 w-full px-3 py-2 text-left text-[13px] text-red-600 hover:bg-red-50 rounded-md transition-colors"
+								onClick={() => setConfirmDelete(true)}
+							>
+								<Trash2 className="w-3.5 h-3.5" />
+								Delete task
+							</button>
+						) : (
+							<div className="px-3 py-2">
+								<p className="text-[12px] text-slate-600 mb-2">Delete this task?</p>
+								<div className="flex items-center gap-2">
+									<button
+										type="button"
+										className="flex-1 text-[12px] font-medium px-2 py-1 rounded bg-red-600 text-white hover:bg-red-700 transition-colors"
+										onClick={() => {
+											deleteTask.mutate(task.id);
+											setActionsOpen(false);
+											setConfirmDelete(false);
+										}}
+									>
+										Confirm
+									</button>
+									<button
+										type="button"
+										className="flex-1 text-[12px] font-medium px-2 py-1 rounded bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+										onClick={() => setConfirmDelete(false)}
+									>
+										Cancel
+									</button>
+								</div>
+							</div>
+						)}
+					</PopoverContent>
+				</Popover>
 			</div>
 		</div>
 	);

@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useCreateTask } from "@/hooks/api/use-tasks";
+import { useBulkCreateTasks } from "@/hooks/api/use-tasks";
 import { useMemberLookup } from "@/hooks/use-member-lookup";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useWorkspaceMembers } from "@/hooks/use-workspace-members";
@@ -122,7 +122,7 @@ export function AskAIPanel({
 	const { members } = useWorkspaceMembers();
 	const { getMember } = useMemberLookup();
 	const { token } = useSupabaseAuth();
-	const createTask = useCreateTask(token || undefined);
+	const bulkCreate = useBulkCreateTasks(token || undefined);
 
 	const scrollToBottom = useCallback(() => {
 		setTimeout(() => {
@@ -184,9 +184,9 @@ export function AskAIPanel({
 
 			setCreatingMsgId(msgId);
 
-			for (const task of msg.tasks) {
-				try {
-					await createTask.mutateAsync({
+			try {
+				await bulkCreate.mutateAsync(
+					msg.tasks.map((task) => ({
 						spaceId,
 						title: task.title,
 						priority: task.priority,
@@ -194,16 +194,15 @@ export function AskAIPanel({
 						assigneeId: task.assigneeId,
 						startDate: task.startDate?.toISOString(),
 						dueDate: task.dueDate?.toISOString(),
-					});
-				} catch (err) {
-					console.error("Failed to create task:", task.title, err);
-				}
+					})),
+				);
+			} catch (err) {
+				console.error("Failed to bulk create tasks:", err);
 			}
 
 			setCreatingMsgId(null);
 			setConfirmedMsgIds((prev) => new Set(prev).add(msgId));
 
-			// Add success message
 			const successMsg: ChatMessage = {
 				id: `s-${Date.now()}`,
 				role: "ai",
@@ -212,7 +211,7 @@ export function AskAIPanel({
 			setMessages((prev) => [...prev, successMsg]);
 			scrollToBottom();
 		},
-		[messages, spaceId, createTask, scrollToBottom],
+		[messages, spaceId, bulkCreate, scrollToBottom],
 	);
 
 	if (!open) return null;

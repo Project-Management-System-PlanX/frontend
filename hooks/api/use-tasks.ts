@@ -66,6 +66,18 @@ export const useCreateTask = (token?: string) => {
 	});
 };
 
+export const useBulkCreateTasks = (token?: string) => {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: (tasks: CreateTaskPayload[]) => tasksService.bulkCreate(tasks, token),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: taskKeys.lists() });
+			queryClient.invalidateQueries({ queryKey: taskKeys.assignedToMe() });
+			queryClient.invalidateQueries({ queryKey: taskKeys.workedOn() });
+		},
+	});
+};
+
 export const useUpdateTask = (token?: string) => {
 	const queryClient = useQueryClient();
 	return useMutation({
