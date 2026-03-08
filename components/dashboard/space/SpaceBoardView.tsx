@@ -345,6 +345,7 @@ function TaskCard({
 	const displayId = task.taskNumber ? `${prefix}-${task.taskNumber}` : task.id;
 
 	return (
+		// biome-ignore lint/a11y/useSemanticElements: complex card component
 		<div
 			draggable
 			role="button"

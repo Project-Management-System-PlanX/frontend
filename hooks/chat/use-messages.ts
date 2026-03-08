@@ -270,7 +270,20 @@ export function useMessages(channelId: string | null) {
 			setMessages((prev) =>
 				prev.map((msg) =>
 					msg.id === messageId
-						? { ...msg, content: "", deletedAt: new Date().toISOString(), deleted_at: new Date().toISOString(), file_url: undefined, fileUrl: undefined, file_name: undefined, fileName: undefined, file_type: undefined, fileType: undefined, file_size: undefined, fileSize: undefined }
+						? {
+								...msg,
+								content: "",
+								deletedAt: new Date().toISOString(),
+								deleted_at: new Date().toISOString(),
+								file_url: undefined,
+								fileUrl: undefined,
+								file_name: undefined,
+								fileName: undefined,
+								file_type: undefined,
+								fileType: undefined,
+								file_size: undefined,
+								fileSize: undefined,
+							}
 						: msg,
 				),
 			);

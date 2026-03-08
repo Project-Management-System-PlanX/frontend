@@ -470,6 +470,7 @@ export function CreateTaskModal({
 														!newTeamMembers.includes(m.userId) &&
 														m.userId !== (supabaseUser?.id || user?.id),
 												)
+												// biome-ignore lint/suspicious/noExplicitAny: members API typing
 												.map((m: any) => {
 													const u = m.user;
 													const name = u
@@ -586,13 +587,16 @@ export function CreateTaskModal({
 						<div className="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-md text-sm">
 							<div className="w-5 h-5 rounded-full bg-orange-500 text-white flex items-center justify-center text-[9px] font-bold">
 								{(() => {
+									// biome-ignore lint/suspicious/noExplicitAny: members API typing
 									const m = (members as any[])?.find(
 										(x) => x.userId === (supabaseUser?.id || user?.id),
 									);
 									const u = m?.user;
 									const name = u
 										? [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username || u.email
-										: (user as any)?.user_metadata?.full_name ||
+										: // biome-ignore lint/suspicious/noExplicitAny: user metadata from Supabase
+											(user as any)?.user_metadata?.full_name ||
+											// biome-ignore lint/suspicious/noExplicitAny: user metadata from Supabase
 											(user as any)?.user_metadata?.name ||
 											user?.email ||
 											"Current User";
@@ -608,7 +612,9 @@ export function CreateTaskModal({
 									const u = m?.user;
 									return u
 										? [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username || u.email
-										: (user as any)?.user_metadata?.full_name ||
+										: // biome-ignore lint/suspicious/noExplicitAny: user metadata from Supabase
+											(user as any)?.user_metadata?.full_name ||
+												// biome-ignore lint/suspicious/noExplicitAny: user metadata from Supabase
 												(user as any)?.user_metadata?.name ||
 												user?.email ||
 												"Current User";
@@ -620,6 +626,7 @@ export function CreateTaskModal({
 					{/* Attachment — full width */}
 					<div className="col-span-2 grid gap-1.5">
 						<Label className="text-sm font-medium">Attachment</Label>
+						{/* biome-ignore lint/a11y/useSemanticElements: custom drop area component */}
 						<div
 							role="button"
 							tabIndex={0}

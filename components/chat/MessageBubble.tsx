@@ -1,5 +1,5 @@
-import DOMPurify from "dompurify";
 import { format } from "date-fns";
+import DOMPurify from "dompurify";
 import type { Message } from "@/hooks/chat/use-messages";
 
 interface MessageBubbleProps {
@@ -72,18 +72,7 @@ export function MessageBubble({ message, isOwnMessage, showAvatar = true }: Mess
 								// biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized via DOMPurify
 								dangerouslySetInnerHTML={{
 									__html: DOMPurify.sanitize(content, {
-										ALLOWED_TAGS: [
-											"p",
-											"br",
-											"strong",
-											"em",
-											"u",
-											"s",
-											"a",
-											"ul",
-											"ol",
-											"li",
-										],
+										ALLOWED_TAGS: ["p", "br", "strong", "em", "u", "s", "a", "ul", "ol", "li"],
 										ALLOWED_ATTR: ["href", "target", "rel", "style", "class"],
 									}),
 								}}

@@ -184,6 +184,7 @@ export default function WorkspacesPage() {
 									}
 								>
 									{workspaces.map((workspace, index) => (
+										// biome-ignore lint/a11y/useSemanticElements: complex card
 										<div
 											key={workspace.id}
 											role="button"
