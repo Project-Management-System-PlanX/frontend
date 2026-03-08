@@ -2,162 +2,122 @@
 
 import {
 	ChevronDown,
+	Download,
+	ExternalLink,
+	File,
+	FileAudio,
+	FileImage,
+	FileSpreadsheet,
 	FileText,
+	FileVideo,
 	Filter,
-	MoreVertical,
+	Loader2,
 	Plus,
 	Search,
 	SlidersHorizontal,
-	Star,
-	Upload,
 	X,
 } from "lucide-react";
-import { useState } from "react";
+import Image from "next/image";
+import { useMemo, useState } from "react";
+import { type FileMessage, useFilesByWorkspace } from "@/hooks/api/use-files";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
+import { useWorkspaceStore } from "@/stores/workspace-store";
 
 /* ═══════════════════════════════════════════════
-   Types & Data
+   Helpers
    ═══════════════════════════════════════════════ */
 
-interface DocItem {
-	id: string;
-	name: string;
-	type: "document" | "spreadsheet" | "presentation" | "template";
-	creator: string;
-	creatorInitial: string;
-	creatorColor: string;
-	collaborators?: { initial: string; color: string }[];
-	lastViewed: string;
-	readTime: string;
-	isTemplate?: boolean;
-	isStarred?: boolean;
+const FILE_TYPE_CATEGORIES = {
+	Images: ["image/png", "image/jpeg", "image/jpg", "image/gif", "image/webp", "image/svg+xml"],
+	Documents: [
+		"application/pdf",
+		"text/plain",
+		"application/msword",
+		"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+	],
+	Spreadsheets: [
+		"application/vnd.ms-excel",
+		"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+		"text/csv",
+	],
+	Audio: ["audio/webm", "audio/mpeg", "audio/mp3", "audio/wav", "audio/ogg", "audio/mp4"],
+	Video: ["video/mp4", "video/webm", "video/ogg"],
+} as const;
+
+function getFileCategory(mimeType: string): string {
+	for (const [category, types] of Object.entries(FILE_TYPE_CATEGORIES)) {
+		if ((types as readonly string[]).includes(mimeType)) return category;
+	}
+	return "Other";
 }
 
-const DOCS: DocItem[] = [
-	{
-		id: "1",
-		name: "Q1 Sprint Planning Notes",
-		type: "document",
-		creator: "Shashanth K (you)",
-		creatorInitial: "S",
-		creatorColor: "bg-[#0B6E4F]",
-		collaborators: [{ initial: "T", color: "bg-blue-600" }],
-		lastViewed: "Last viewed today",
-		readTime: "3 min read",
-		isStarred: true,
-	},
-	{
-		id: "2",
-		name: "Deal tracker",
-		type: "spreadsheet",
-		creator: "Shashanth K (you)",
-		creatorInitial: "S",
-		creatorColor: "bg-[#0B6E4F]",
-		lastViewed: "Last viewed today",
-		readTime: "2 min read",
-	},
-	{
-		id: "3",
-		name: "Project tracker",
-		type: "spreadsheet",
-		creator: "Shashanth K (you)",
-		creatorInitial: "S",
-		creatorColor: "bg-[#0B6E4F]",
-		lastViewed: "Last viewed on February 4th",
-		readTime: "5 min read",
-	},
-	{
-		id: "4",
-		name: "Product roadmap 2026",
-		type: "document",
-		creator: "Ravikrishna J",
-		creatorInitial: "R",
-		creatorColor: "bg-orange-500",
-		collaborators: [
-			{ initial: "S", color: "bg-[#0B6E4F]" },
-			{ initial: "P", color: "bg-violet-500" },
-		],
-		lastViewed: "Last viewed on February 10th",
-		readTime: "8 min read",
-	},
-	{
-		id: "5",
-		name: "Project overview",
-		type: "document",
-		creator: "Slackbot",
-		creatorInitial: "S",
-		creatorColor: "bg-blue-600",
-		lastViewed: "Last viewed on February 4th",
-		readTime: "1 min read",
-		isTemplate: true,
-	},
-	{
-		id: "6",
-		name: "Weekly 1:1",
-		type: "document",
-		creator: "Slackbot",
-		creatorInitial: "S",
-		creatorColor: "bg-blue-600",
-		lastViewed: "Last viewed on February 3rd",
-		readTime: "1 min read",
-		isTemplate: true,
-	},
-	{
-		id: "7",
-		name: "To-do list",
-		type: "document",
-		creator: "Slackbot",
-		creatorInitial: "S",
-		creatorColor: "bg-blue-600",
-		lastViewed: "Last viewed on February 3rd",
-		readTime: "1 min read",
-		isTemplate: true,
-	},
-	{
-		id: "8",
-		name: "API Documentation v2",
-		type: "document",
-		creator: "Alex Morgan",
-		creatorInitial: "A",
-		creatorColor: "bg-pink-500",
-		collaborators: [{ initial: "J", color: "bg-teal-500" }],
-		lastViewed: "Last viewed on January 28th",
-		readTime: "12 min read",
-	},
-	{
-		id: "9",
-		name: "Sales pipeline analysis",
-		type: "spreadsheet",
-		creator: "Priya Patel",
-		creatorInitial: "P",
-		creatorColor: "bg-violet-500",
-		lastViewed: "Last viewed on January 25th",
-		readTime: "4 min read",
-	},
-	{
-		id: "10",
-		name: "Team onboarding guide",
-		type: "document",
-		creator: "Sarah Chen",
-		creatorInitial: "SC",
-		creatorColor: "bg-amber-500",
-		lastViewed: "Last viewed on January 20th",
-		readTime: "6 min read",
-		isTemplate: true,
-		isStarred: true,
-	},
-	{
-		id: "11",
-		name: "Design system components",
-		type: "presentation",
-		creator: "Shashanth K (you)",
-		creatorInitial: "S",
-		creatorColor: "bg-[#0B6E4F]",
-		lastViewed: "Last viewed on January 18th",
-		readTime: "15 min read",
-	},
-];
+function getFileIcon(mimeType: string) {
+	const category = getFileCategory(mimeType);
+	switch (category) {
+		case "Images":
+			return { icon: FileImage, color: "text-emerald-600", bg: "bg-emerald-100" };
+		case "Documents":
+			return { icon: FileText, color: "text-blue-600", bg: "bg-blue-100" };
+		case "Spreadsheets":
+			return { icon: FileSpreadsheet, color: "text-green-600", bg: "bg-green-100" };
+		case "Audio":
+			return { icon: FileAudio, color: "text-purple-600", bg: "bg-purple-100" };
+		case "Video":
+			return { icon: FileVideo, color: "text-red-600", bg: "bg-red-100" };
+		default:
+			return { icon: File, color: "text-slate-600", bg: "bg-slate-100" };
+	}
+}
+
+function formatFileSize(bytes: number): string {
+	if (bytes < 1024) return `${bytes} B`;
+	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+	return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatDate(dateStr: string): string {
+	const date = new Date(dateStr);
+	const now = new Date();
+	const diffMs = now.getTime() - date.getTime();
+	const diffMins = Math.floor(diffMs / 60000);
+	const diffHours = Math.floor(diffMins / 60);
+	const diffDays = Math.floor(diffHours / 24);
+
+	if (diffMins < 1) return "Just now";
+	if (diffMins < 60) return `${diffMins}m ago`;
+	if (diffHours < 24) return `${diffHours}h ago`;
+	if (diffDays === 1) return "Yesterday";
+	if (diffDays < 7) return `${diffDays}d ago`;
+	return date.toLocaleDateString("en-US", {
+		month: "short",
+		day: "numeric",
+		year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
+	});
+}
+
+function getUserDisplayName(user: FileMessage["user"]): string {
+	if (user.firstName || user.lastName) {
+		return [user.firstName, user.lastName].filter(Boolean).join(" ");
+	}
+	return user.username || user.email.split("@")[0];
+}
+
+function getUserInitial(user: FileMessage["user"]): string {
+	if (user.firstName) return user.firstName[0].toUpperCase();
+	if (user.username) return user.username[0].toUpperCase();
+	return user.email[0].toUpperCase();
+}
 
 const FILTER_TABS = ["All", "Created by you", "Shared with you"];
+const TYPE_FILTERS = [
+	"All types",
+	"Images",
+	"Documents",
+	"Spreadsheets",
+	"Audio",
+	"Video",
+	"Other",
+];
 
 /* ═══════════════════════════════════════════════
    Component
@@ -165,27 +125,66 @@ const FILTER_TABS = ["All", "Created by you", "Shared with you"];
 
 export function FilesArea() {
 	const [activeFilter, setActiveFilter] = useState("All");
-	const [showBanner, setShowBanner] = useState(true);
 	const [searchQuery, setSearchQuery] = useState("");
-	const [starredIds, setStarredIds] = useState<Set<string>>(
-		new Set(DOCS.filter((d) => d.isStarred).map((d) => d.id)),
-	);
+	const [typeFilter, setTypeFilter] = useState("All types");
+	const [showTypeDropdown, setShowTypeDropdown] = useState(false);
+	const [showBanner, setShowBanner] = useState(true);
 
-	const toggleStar = (id: string) => {
-		setStarredIds((prev) => {
-			const next = new Set(prev);
-			if (next.has(id)) next.delete(id);
-			else next.add(id);
-			return next;
+	const { token, user } = useSupabaseAuth();
+	const { activeWorkspaceId } = useWorkspaceStore();
+	const { data: files, isLoading, error } = useFilesByWorkspace(activeWorkspaceId || "", token);
+
+	const currentUserId = user?.id;
+
+	const filteredFiles = useMemo(() => {
+		if (!files) return [];
+		return files.filter((file) => {
+			// Search filter
+			if (searchQuery && !file.fileName.toLowerCase().includes(searchQuery.toLowerCase())) {
+				return false;
+			}
+			// Tab filter
+			if (activeFilter === "Created by you" && file.user.supabaseId !== currentUserId) {
+				return false;
+			}
+			if (activeFilter === "Shared with you" && file.user.supabaseId === currentUserId) {
+				return false;
+			}
+			// Type filter
+			if (typeFilter !== "All types" && getFileCategory(file.fileType) !== typeFilter) {
+				return false;
+			}
+			return true;
 		});
+	}, [files, searchQuery, activeFilter, typeFilter, currentUserId]);
+
+	const typeCount = useMemo(() => {
+		if (!files) return 0;
+		const categories = new Set(files.map((f) => getFileCategory(f.fileType)));
+		return categories.size;
+	}, [files]);
+
+	const handleOpenFile = (fileUrl: string) => {
+		window.open(fileUrl, "_blank", "noopener,noreferrer");
 	};
 
-	const filteredDocs = DOCS.filter((doc) => {
-		if (searchQuery && !doc.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-		if (activeFilter === "Created by you" && !doc.creator.includes("(you)")) return false;
-		if (activeFilter === "Shared with you" && doc.creator.includes("(you)")) return false;
-		return true;
-	});
+	const handleDownload = async (fileUrl: string, fileName: string) => {
+		try {
+			const response = await fetch(fileUrl);
+			const blob = await response.blob();
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = fileName;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+		} catch {
+			// Fallback: open in new tab
+			window.open(fileUrl, "_blank", "noopener,noreferrer");
+		}
+	};
 
 	return (
 		<div
@@ -199,14 +198,10 @@ export function FilesArea() {
 						<h1 className="text-xl font-bold text-slate-900 flex items-center gap-2.5">
 							<FileText className="w-5 h-5 text-[#0B6E4F]" />
 							Files
+							{files && (
+								<span className="text-sm font-normal text-slate-400">({files.length})</span>
+							)}
 						</h1>
-						<button
-							type="button"
-							className="flex items-center gap-2 px-4 py-2 bg-[#0B6E4F] text-white text-sm font-semibold rounded-lg hover:bg-[#095C42] transition-colors shadow-sm"
-						>
-							<Upload className="w-4 h-4" />
-							Upload
-						</button>
 					</div>
 
 					{/* Filter Tabs + Controls */}
@@ -242,22 +237,38 @@ export function FilesArea() {
 							</div>
 
 							{/* Types Filter */}
-							<button
-								type="button"
-								className="flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-semibold bg-[#0B6E4F] text-white rounded-lg hover:bg-[#095C42] transition-colors"
-							>
-								<Filter className="w-3.5 h-3.5" />5 Types
-								<ChevronDown className="w-3 h-3" />
-							</button>
-
-							{/* Sort */}
-							<button
-								type="button"
-								className="flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
-							>
-								Recently viewed
-								<ChevronDown className="w-3 h-3 text-slate-400" />
-							</button>
+							<div className="relative">
+								<button
+									type="button"
+									onClick={() => setShowTypeDropdown(!showTypeDropdown)}
+									className="flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-semibold bg-[#0B6E4F] text-white rounded-lg hover:bg-[#095C42] transition-colors"
+								>
+									<Filter className="w-3.5 h-3.5" />
+									{typeFilter === "All types" ? `${typeCount} Types` : typeFilter}
+									<ChevronDown className="w-3 h-3" />
+								</button>
+								{showTypeDropdown && (
+									<div className="absolute right-0 top-full mt-1 w-44 bg-white border border-slate-200 rounded-lg shadow-lg z-50 py-1">
+										{TYPE_FILTERS.map((type) => (
+											<button
+												key={type}
+												type="button"
+												onClick={() => {
+													setTypeFilter(type);
+													setShowTypeDropdown(false);
+												}}
+												className={`w-full text-left px-3 py-2 text-[13px] hover:bg-slate-50 transition-colors ${
+													typeFilter === type
+														? "text-[#0B6E4F] font-semibold bg-slate-50"
+														: "text-slate-600"
+												}`}
+											>
+												{type}
+											</button>
+										))}
+									</div>
+								)}
+							</div>
 
 							{/* Settings */}
 							<button
@@ -277,7 +288,6 @@ export function FilesArea() {
 					{/* Banner */}
 					{showBanner && (
 						<div className="mb-6 rounded-2xl p-6 relative overflow-hidden border border-slate-200 bg-white shadow-sm animate-[fadeInUp_0.35s_ease-out]">
-							{/* Close Button */}
 							<button
 								type="button"
 								onClick={() => setShowBanner(false)}
@@ -289,11 +299,11 @@ export function FilesArea() {
 							<div className="flex items-start justify-between relative z-10">
 								<div className="max-w-lg">
 									<h2 className="text-xl font-bold text-slate-900 mb-2">
-										Get your work done in TeamUp
+										All your shared files in one place
 									</h2>
 									<p className="text-[13px] text-slate-500 mb-6 leading-relaxed font-medium">
-										Collect and share information with a canvas, or track your next project in a
-										list.
+										Every file shared across your channels and DMs appears here. Click any file to
+										view or download it.
 									</p>
 									<div className="flex items-center gap-3">
 										<button
@@ -311,10 +321,8 @@ export function FilesArea() {
 									</div>
 								</div>
 
-								{/* Mock UI Illustration */}
 								<div className="hidden md:block relative w-64 h-40 -my-6 mr-4 opacity-100 select-none pointer-events-none">
 									<div className="absolute top-5 right-0 w-60 h-48 bg-slate-50 rounded-xl border border-slate-200 shadow-sm p-4 overflow-hidden">
-										{/* Skeleton UI */}
 										<div className="flex items-center gap-3 mb-4">
 											<div className="w-8 h-8 bg-white rounded-lg border border-slate-200 shadow-sm" />
 											<div className="h-2.5 w-24 bg-slate-200 rounded-full" />
@@ -326,7 +334,6 @@ export function FilesArea() {
 											<div className="w-full h-8 bg-white rounded-lg border border-slate-200" />
 										</div>
 									</div>
-									{/* Floating Elements */}
 									<div className="absolute top-12 -left-4 w-12 h-12 bg-white rounded-xl border border-slate-200 shadow-md flex items-center justify-center text-[#ffb020]">
 										<FileText className="w-6 h-6" />
 									</div>
@@ -337,97 +344,159 @@ export function FilesArea() {
 							</div>
 						</div>
 					)}
-					<div className="divide-y divide-slate-100">
-						{filteredDocs.map((doc) => {
-							const starred = starredIds.has(doc.id);
 
-							return (
-								<div
-									key={doc.id}
-									className="flex items-center px-6 py-3.5 hover:bg-slate-50 transition-colors cursor-pointer group"
-								>
-									{/* Doc Icon */}
-									<div className="shrink-0 mr-4">
-										<div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center">
-											<FileText className="w-4.5 h-4.5 text-amber-700" />
-										</div>
-									</div>
+					{/* Loading */}
+					{isLoading && (
+						<div className="flex flex-col items-center justify-center py-20 text-center">
+							<Loader2 className="w-8 h-8 text-[#0B6E4F] animate-spin mb-4" />
+							<p className="text-sm font-semibold text-slate-600">Loading files...</p>
+						</div>
+					)}
 
-									{/* Title + Meta */}
-									<div className="flex-1 min-w-0 mr-4">
-										<div className="flex items-center gap-2 mb-0.5">
-											<span className="text-[14px] font-semibold text-slate-900 truncate">
-												{doc.name}
-											</span>
-											{doc.isTemplate && (
-												<span className="shrink-0 px-2 py-[1px] text-[10px] font-bold uppercase tracking-wide bg-[#0B6E4F] text-white rounded">
-													Template
-												</span>
+					{/* Error */}
+					{error && !isLoading && (
+						<div className="flex flex-col items-center justify-center py-20 text-center">
+							<div className="w-14 h-14 rounded-2xl bg-red-100 flex items-center justify-center mb-4">
+								<FileText className="w-7 h-7 text-red-400" />
+							</div>
+							<p className="text-sm font-semibold text-slate-600 mb-1">Failed to load files</p>
+							<p className="text-xs text-slate-400">Please try refreshing the page</p>
+						</div>
+					)}
+
+					{/* File rows */}
+					{!isLoading && !error && (
+						<div className="divide-y divide-slate-100">
+							{filteredFiles.map((file) => {
+								const { icon: FileIcon, color, bg } = getFileIcon(file.fileType);
+								const isImage = getFileCategory(file.fileType) === "Images";
+								const displayName = getUserDisplayName(file.user);
+								const initial = getUserInitial(file.user);
+								const isOwn = file.user.supabaseId === currentUserId;
+
+								return (
+									<div
+										key={file.id}
+										role="button"
+										tabIndex={0}
+										className="flex items-center px-6 py-3.5 hover:bg-slate-50 transition-colors cursor-pointer group"
+										onClick={() => handleOpenFile(file.fileUrl)}
+										onKeyDown={(e) => {
+											if (e.key === "Enter" || e.key === " ") handleOpenFile(file.fileUrl);
+										}}
+									>
+										{/* File Icon / Thumbnail */}
+										<div className="shrink-0 mr-4">
+											{isImage ? (
+												<div className="w-9 h-9 rounded-lg overflow-hidden border border-slate-200 relative">
+													<Image
+														src={file.fileUrl}
+														alt={file.fileName}
+														fill
+														className="object-cover"
+														sizes="36px"
+													/>
+												</div>
+											) : (
+												<div
+													className={`w-9 h-9 rounded-lg ${bg} flex items-center justify-center`}
+												>
+													<FileIcon className={`w-[18px] h-[18px] ${color}`} />
+												</div>
 											)}
 										</div>
-										<p className="text-[12px] text-slate-400">
-											{doc.creator} · {doc.lastViewed} · {doc.readTime}
-										</p>
-									</div>
 
-									{/* Right side: Collaborators + Star + Menu */}
-									<div className="flex items-center gap-3 shrink-0">
-										{/* Collaborator Avatars */}
-										<div className="flex items-center -space-x-1.5">
-											{/* Creator avatar */}
-											<div
-												className={`w-7 h-7 rounded-full ${doc.creatorColor} text-white flex items-center justify-center text-[10px] font-bold ring-2 ring-white`}
-											>
-												{doc.creatorInitial}
+										{/* Title + Meta */}
+										<div className="flex-1 min-w-0 mr-4">
+											<div className="flex items-center gap-2 mb-0.5">
+												<span className="text-[14px] font-semibold text-slate-900 truncate">
+													{file.fileName}
+												</span>
+												{file.duration && file.duration > 0 && (
+													<span className="shrink-0 px-2 py-[1px] text-[10px] font-bold uppercase tracking-wide bg-purple-100 text-purple-700 rounded">
+														Voice
+													</span>
+												)}
 											</div>
-											{doc.collaborators?.map((c) => (
-												<div
-													key={c.initial}
-													className={`w-7 h-7 rounded-full ${c.color} text-white flex items-center justify-center text-[10px] font-bold ring-2 ring-white`}
-												>
-													{c.initial}
-												</div>
-											))}
+											<p className="text-[12px] text-slate-400 truncate">
+												{isOwn ? "You" : displayName}
+												{" · "}
+												<span className="text-slate-400">in #{file.channel.name}</span>
+												{" · "}
+												{formatDate(file.createdAt)}
+												{" · "}
+												{formatFileSize(file.fileSize)}
+											</p>
 										</div>
 
-										{/* Star */}
-										<button
-											type="button"
-											onClick={(e) => {
-												e.stopPropagation();
-												toggleStar(doc.id);
-											}}
-											className={`p-1 rounded transition-all ${
-												starred
-													? "text-amber-400"
-													: "text-slate-300 opacity-0 group-hover:opacity-100 hover:text-amber-400"
-											}`}
-										>
-											<Star className="w-4.5 h-4.5" fill={starred ? "currentColor" : "none"} />
-										</button>
+										{/* Right side: Avatar + Actions */}
+										<div className="flex items-center gap-3 shrink-0">
+											{/* Uploader avatar */}
+											<div className="flex items-center -space-x-1.5">
+												{file.user.imageUrl ? (
+													<Image
+														src={file.user.imageUrl}
+														alt={displayName}
+														width={28}
+														height={28}
+														className="w-7 h-7 rounded-full ring-2 ring-white object-cover"
+													/>
+												) : (
+													<div className="w-7 h-7 rounded-full bg-[#0B6E4F] text-white flex items-center justify-center text-[10px] font-bold ring-2 ring-white">
+														{initial}
+													</div>
+												)}
+											</div>
 
-										{/* Kebab Menu */}
-										<button
-											type="button"
-											className="p-1 rounded text-slate-300 opacity-0 group-hover:opacity-100 hover:text-slate-600 transition-all"
-										>
-											<MoreVertical className="w-4.5 h-4.5" />
-										</button>
+											{/* Download */}
+											<button
+												type="button"
+												onClick={(e) => {
+													e.stopPropagation();
+													handleDownload(file.fileUrl, file.fileName);
+												}}
+												className="p-1 rounded text-slate-300 opacity-0 group-hover:opacity-100 hover:text-slate-600 transition-all"
+												title="Download"
+											>
+												<Download className="w-[18px] h-[18px]" />
+											</button>
+
+											{/* Open in new tab */}
+											<button
+												type="button"
+												onClick={(e) => {
+													e.stopPropagation();
+													handleOpenFile(file.fileUrl);
+												}}
+												className="p-1 rounded text-slate-300 opacity-0 group-hover:opacity-100 hover:text-slate-600 transition-all"
+												title="Open in new tab"
+											>
+												<ExternalLink className="w-[18px] h-[18px]" />
+											</button>
+										</div>
 									</div>
-								</div>
-							);
-						})}
+								);
+							})}
 
-						{filteredDocs.length === 0 && (
-							<div className="flex flex-col items-center justify-center py-20 text-center">
-								<div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
-									<FileText className="w-7 h-7 text-slate-400" />
+							{filteredFiles.length === 0 && !isLoading && (
+								<div className="flex flex-col items-center justify-center py-20 text-center">
+									<div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
+										<FileText className="w-7 h-7 text-slate-400" />
+									</div>
+									<p className="text-sm font-semibold text-slate-600 mb-1">
+										{files && files.length > 0
+											? "No files match your filters"
+											: "No files shared yet"}
+									</p>
+									<p className="text-xs text-slate-400">
+										{files && files.length > 0
+											? "Try adjusting your search or filters"
+											: "Files shared in channels and DMs will appear here"}
+									</p>
 								</div>
-								<p className="text-sm font-semibold text-slate-600 mb-1">No files found</p>
-								<p className="text-xs text-slate-400">Try adjusting your search or filters</p>
-							</div>
-						)}
-					</div>
+							)}
+						</div>
+					)}
 				</div>
 			</div>
 		</div>
