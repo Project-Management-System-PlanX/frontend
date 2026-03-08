@@ -17,6 +17,7 @@ import {
 	Plus,
 	Search,
 	Share2,
+	Sparkles,
 	User,
 	Zap,
 } from "lucide-react";
@@ -34,11 +35,13 @@ import { SpaceColumnView } from "./space/SpaceColumnView";
 import { SpaceFormsView } from "./space/SpaceFormsView";
 import { SpaceListView } from "./space/SpaceListView";
 import { SpaceTimelineView } from "./space/SpaceTimelineView";
+import { AskAIPanel } from "./space/AskAIPanel";
 
 export function Space({ spaceId }: { spaceId: string }) {
 	const [viewMode, _setViewMode] = useState<"list" | "column">("list");
 	const [activeTab, setActiveTab] = useState("Board");
 	const [showCreateTask, setShowCreateTask] = useState(false);
+	const [showAskAI, setShowAskAI] = useState(false);
 
 	const { token } = useSupabaseAuth();
 	const { data: space, isLoading } = useSpace(spaceId, token || undefined);
@@ -176,6 +179,17 @@ export function Space({ spaceId }: { spaceId: string }) {
 							>
 								<Filter className="w-3.5 h-3.5 text-slate-500" /> Filter
 							</button>
+							<button
+								type="button"
+								onClick={() => setShowAskAI((v) => !v)}
+								className={`flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium rounded-[4px] transition-colors ml-1 ${
+									showAskAI
+										? "bg-[#0B6E4F] text-white shadow-sm"
+										: "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+								}`}
+							>
+								<Sparkles className="w-3.5 h-3.5" /> Ask AI
+							</button>
 						</div>
 
 						{/* Right: Actions */}
@@ -231,6 +245,8 @@ export function Space({ spaceId }: { spaceId: string }) {
 				onOpenChange={setShowCreateTask}
 				defaultSpaceId={spaceId}
 			/>
+
+			<AskAIPanel open={showAskAI} onClose={() => setShowAskAI(false)} />
 		</div>
 	);
 }
