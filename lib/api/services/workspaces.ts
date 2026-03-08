@@ -2,6 +2,19 @@ import type { Workspace, WorkspaceMember } from "../../types/models";
 import { apiClient } from "../client";
 import { API_ENDPOINTS } from "../config";
 
+export interface EmailInvitation {
+	id: string;
+	workspaceId: string;
+	email: string;
+	invitedBy: string;
+	inviteToken: string;
+	status: "PENDING" | "ACCEPTED" | "EXPIRED" | "FAILED";
+	channelIds: string[];
+	sentAt: string;
+	acceptedAt: string | null;
+	workspace: { name: string; slug: string };
+}
+
 // Example payload interfaces based on docs
 export interface CreateWorkspacePayload {
 	name: string;
@@ -88,6 +101,12 @@ export const workspaceService = {
 			undefined,
 			{ token },
 		),
+
+	getInvitations: async (workspaceId: string, token?: string) =>
+		apiClient.get<{
+			sent: EmailInvitation[];
+			received: EmailInvitation[];
+		}>(API_ENDPOINTS.WORKSPACE_INVITATIONS(workspaceId), { token }),
 
 	getInvite: async (inviteToken: string) =>
 		apiClient.get<{

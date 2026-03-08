@@ -1,8 +1,8 @@
 "use client";
 
-import type { KeyboardEvent } from "react";
 import { motion } from "framer-motion";
 import { Hash, Lightbulb, Link2, Loader2, Search, X } from "lucide-react";
+import type { KeyboardEvent } from "react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useWorkspaceMembers } from "@/hooks/use-workspace-members";
@@ -38,6 +38,7 @@ export function InviteMembersDialog({
 	const [selectedChannelIds, setSelectedChannelIds] = useState<Set<string>>(new Set());
 	const [copied, setCopied] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const [sendSuccess, setSendSuccess] = useState(false);
 	const emailInputRef = useRef<HTMLInputElement>(null);
 
 	const { token } = useSupabaseAuth();
@@ -67,7 +68,7 @@ export function InviteMembersDialog({
 	const addEmail = useCallback(
 		(raw: string) => {
 			const email = raw.trim().toLowerCase();
-			if (email && email.includes("@") && !emailChips.includes(email)) {
+			if (email?.includes("@") && !emailChips.includes(email)) {
 				setEmailChips((prev) => [...prev, email]);
 			}
 			setEmailInput("");
@@ -95,7 +96,7 @@ export function InviteMembersDialog({
 		const parts = pasted.split(/[,;\s]+/);
 		for (const part of parts) {
 			const email = part.trim().toLowerCase();
-			if (email && email.includes("@") && !emailChips.includes(email)) {
+			if (email?.includes("@") && !emailChips.includes(email)) {
 				setEmailChips((prev) => [...prev, email]);
 			}
 		}
@@ -112,14 +113,16 @@ export function InviteMembersDialog({
 		});
 	};
 
-	const [sendSuccess, setSendSuccess] = useState(false);
-
 	const handleSend = async () => {
 		if (emailInput.trim()) addEmail(emailInput);
 
 		// Collect final email list (including any just-typed one)
 		const finalEmails = [...emailChips];
-		if (emailInput.trim() && emailInput.includes("@") && !finalEmails.includes(emailInput.trim().toLowerCase())) {
+		if (
+			emailInput.trim() &&
+			emailInput.includes("@") &&
+			!finalEmails.includes(emailInput.trim().toLowerCase())
+		) {
 			finalEmails.push(emailInput.trim().toLowerCase());
 		}
 
@@ -149,9 +152,10 @@ export function InviteMembersDialog({
 			if (result.failed.length > 0 && result.sent.length === 0) {
 				setError(`Failed to send to: ${result.failed.join(", ")}`);
 			} else {
-				const skippedNote = alreadyMembers.length > 0
-					? ` (${alreadyMembers.length} already-member email${alreadyMembers.length > 1 ? "s" : ""} skipped)`
-					: "";
+				const skippedNote =
+					alreadyMembers.length > 0
+						? ` (${alreadyMembers.length} already-member email${alreadyMembers.length > 1 ? "s" : ""} skipped)`
+						: "";
 				setSendSuccess(true);
 				if (skippedNote) setError(skippedNote.trim());
 				setTimeout(() => {
@@ -210,9 +214,7 @@ export function InviteMembersDialog({
 			>
 				{/* Header */}
 				<div className="flex items-start justify-between px-6 pt-6 pb-0">
-					<h2 className="text-lg font-bold text-gray-900">
-						Invite people to {workspaceName}
-					</h2>
+					<h2 className="text-lg font-bold text-gray-900">Invite people to {workspaceName}</h2>
 					<button
 						type="button"
 						onClick={handleClose}
@@ -232,28 +234,30 @@ export function InviteMembersDialog({
 				<div className="px-6 py-4 space-y-4">
 					{/* To field with email chips */}
 					<div>
+						{/* biome-ignore lint/a11y/noLabelWithoutControl: custom chip input container */}
 						<label className="text-sm font-medium text-gray-700 mb-1.5 block">To:</label>
+						{/* biome-ignore lint/a11y/noStaticElementInteractions: click delegates to input */}
 						<div
 							className="flex flex-wrap items-center gap-1.5 min-h-[68px] w-full bg-white border border-gray-300 rounded-md px-3 py-2 focus-within:border-cyan-500 focus-within:ring-1 focus-within:ring-cyan-500 cursor-text"
 							onClick={() => emailInputRef.current?.focus()}
 							onKeyDown={() => {}}
 						>
 							{emailChips.map((email) => {
-									const isExisting = existingEmails.has(email);
-									return (
-								<span
-									key={email}
-									className={`inline-flex items-center gap-1 text-sm px-2.5 py-1 rounded-md ${
-										isExisting
-											? "bg-amber-50 border border-amber-300 text-amber-700"
-											: "bg-gray-100 border border-gray-200 text-gray-700"
-									}`}
-									title={isExisting ? "Already a workspace member" : undefined}
-								>
-									{email}
-									{isExisting && (
-										<span className="text-[10px] text-amber-600 font-medium">member</span>
-									)}
+								const isExisting = existingEmails.has(email);
+								return (
+									<span
+										key={email}
+										className={`inline-flex items-center gap-1 text-sm px-2.5 py-1 rounded-md ${
+											isExisting
+												? "bg-amber-50 border border-amber-300 text-amber-700"
+												: "bg-gray-100 border border-gray-200 text-gray-700"
+										}`}
+										title={isExisting ? "Already a workspace member" : undefined}
+									>
+										{email}
+										{isExisting && (
+											<span className="text-[10px] text-amber-600 font-medium">member</span>
+										)}
 										<button
 											type="button"
 											onClick={(e) => {
@@ -285,9 +289,7 @@ export function InviteMembersDialog({
 
 					{/* Add to channels */}
 					<div>
-						<p className="text-sm font-semibold text-gray-900">
-							Add to team channels (optional)
-						</p>
+						<p className="text-sm font-semibold text-gray-900">Add to team channels (optional)</p>
 						<p className="text-xs text-gray-500 mt-0.5">
 							Make sure your teammates are in the right conversations from the get go.
 						</p>
@@ -303,7 +305,7 @@ export function InviteMembersDialog({
 										onClick={() => toggleChannel(ch.id)}
 										className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium text-white transition-colors ${
 											selectedChannelIds.has(ch.id)
-												? "ring-2 ring-cyan-400 " + CHIP_COLORS[i % CHIP_COLORS.length]
+												? `ring-2 ring-cyan-400 ${CHIP_COLORS[i % CHIP_COLORS.length]}`
 												: CHIP_COLORS[i % CHIP_COLORS.length]
 										}`}
 									>
@@ -378,10 +380,7 @@ export function InviteMembersDialog({
 						{copied ? "Link copied!" : "Copy invite link"}
 						{!copied && (
 							<span className="text-gray-400">
-								–{" "}
-								<span className="text-cyan-600/70 hover:text-cyan-700">
-									Edit link settings
-								</span>
+								– <span className="text-cyan-600/70 hover:text-cyan-700">Edit link settings</span>
 							</span>
 						)}
 					</button>
