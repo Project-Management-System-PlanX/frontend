@@ -70,6 +70,7 @@ import {
 	Smile,
 	Star,
 	Strikethrough,
+	Trash2,
 	Underline as UnderlineIcon,
 	X,
 } from "lucide-react";
@@ -132,7 +133,7 @@ export function ChatArea({
 	const displayName = isDM && dmDisplayName ? dmDisplayName : channel ? channel.name : channelName;
 
 	// Use real Supabase messages for this channel
-	const { messages, isLoading, error, sendMessage } = useMessages(channelName);
+	const { messages, isLoading, error, sendMessage, deleteMessage } = useMessages(channelName);
 
 	// Filtered member list for @ mentions
 	const filteredMembers = useMemo(() => {
@@ -540,9 +541,12 @@ export function ChatArea({
 							</p>
 						</div>
 					) : (
-						messages.map((message) => (
+						messages.map((message) => {
+							const isDeleted = !!(message.deletedAt || message.deleted_at);
+							const isOwnMessage = message.user_id === user?.id || message.userId === user?.id;
+							return (
 							<div key={message.id}>
-								<div className="flex gap-3 group">
+								<div className="flex gap-3 group relative hover:bg-[#f9fafb] rounded-lg px-2 py-1 -mx-2 transition-colors">
 									<Avatar className="w-10 h-10 shrink-0">
 										<AvatarImage src={message.users?.imageUrl || undefined} />
 										<AvatarFallback className="bg-[#e5e7eb] text-[#404040]">
@@ -560,6 +564,10 @@ export function ChatArea({
 											</span>
 										</div>
 
+										{isDeleted ? (
+											<p className="text-[#9a9a9a] mt-1 italic text-sm">This message was deleted</p>
+										) : (
+											<>
 										{message.content && (
 											isHtmlContent(message.content) ? (
 												// biome-ignore lint/a11y/noStaticElementInteractions: mention clicks navigate to DM
@@ -625,10 +633,25 @@ export function ChatArea({
 												)}
 											</div>
 										)}
+											</>
+										)}
 									</div>
+
+									{/* Delete button — only for own messages, hidden when deleted */}
+									{isOwnMessage && !isDeleted && (
+										<button
+											type="button"
+											onClick={() => deleteMessage(message.id)}
+											className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-md hover:bg-red-50 text-[#9a9a9a] hover:text-red-500"
+											title="Delete message"
+										>
+											<Trash2 className="w-4 h-4" />
+										</button>
+									)}
 								</div>
 							</div>
-						))
+							);
+						})
 					)}
 					<div ref={scrollRef} />
 				</div>

@@ -63,6 +63,7 @@ export const API_ENDPOINTS = {
 	// Messages
 	MESSAGES: "/messages",
 	MESSAGES_BY_CHANNEL: (channelId: string) => `/messages/channel/${channelId}`,
+	MESSAGE_DELETE: (messageId: string) => `/messages/${messageId}`,
 
 	// Meetings (proxied to meeting-service via Next.js rewrites)
 	MEETINGS_CREATE: "/meetings/create",

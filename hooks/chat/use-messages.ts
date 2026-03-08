@@ -22,6 +22,8 @@ export interface Message {
 	fileSize?: number;
 	is_edited?: boolean;
 	isEdited?: boolean;
+	deleted_at?: string | null;
+	deletedAt?: string | null;
 	created_at?: string;
 	createdAt?: string;
 	updated_at?: string;
@@ -61,6 +63,8 @@ function normalizeMessage(msg: any): Message {
 		fileSize: msg.fileSize || msg.file_size,
 		is_edited: msg.is_edited ?? msg.isEdited ?? false,
 		isEdited: msg.isEdited ?? msg.is_edited ?? false,
+		deleted_at: msg.deleted_at || msg.deletedAt || null,
+		deletedAt: msg.deletedAt || msg.deleted_at || null,
 		created_at: msg.created_at || msg.createdAt,
 		createdAt: msg.createdAt || msg.created_at,
 		updated_at: msg.updated_at || msg.updatedAt,
@@ -160,6 +164,22 @@ export function useMessages(channelId: string | null) {
 					});
 				},
 			)
+			.on(
+				"postgres_changes",
+				{
+					event: "UPDATE",
+					schema: "public",
+					table: "messages",
+					filter: `channel_id=eq.${channelId}`,
+				},
+				// biome-ignore lint/suspicious/noExplicitAny: Supabase realtime payload type
+				(payload: any) => {
+					const updated = normalizeMessage(payload.new as Message);
+					setMessages((prev) =>
+						prev.map((msg) => (msg.id === updated.id ? { ...msg, ...updated } : msg)),
+					);
+				},
+			)
 			.subscribe((status, err) => {
 				console.log("Supabase Realtime Status:", status);
 				if (err) console.error("Realtime Error:", err);
@@ -230,10 +250,39 @@ export function useMessages(channelId: string | null) {
 		[channelId],
 	);
 
+	// Delete message via backend API + immediately update state
+	const deleteMessage = useCallback(
+		async (messageId: string) => {
+			if (!channelId) return;
+
+			const supabase = supabaseRef.current;
+			const {
+				data: { session },
+			} = await supabase.auth.getSession();
+			const token = session?.access_token;
+
+			await fetchClient(API_ENDPOINTS.MESSAGE_DELETE(messageId), {
+				token,
+				method: "DELETE",
+			});
+
+			// Optimistically update the local state
+			setMessages((prev) =>
+				prev.map((msg) =>
+					msg.id === messageId
+						? { ...msg, content: "", deletedAt: new Date().toISOString(), deleted_at: new Date().toISOString(), file_url: undefined, fileUrl: undefined, file_name: undefined, fileName: undefined, file_type: undefined, fileType: undefined, file_size: undefined, fileSize: undefined }
+						: msg,
+				),
+			);
+		},
+		[channelId],
+	);
+
 	return {
 		messages,
 		isLoading,
 		error,
 		sendMessage,
+		deleteMessage,
 	};
 }
