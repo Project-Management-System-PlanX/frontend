@@ -1,12 +1,14 @@
 "use client";
 
-import { Bot, CalendarIcon, ChevronDown, Send, Sparkles, User, X } from "lucide-react";
+import { Bot, CalendarIcon, Check, ChevronDown, Loader2, Send, Sparkles, User, X } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useCreateTask } from "@/hooks/api/use-tasks";
 import { useMemberLookup } from "@/hooks/use-member-lookup";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useWorkspaceMembers } from "@/hooks/use-workspace-members";
 
 // ─── Types ───
@@ -103,18 +105,24 @@ const workTypeConfig: Record<string, { label: string; color: string }> = {
 export function AskAIPanel({
 	open,
 	onClose,
+	spaceId,
 }: {
 	open: boolean;
 	onClose: () => void;
+	spaceId: string;
 }) {
 	const [messages, setMessages] = useState<ChatMessage[]>([]);
 	const [input, setInput] = useState("");
 	const [isTyping, setIsTyping] = useState(false);
+	const [confirmedMsgIds, setConfirmedMsgIds] = useState<Set<string>>(new Set());
+	const [creatingMsgId, setCreatingMsgId] = useState<string | null>(null);
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const inputRef = useRef<HTMLInputElement>(null);
 
 	const { members } = useWorkspaceMembers();
 	const { getMember } = useMemberLookup();
+	const { token } = useSupabaseAuth();
+	const createTask = useCreateTask(token || undefined);
 
 	const scrollToBottom = useCallback(() => {
 		setTimeout(() => {
@@ -168,6 +176,44 @@ export function AskAIPanel({
 			),
 		);
 	}, []);
+
+	const handleConfirmTasks = useCallback(
+		async (msgId: string) => {
+			const msg = messages.find((m) => m.id === msgId);
+			if (!msg?.tasks || !spaceId) return;
+
+			setCreatingMsgId(msgId);
+
+			for (const task of msg.tasks) {
+				try {
+					await createTask.mutateAsync({
+						spaceId,
+						title: task.title,
+						priority: task.priority,
+						workType: task.workType,
+						assigneeId: task.assigneeId,
+						startDate: task.startDate?.toISOString(),
+						dueDate: task.dueDate?.toISOString(),
+					});
+				} catch (err) {
+					console.error("Failed to create task:", task.title, err);
+				}
+			}
+
+			setCreatingMsgId(null);
+			setConfirmedMsgIds((prev) => new Set(prev).add(msgId));
+
+			// Add success message
+			const successMsg: ChatMessage = {
+				id: `s-${Date.now()}`,
+				role: "ai",
+				content: `All ${msg.tasks.length} tasks have been created successfully! They're now visible in your List, Board, and other views.`,
+			};
+			setMessages((prev) => [...prev, successMsg]);
+			scrollToBottom();
+		},
+		[messages, spaceId, createTask, scrollToBottom],
+	);
 
 	if (!open) return null;
 
@@ -249,8 +295,36 @@ export function AskAIPanel({
 												members={members}
 												getMember={getMember}
 												onUpdate={(updates) => updateTask(msg.id, task.id, updates)}
+												disabled={confirmedMsgIds.has(msg.id)}
 											/>
 										))}
+
+										{/* Confirm button */}
+										{confirmedMsgIds.has(msg.id) ? (
+											<div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg mt-1">
+												<Check className="w-4 h-4 text-green-600" />
+												<span className="text-[12px] font-medium text-green-700">Tasks created successfully</span>
+											</div>
+										) : (
+											<button
+												type="button"
+												onClick={() => handleConfirmTasks(msg.id)}
+												disabled={creatingMsgId === msg.id}
+												className="w-full mt-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#0B6E4F] text-white text-[13px] font-semibold rounded-lg hover:bg-[#095a40] disabled:opacity-60 transition-colors shadow-sm"
+											>
+												{creatingMsgId === msg.id ? (
+													<>
+														<Loader2 className="w-4 h-4 animate-spin" />
+														Creating tasks...
+													</>
+												) : (
+													<>
+														<Check className="w-4 h-4" />
+														Confirm & Create {msg.tasks.length} Tasks
+													</>
+												)}
+											</button>
+										)}
 									</div>
 								)}
 							</div>
@@ -310,12 +384,14 @@ function TaskCard({
 	members,
 	getMember,
 	onUpdate,
+	disabled,
 }: {
 	task: SuggestedTask;
 	index: number;
 	members: { userId: string; profile?: { firstName?: string; lastName?: string; imageUrl?: string } }[];
 	getMember: (id: string) => { name: string; initials: string; imageUrl?: string };
 	onUpdate: (updates: Partial<SuggestedTask>) => void;
+	disabled?: boolean;
 }) {
 	const pri = priorityConfig[task.priority];
 	const wt = workTypeConfig[task.workType];
@@ -329,12 +405,13 @@ function TaskCard({
 	const assignee = task.assigneeId ? getMember(task.assigneeId) : null;
 
 	return (
-		<div className="group bg-white border border-slate-150 rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow animate-[fadeInUp_0.3s_ease-out]">
+		<div className={`group bg-white border border-slate-150 rounded-lg p-3 shadow-sm transition-shadow animate-[fadeInUp_0.3s_ease-out] ${disabled ? "opacity-70" : "hover:shadow-md"}`}>
 			{/* Row 1: Order, type badge, title */}
 			<div className="flex items-start gap-2">
 				<span className="text-[11px] font-bold text-slate-400 mt-0.5 w-4 text-center flex-shrink-0">
 					{index + 1}
 				</span>
+				{disabled && <Check className="w-3.5 h-3.5 text-green-500 mt-0.5 flex-shrink-0" />}
 				<span
 					className={`${wt.color} text-white text-[9px] font-bold px-1.5 py-0.5 rounded mt-0.5 flex-shrink-0 uppercase tracking-wide`}
 				>

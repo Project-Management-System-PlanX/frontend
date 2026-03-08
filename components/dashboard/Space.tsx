@@ -246,7 +246,7 @@ export function Space({ spaceId }: { spaceId: string }) {
 				defaultSpaceId={spaceId}
 			/>
 
-			<AskAIPanel open={showAskAI} onClose={() => setShowAskAI(false)} />
+			<AskAIPanel open={showAskAI} onClose={() => setShowAskAI(false)} spaceId={spaceId} />
 		</div>
 	);
 }
