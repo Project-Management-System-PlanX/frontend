@@ -28,6 +28,7 @@ import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useTasksRealtime } from "@/hooks/use-tasks-realtime";
 import { CreateTaskModal } from "../modals/CreateTaskModal";
 import { ForYouHeader } from "./foryou/ForYouHeader";
+import { AskAIPanel } from "./space/AskAIPanel";
 import { SpaceBoardView } from "./space/SpaceBoardView";
 import { SpaceCalendarView } from "./space/SpaceCalendarView";
 import { SpaceChartView } from "./space/SpaceChartView";
@@ -35,7 +36,6 @@ import { SpaceColumnView } from "./space/SpaceColumnView";
 import { SpaceFormsView } from "./space/SpaceFormsView";
 import { SpaceListView } from "./space/SpaceListView";
 import { SpaceTimelineView } from "./space/SpaceTimelineView";
-import { AskAIPanel } from "./space/AskAIPanel";
 
 export function Space({ spaceId }: { spaceId: string }) {
 	const [viewMode, _setViewMode] = useState<"list" | "column">("list");

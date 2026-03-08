@@ -1,6 +1,16 @@
 "use client";
 
-import { Bot, CalendarIcon, Check, ChevronDown, Loader2, Send, Sparkles, User, X } from "lucide-react";
+import {
+	Bot,
+	CalendarIcon,
+	Check,
+	ChevronDown,
+	Loader2,
+	Send,
+	Sparkles,
+	User,
+	X,
+} from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Calendar } from "@/components/ui/calendar";
@@ -37,16 +47,46 @@ function generateHardcodedTasks(prompt: string): SuggestedTask[] {
 		return [
 			{ id: "ai-1", title: "Design landing page wireframe", priority: "HIGH", workType: "TASK" },
 			{ id: "ai-2", title: "Implement hero section with CTA", priority: "HIGH", workType: "TASK" },
-			{ id: "ai-3", title: "Build features/benefits section", priority: "MEDIUM", workType: "TASK" },
-			{ id: "ai-4", title: "Create responsive navigation bar", priority: "MEDIUM", workType: "TASK" },
-			{ id: "ai-5", title: "Add footer with links and social icons", priority: "LOW", workType: "TASK" },
-			{ id: "ai-6", title: "Optimize for mobile responsiveness", priority: "HIGH", workType: "TASK" },
+			{
+				id: "ai-3",
+				title: "Build features/benefits section",
+				priority: "MEDIUM",
+				workType: "TASK",
+			},
+			{
+				id: "ai-4",
+				title: "Create responsive navigation bar",
+				priority: "MEDIUM",
+				workType: "TASK",
+			},
+			{
+				id: "ai-5",
+				title: "Add footer with links and social icons",
+				priority: "LOW",
+				workType: "TASK",
+			},
+			{
+				id: "ai-6",
+				title: "Optimize for mobile responsiveness",
+				priority: "HIGH",
+				workType: "TASK",
+			},
 		];
 	}
 
-	if (lower.includes("auth") || lower.includes("login") || lower.includes("signup") || lower.includes("sign")) {
+	if (
+		lower.includes("auth") ||
+		lower.includes("login") ||
+		lower.includes("signup") ||
+		lower.includes("sign")
+	) {
 		return [
-			{ id: "ai-1", title: "Set up authentication provider (OAuth/JWT)", priority: "CRITICAL", workType: "TASK" },
+			{
+				id: "ai-1",
+				title: "Set up authentication provider (OAuth/JWT)",
+				priority: "CRITICAL",
+				workType: "TASK",
+			},
 			{ id: "ai-2", title: "Create login page UI", priority: "HIGH", workType: "TASK" },
 			{ id: "ai-3", title: "Create signup/register page UI", priority: "HIGH", workType: "TASK" },
 			{ id: "ai-4", title: "Implement password reset flow", priority: "MEDIUM", workType: "TASK" },
@@ -58,9 +98,19 @@ function generateHardcodedTasks(prompt: string): SuggestedTask[] {
 	if (lower.includes("api") || lower.includes("backend") || lower.includes("endpoint")) {
 		return [
 			{ id: "ai-1", title: "Design REST API schema & routes", priority: "HIGH", workType: "STORY" },
-			{ id: "ai-2", title: "Set up database models/migrations", priority: "HIGH", workType: "TASK" },
+			{
+				id: "ai-2",
+				title: "Set up database models/migrations",
+				priority: "HIGH",
+				workType: "TASK",
+			},
 			{ id: "ai-3", title: "Implement CRUD endpoints", priority: "HIGH", workType: "TASK" },
-			{ id: "ai-4", title: "Add input validation & error handling", priority: "MEDIUM", workType: "TASK" },
+			{
+				id: "ai-4",
+				title: "Add input validation & error handling",
+				priority: "MEDIUM",
+				workType: "TASK",
+			},
 			{ id: "ai-5", title: "Write API integration tests", priority: "MEDIUM", workType: "TASK" },
 		];
 	}
@@ -77,7 +127,12 @@ function generateHardcodedTasks(prompt: string): SuggestedTask[] {
 
 	// Default generic tasks
 	return [
-		{ id: "ai-1", title: "Define project requirements & scope", priority: "HIGH", workType: "STORY" },
+		{
+			id: "ai-1",
+			title: "Define project requirements & scope",
+			priority: "HIGH",
+			workType: "STORY",
+		},
 		{ id: "ai-2", title: "Create initial project structure", priority: "HIGH", workType: "TASK" },
 		{ id: "ai-3", title: "Design UI/UX mockups", priority: "MEDIUM", workType: "TASK" },
 		{ id: "ai-4", title: "Implement core feature logic", priority: "HIGH", workType: "TASK" },
@@ -164,18 +219,21 @@ export function AskAIPanel({
 		}, 1200);
 	}, [input, scrollToBottom]);
 
-	const updateTask = useCallback((msgId: string, taskId: string, updates: Partial<SuggestedTask>) => {
-		setMessages((prev) =>
-			prev.map((m) =>
-				m.id === msgId
-					? {
-							...m,
-							tasks: m.tasks?.map((t) => (t.id === taskId ? { ...t, ...updates } : t)),
-						}
-					: m,
-			),
-		);
-	}, []);
+	const updateTask = useCallback(
+		(msgId: string, taskId: string, updates: Partial<SuggestedTask>) => {
+			setMessages((prev) =>
+				prev.map((m) =>
+					m.id === msgId
+						? {
+								...m,
+								tasks: m.tasks?.map((t) => (t.id === taskId ? { ...t, ...updates } : t)),
+							}
+						: m,
+				),
+			);
+		},
+		[],
+	);
 
 	const handleConfirmTasks = useCallback(
 		async (msgId: string) => {
@@ -246,7 +304,8 @@ export function AskAIPanel({
 						<div>
 							<p className="text-sm font-semibold text-slate-700">What are you working on?</p>
 							<p className="text-xs text-slate-400 mt-1 max-w-[260px]">
-								Describe your feature or project and I'll suggest an ordered list of tasks with priorities.
+								Describe your feature or project and I'll suggest an ordered list of tasks with
+								priorities.
 							</p>
 						</div>
 						<div className="flex flex-wrap gap-1.5 mt-2 justify-center">
@@ -302,7 +361,9 @@ export function AskAIPanel({
 										{confirmedMsgIds.has(msg.id) ? (
 											<div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg mt-1">
 												<Check className="w-4 h-4 text-green-600" />
-												<span className="text-[12px] font-medium text-green-700">Tasks created successfully</span>
+												<span className="text-[12px] font-medium text-green-700">
+													Tasks created successfully
+												</span>
 											</div>
 										) : (
 											<button
@@ -387,7 +448,10 @@ function TaskCard({
 }: {
 	task: SuggestedTask;
 	index: number;
-	members: { userId: string; profile?: { firstName?: string; lastName?: string; imageUrl?: string } }[];
+	members: {
+		userId: string;
+		profile?: { firstName?: string; lastName?: string; imageUrl?: string };
+	}[];
 	getMember: (id: string) => { name: string; initials: string; imageUrl?: string };
 	onUpdate: (updates: Partial<SuggestedTask>) => void;
 	disabled?: boolean;
@@ -397,14 +461,14 @@ function TaskCard({
 	const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
 
 	const fmtDate = (d?: Date) =>
-		d
-			? d.toLocaleDateString(undefined, { month: "short", day: "numeric" })
-			: "—";
+		d ? d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "—";
 
 	const assignee = task.assigneeId ? getMember(task.assigneeId) : null;
 
 	return (
-		<div className={`group bg-white border border-slate-150 rounded-lg p-3 shadow-sm transition-shadow animate-[fadeInUp_0.3s_ease-out] ${disabled ? "opacity-70" : "hover:shadow-md"}`}>
+		<div
+			className={`group bg-white border border-slate-150 rounded-lg p-3 shadow-sm transition-shadow animate-[fadeInUp_0.3s_ease-out] ${disabled ? "opacity-70" : "hover:shadow-md"}`}
+		>
 			{/* Row 1: Order, type badge, title */}
 			<div className="flex items-start gap-2">
 				<span className="text-[11px] font-bold text-slate-400 mt-0.5 w-4 text-center flex-shrink-0">
@@ -422,7 +486,9 @@ function TaskCard({
 			{/* Row 2: Priority, Assignee, Dates */}
 			<div className="flex items-center gap-2 mt-2 ml-6 flex-wrap">
 				{/* Priority */}
-				<span className={`${pri.bg} ${pri.color} text-[10px] font-semibold px-2 py-0.5 rounded-full`}>
+				<span
+					className={`${pri.bg} ${pri.color} text-[10px] font-semibold px-2 py-0.5 rounded-full`}
+				>
 					{pri.label}
 				</span>
 

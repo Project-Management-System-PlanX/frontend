@@ -86,7 +86,7 @@ function taskColor(task: Task): { bar: string; dot: string } {
    Component
 ────────────────────────────────────────────── */
 export function SpaceTimelineView({ spaceId }: { spaceId: string }) {
-	const { token, user } = useSupabaseAuth();
+	const { token } = useSupabaseAuth();
 	const { data: space } = useSpace(spaceId, token || undefined);
 	const { data: tasks, isLoading } = useTasks(spaceId, undefined, token || undefined);
 

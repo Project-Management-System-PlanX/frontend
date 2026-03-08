@@ -1,12 +1,20 @@
 "use client";
 
-import { Check, ChevronDown, ChevronRight, MoreHorizontal, Search, Trash2, User } from "lucide-react";
-import { useRef, useState } from "react";
+import {
+	Check,
+	ChevronDown,
+	ChevronRight,
+	MoreHorizontal,
+	Search,
+	Trash2,
+	User,
+} from "lucide-react";
+import { useState } from "react";
 import { TaskDetailModal } from "@/components/modals/TaskDetailModal";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSpace } from "@/hooks/api/use-spaces";
-import { useTasks, useDeleteTask, useUpdateTask } from "@/hooks/api/use-tasks";
+import { useDeleteTask, useTasks, useUpdateTask } from "@/hooks/api/use-tasks";
 import { useMemberLookup } from "@/hooks/use-member-lookup";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useWorkspaceMembers } from "@/hooks/use-workspace-members";
@@ -25,7 +33,7 @@ const COL_GRID =
 	"grid-cols-[auto_minmax(260px,1fr)_120px_120px_120px_80px_110px_100px_150px_150px_110px_36px]";
 
 export function SpaceListView({ spaceId }: { spaceId: string }) {
-	const { token, user } = useSupabaseAuth();
+	const { token } = useSupabaseAuth();
 	const { data: space } = useSpace(spaceId, token || undefined);
 	const { data: tasks, isLoading } = useTasks(spaceId, undefined, token || undefined);
 	const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -182,7 +190,11 @@ function TaskRow({ task, prefix, onClick }: { task: Task; prefix: string; onClic
 			</div>
 
 			{/* Assignee */}
-			<div className="px-3 py-2.5 flex items-center gap-2 min-w-0" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+			<div
+				className="px-3 py-2.5 flex items-center gap-2 min-w-0"
+				onClick={(e) => e.stopPropagation()}
+				onKeyDown={(e) => e.stopPropagation()}
+			>
 				<Popover open={assigneeOpen} onOpenChange={setAssigneeOpen}>
 					<PopoverTrigger asChild>
 						<button
@@ -208,7 +220,12 @@ function TaskRow({ task, prefix, onClick }: { task: Task; prefix: string; onClic
 							)}
 						</button>
 					</PopoverTrigger>
-					<PopoverContent className="w-56 p-0" align="start" sideOffset={4} onClick={(e) => e.stopPropagation()}>
+					<PopoverContent
+						className="w-56 p-0"
+						align="start"
+						sideOffset={4}
+						onClick={(e) => e.stopPropagation()}
+					>
 						<div className="p-2 border-b border-slate-100">
 							<div className="flex items-center gap-2 rounded-md bg-slate-50 px-2 py-1.5">
 								<Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -242,13 +259,19 @@ function TaskRow({ task, prefix, onClick }: { task: Task; prefix: string; onClic
 							{members
 								.filter((m) => {
 									if (!memberSearch) return true;
-									const name = `${m.profile?.firstName ?? ""} ${m.profile?.lastName ?? ""}`.toLowerCase();
+									const name =
+										`${m.profile?.firstName ?? ""} ${m.profile?.lastName ?? ""}`.toLowerCase();
 									return name.includes(memberSearch.toLowerCase());
 								})
 								.map((m) => {
 									const isSelected = m.userId === task.assigneeId;
-									const initials = `${(m.profile?.firstName ?? "")[0] ?? ""}${(m.profile?.lastName ?? "")[0] ?? ""}`.toUpperCase() || "?";
-									const name = [m.profile?.firstName, m.profile?.lastName].filter(Boolean).join(" ") || m.profile?.email || "Unknown";
+									const initials =
+										`${(m.profile?.firstName ?? "")[0] ?? ""}${(m.profile?.lastName ?? "")[0] ?? ""}`.toUpperCase() ||
+										"?";
+									const name =
+										[m.profile?.firstName, m.profile?.lastName].filter(Boolean).join(" ") ||
+										m.profile?.email ||
+										"Unknown";
 									return (
 										<button
 											key={m.id}
@@ -301,7 +324,9 @@ function TaskRow({ task, prefix, onClick }: { task: Task; prefix: string; onClic
 							className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2 py-0.5 rounded-full ${p.bg} ${p.text}`}
 						>
 							<span className={`w-1.5 h-1.5 rounded-full ${p.dot}`} />
-							{task.priority !== "NONE" ? task.priority.charAt(0) + task.priority.slice(1).toLowerCase() : "None"}
+							{task.priority !== "NONE"
+								? task.priority.charAt(0) + task.priority.slice(1).toLowerCase()
+								: "None"}
 						</span>
 					);
 				})()}
@@ -340,8 +365,18 @@ function TaskRow({ task, prefix, onClick }: { task: Task; prefix: string; onClic
 			</div>
 
 			{/* Actions */}
-			<div className="px-1 py-2.5" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-				<Popover open={actionsOpen} onOpenChange={(open) => { setActionsOpen(open); if (!open) setConfirmDelete(false); }}>
+			<div
+				className="px-1 py-2.5"
+				onClick={(e) => e.stopPropagation()}
+				onKeyDown={(e) => e.stopPropagation()}
+			>
+				<Popover
+					open={actionsOpen}
+					onOpenChange={(open) => {
+						setActionsOpen(open);
+						if (!open) setConfirmDelete(false);
+					}}
+				>
 					<PopoverTrigger asChild>
 						<button
 							type="button"

@@ -69,7 +69,7 @@ function getCalendarDays(year: number, month: number): (Date | null)[] {
    ═══════════════════════════════════════════════ */
 
 export function SpaceCalendarView({ spaceId }: { spaceId: string }) {
-	const { token, user } = useSupabaseAuth();
+	const { token } = useSupabaseAuth();
 	const { data: space } = useSpace(spaceId, token || undefined);
 	const { data: tasks, isLoading } = useTasks(spaceId, undefined, token || undefined);
 

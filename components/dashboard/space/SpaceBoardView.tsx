@@ -28,7 +28,7 @@ const PRIORITY_CONFIG: Record<string, { label: string; color: string; bg: string
 };
 
 export function SpaceBoardView({ spaceId }: { spaceId: string }) {
-	const { token, user } = useSupabaseAuth();
+	const { token } = useSupabaseAuth();
 
 	const { data: space, isLoading: isSpaceLoading } = useSpace(spaceId, token || undefined);
 	const { data: serverTasks } = useTasks(spaceId, undefined, token || undefined);
