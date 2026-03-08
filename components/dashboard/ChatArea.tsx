@@ -1,13 +1,65 @@
 "use client";
 
+import data from "@emoji-mart/data";
+import Picker from "@emoji-mart/react";
+import { Node } from "@tiptap/core";
+import Link from "@tiptap/extension-link";
+import Placeholder from "@tiptap/extension-placeholder";
+import TextAlign from "@tiptap/extension-text-align";
+import Underline from "@tiptap/extension-underline";
+import { EditorContent, useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+
+const MentionNode = Node.create({
+	name: "mention",
+	group: "inline",
+	inline: true,
+	selectable: true,
+	atom: true,
+
+	addAttributes() {
+		return {
+			id: { default: null },
+			label: { default: null },
+		};
+	},
+
+	parseHTML() {
+		return [
+			{
+				tag: "span[data-mention]",
+				getAttrs: (dom) => {
+					const el = dom as HTMLElement;
+					return {
+						id: el.getAttribute("data-mention"),
+						label: (el.textContent || "").replace(/^@/, ""),
+					};
+				},
+			},
+		];
+	},
+
+	renderHTML({ node }) {
+		return [
+			"span",
+			{ "data-mention": node.attrs.id, class: "mention" },
+			`@${node.attrs.label}`,
+		];
+	},
+});
+import DOMPurify from "dompurify";
 import {
+	AlignCenter,
+	AlignLeft,
+	AlignRight,
 	AtSign,
 	Bold,
+	Check,
 	File as FileIcon,
 	Image as ImageIcon,
 	Info,
 	Italic,
-	Link as LinkIcon,
+	Link2,
 	List,
 	ListOrdered,
 	Loader2,
@@ -18,16 +70,24 @@ import {
 	Smile,
 	Star,
 	Strikethrough,
+	Underline as UnderlineIcon,
 	X,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { StartMeetingButton } from "@/components/meeting/StartMeetingButton";
+import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+const StartMeetingButton = dynamic(
+	() => import("@/components/meeting/StartMeetingButton").then((m) => m.StartMeetingButton),
+	{ ssr: false },
+);
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { type Message as SupabaseMessage, useMessages } from "@/hooks/chat/use-messages";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
+import { useWorkspaceMembers } from "@/hooks/use-workspace-members";
 import { createClient } from "@/lib/supabase/client";
 import { useChannelStore } from "@/stores/channel-store";
 
@@ -46,16 +106,26 @@ export function ChatArea({
 	isDM,
 	dmDisplayName,
 }: ChatAreaProps) {
-	const [messageInput, setMessageInput] = useState("");
 	const [attachment, setAttachment] = useState<File | null>(null);
 	const [isUploading, setIsUploading] = useState(false);
+	const [showEmoji, setShowEmoji] = useState(false);
+	const [showLinkInput, setShowLinkInput] = useState(false);
+	const [linkUrl, setLinkUrl] = useState("");
+	const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+	const [mentionIndex, setMentionIndex] = useState(0);
+	const mentionRangeRef = useRef<{ from: number; to: number } | null>(null);
 
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
+	const emojiRef = useRef<HTMLDivElement>(null);
+	const linkInputRef = useRef<HTMLInputElement>(null);
+	const mentionRef = useRef<HTMLDivElement>(null);
 
 	const { user } = useSupabaseAuth();
+	const { members } = useWorkspaceMembers();
 	const { channels } = useChannelStore();
 	const supabase = createClient();
+	const router = useRouter();
 
 	// Find the channel by ID (channelName is actually channelId from URL)
 	const channel = channels.find((c) => c.id === channelName);
@@ -63,6 +133,69 @@ export function ChatArea({
 
 	// Use real Supabase messages for this channel
 	const { messages, isLoading, error, sendMessage } = useMessages(channelName);
+
+	// Filtered member list for @ mentions
+	const filteredMembers = useMemo(() => {
+		if (mentionQuery === null) return [];
+		const q = mentionQuery.toLowerCase();
+		return members
+			.filter((m) => {
+				const name = [m.profile?.firstName, m.profile?.lastName].filter(Boolean).join(" ").toLowerCase();
+				const email = m.profile?.email?.toLowerCase() || "";
+				const username = m.profile?.username?.toLowerCase() || "";
+				return name.includes(q) || email.includes(q) || username.includes(q);
+			})
+			.slice(0, 8);
+	}, [members, mentionQuery]);
+
+	// Tiptap rich-text editor
+	const editor = useEditor({
+		immediatelyRender: false,
+		extensions: [
+			StarterKit.configure({
+				heading: false,
+				codeBlock: false,
+				horizontalRule: false,
+				blockquote: false,
+			}),
+			Placeholder.configure({
+				placeholder: `Message ${isDM ? "@" : "#"}${displayName}`,
+			}),
+			Underline,
+			TextAlign.configure({ types: ["paragraph"] }),
+			Link.configure({ openOnClick: false, HTMLAttributes: { class: "text-blue-500 underline" } }),
+			MentionNode,
+		],
+		onUpdate: ({ editor: ed }) => {
+			// Detect @ mention trigger
+			const { from } = ed.state.selection;
+			const textBefore = ed.state.doc.textBetween(Math.max(0, from - 50), from, "\n");
+			const mentionMatch = textBefore.match(/@(\w*)$/);
+			if (mentionMatch) {
+				setMentionQuery(mentionMatch[1]);
+				setMentionIndex(0);
+				mentionRangeRef.current = { from: from - mentionMatch[0].length, to: from };
+			} else {
+				setMentionQuery(null);
+				mentionRangeRef.current = null;
+			}
+		},
+		editorProps: {
+			attributes: {
+				class:
+					"prose prose-sm max-w-none focus:outline-none min-h-[40px] max-h-[160px] overflow-y-auto px-3 py-2 text-sm text-[#202020] [&_p]:my-0 [&_ul]:my-1 [&_ol]:my-1",
+			},
+			handleKeyDown: (_view, event) => {
+				if (event.key === "Enter" && !event.shiftKey) {
+					event.preventDefault();
+					handleSendMessage();
+					return true;
+				}
+				return false;
+			},
+		},
+		editable: !isUploading,
+	});
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: Scroll to bottom when messages change
 	useEffect(() => {
@@ -79,8 +212,12 @@ export function ChatArea({
 		}
 	};
 
-	const handleSendMessage = async () => {
-		if ((!messageInput.trim() && !attachment) || !user?.id || isUploading) return;
+	const handleSendMessage = useCallback(async () => {
+		if (!editor || !user?.id || isUploading) return;
+
+		const html = editor.getHTML();
+		const text = editor.getText().trim();
+		if (!text && !attachment) return;
 
 		try {
 			setIsUploading(true);
@@ -107,21 +244,146 @@ export function ChatArea({
 				};
 			}
 
-			await sendMessage(messageInput, user.id, fileDetails);
-			setMessageInput("");
+			await sendMessage(text ? html : "", user.id, fileDetails);
+			editor.commands.clearContent();
 			setAttachment(null);
 		} catch (err) {
 			console.error("Failed to send message:", err);
 		} finally {
 			setIsUploading(false);
 		}
+	}, [editor, user?.id, isUploading, attachment, channelName, supabase.storage, sendMessage]);
+
+	// Re-bind handleSendMessage to the editor's keydown handler when dependencies change
+	useEffect(() => {
+		if (!editor) return;
+		editor.setOptions({
+			editorProps: {
+				...editor.options.editorProps,
+				handleKeyDown: (_view, event) => {
+					if (event.key === "Enter" && !event.shiftKey) {
+						event.preventDefault();
+						handleSendMessage();
+						return true;
+					}
+					return false;
+				},
+			},
+		});
+	}, [editor, handleSendMessage]);
+
+	// Close emoji picker on outside click
+	useEffect(() => {
+		const handleClickOutside = (e: MouseEvent) => {
+			if (emojiRef.current && !emojiRef.current.contains(e.target as globalThis.Node)) {
+				setShowEmoji(false);
+			}
+		};
+		if (showEmoji) document.addEventListener("mousedown", handleClickOutside);
+		return () => document.removeEventListener("mousedown", handleClickOutside);
+	}, [showEmoji]);
+
+	// biome-ignore lint/suspicious/noExplicitAny: emoji-mart types aren't exported
+	const handleEmojiSelect = (emoji: any) => {
+		editor?.chain().focus().insertContent(emoji.native).run();
+		setShowEmoji(false);
 	};
 
-	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-		if (e.key === "Enter") {
-			handleSendMessage();
+	const handleLinkAdd = () => {
+		if (!editor) return;
+		if (showLinkInput) {
+			// Apply the link
+			if (linkUrl.trim()) {
+				editor.chain().focus().setLink({ href: linkUrl.trim() }).run();
+			}
+			setShowLinkInput(false);
+			setLinkUrl("");
+		} else {
+			// If there's already a link, remove it
+			if (editor.isActive("link")) {
+				editor.chain().focus().unsetLink().run();
+				return;
+			}
+			setShowLinkInput(true);
+			setTimeout(() => linkInputRef.current?.focus(), 50);
 		}
 	};
+
+	const handleLinkKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+		if (e.key === "Enter") {
+			e.preventDefault();
+			if (linkUrl.trim() && editor) {
+				editor.chain().focus().setLink({ href: linkUrl.trim() }).run();
+			}
+			setShowLinkInput(false);
+			setLinkUrl("");
+		} else if (e.key === "Escape") {
+			setShowLinkInput(false);
+			setLinkUrl("");
+			editor?.chain().focus().run();
+		}
+	};
+
+	const insertMention = useCallback(
+		(member: (typeof members)[0]) => {
+			if (!editor) return;
+			const name = [member.profile?.firstName, member.profile?.lastName].filter(Boolean).join(" ") || member.profile?.username || "user";
+			const range = mentionRangeRef.current;
+			if (!range) return;
+
+			editor
+				.chain()
+				.focus()
+				.deleteRange({ from: range.from, to: range.to })
+				.insertContentAt(range.from, [
+					{ type: "mention", attrs: { id: member.userId, label: name } },
+					{ type: "text", text: " " },
+				])
+				.run();
+
+			setMentionQuery(null);
+			mentionRangeRef.current = null;
+		},
+		[editor],
+	);
+
+	// Handle @ mention keyboard navigation
+	const handleMentionKeyDown = useCallback(
+		(e: KeyboardEvent) => {
+			if (mentionQuery === null || filteredMembers.length === 0) return;
+			if (e.key === "ArrowDown") {
+				e.preventDefault();
+				setMentionIndex((i) => (i + 1) % filteredMembers.length);
+			} else if (e.key === "ArrowUp") {
+				e.preventDefault();
+				setMentionIndex((i) => (i - 1 + filteredMembers.length) % filteredMembers.length);
+			} else if (e.key === "Enter" || e.key === "Tab") {
+				e.preventDefault();
+				insertMention(filteredMembers[mentionIndex]);
+			} else if (e.key === "Escape") {
+				setMentionQuery(null);
+			}
+		},
+		[mentionQuery, filteredMembers, mentionIndex, insertMention],
+	);
+
+	useEffect(() => {
+		if (mentionQuery !== null) {
+			document.addEventListener("keydown", handleMentionKeyDown, true);
+		}
+		return () => document.removeEventListener("keydown", handleMentionKeyDown, true);
+	}, [mentionQuery, handleMentionKeyDown]);
+
+	// Close mention dropdown on outside click
+	useEffect(() => {
+		const handleClickOutside = (e: MouseEvent) => {
+			if (mentionRef.current && !mentionRef.current.contains(e.target as globalThis.Node)) {
+				setMentionQuery(null);
+			}
+		};
+		if (mentionQuery !== null) document.addEventListener("mousedown", handleClickOutside);
+		return () => document.removeEventListener("mousedown", handleClickOutside);
+	}, [mentionQuery]);
 
 	const formatMessageTime = (timestamp: string) => {
 		try {
@@ -172,6 +434,8 @@ export function ChatArea({
 			.toUpperCase()
 			.slice(0, 2);
 	};
+
+	const isHtmlContent = (content: string) => /<[a-z][\s\S]*>/i.test(content);
 
 	return (
 		<div
@@ -297,9 +561,33 @@ export function ChatArea({
 										</div>
 
 										{message.content && (
-											<p className="text-[#404040] mt-1 leading-relaxed text-[15px]">
-												{message.content}
-											</p>
+											isHtmlContent(message.content) ? (
+												// biome-ignore lint/a11y/noStaticElementInteractions: mention clicks navigate to DM
+												// biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized via DOMPurify
+												<div
+													className="text-[#404040] mt-1 leading-relaxed text-[15px] prose prose-sm max-w-none [&_p]:my-0 [&_ul]:my-1 [&_ol]:my-1 [&_a]:text-blue-500"
+													onClick={(e) => {
+														const target = e.target as HTMLElement;
+														const mentionId = target.getAttribute("data-mention");
+														if (mentionId) {
+															const mentionedMember = members.find((m) => m.userId === mentionId);
+															if (mentionedMember?.slug) {
+																router.push(`/dashboard/chat/dm/${encodeURIComponent(mentionedMember.slug)}`);
+															}
+														}
+													}}
+													dangerouslySetInnerHTML={{
+														__html: DOMPurify.sanitize(message.content, {
+															ALLOWED_TAGS: ["p", "br", "strong", "em", "u", "s", "a", "ul", "ol", "li", "span"],
+															ALLOWED_ATTR: ["href", "target", "rel", "style", "class", "data-mention"],
+														}),
+													}}
+												/>
+											) : (
+												<p className="text-[#404040] mt-1 leading-relaxed text-[15px]">
+													{message.content}
+												</p>
+											)
 										)}
 
 										{message.file_url && (
@@ -348,53 +636,80 @@ export function ChatArea({
 
 			{/* Message Input */}
 			<div className="pt-2 pb-4 px-4 border-t border-[#e5e7eb] shrink-0">
-				<div className="bg-white rounded-xl border border-[#e5e7eb] shadow-sm">
+				<div className="bg-white rounded-xl border border-[#e5e7eb] shadow-sm focus-within:ring-2 focus-within:ring-[#50C878]/30 focus-within:border-[#50C878] transition-all overflow-hidden">
 					{/* Formatting Toolbar */}
-					<div className="flex items-center gap-1 px-3 py-2 border-b border-[#e5e7eb]">
-						<TooltipProvider delayDuration={0}>
-							{[
-								{ icon: Bold, label: "Bold" },
-								{ icon: Italic, label: "Italic" },
-								{ icon: Strikethrough, label: "Strikethrough" },
-							].map(({ icon: Icon, label }) => (
-								<Tooltip key={label}>
-									<TooltipTrigger asChild>
-										<Button
-											variant="ghost"
-											size="icon"
-											className="w-7 h-7 text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"
-										>
-											<Icon className="w-4 h-4" />
-										</Button>
-									</TooltipTrigger>
-									<TooltipContent>{label}</TooltipContent>
-								</Tooltip>
+					{editor && (
+						<div className="flex items-center gap-1 px-3 py-2 border-b border-[#e5e7eb]">
+							{/* Bold / Italic / Underline / Strikethrough */}
+							{([
+								{ cmd: () => editor.chain().focus().toggleBold().run(), active: editor.isActive("bold"), icon: Bold, label: "Bold" },
+								{ cmd: () => editor.chain().focus().toggleItalic().run(), active: editor.isActive("italic"), icon: Italic, label: "Italic" },
+								{ cmd: () => editor.chain().focus().toggleUnderline().run(), active: editor.isActive("underline"), icon: UnderlineIcon, label: "Underline" },
+								{ cmd: () => editor.chain().focus().toggleStrike().run(), active: editor.isActive("strike"), icon: Strikethrough, label: "Strikethrough" },
+							] as const).map(({ cmd, active, icon: Icon, label }) => (
+								<button
+									key={label}
+									type="button"
+									onClick={cmd}
+									title={label}
+									className={`w-7 h-7 flex items-center justify-center rounded transition-colors ${active ? "text-[#0B6E4F] bg-emerald-50" : "text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"}`}
+								>
+									<Icon className="w-4 h-4" />
+								</button>
 							))}
 
 							<div className="w-px h-4 bg-[#e5e7eb] mx-1" />
 
-							{[
-								{ icon: LinkIcon, label: "Add link" },
-								{ icon: List, label: "Bulleted list" },
-								{ icon: ListOrdered, label: "Numbered list" },
-							].map(({ icon: Icon, label }) => (
-								<Tooltip key={label}>
-									<TooltipTrigger asChild>
-										<Button
-											variant="ghost"
-											size="icon"
-											className="w-7 h-7 text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"
-										>
-											<Icon className="w-4 h-4" />
-										</Button>
-									</TooltipTrigger>
-									<TooltipContent>{label}</TooltipContent>
-								</Tooltip>
-							))}
-						</TooltipProvider>
-					</div>
+							{/* Link */}
+							<button
+								type="button"
+								onClick={handleLinkAdd}
+								title="Add link"
+								className={`w-7 h-7 flex items-center justify-center rounded transition-colors ${editor.isActive("link") ? "text-[#0B6E4F] bg-emerald-50" : "text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"}`}
+							>
+								<Link2 className="w-4 h-4" />
+							</button>
 
-					{/* Input & Staging */}
+							{/* Lists */}
+							<button
+								type="button"
+								onClick={() => editor.chain().focus().toggleBulletList().run()}
+								title="Bulleted list"
+								className={`w-7 h-7 flex items-center justify-center rounded transition-colors ${editor.isActive("bulletList") ? "text-[#0B6E4F] bg-emerald-50" : "text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"}`}
+							>
+								<List className="w-4 h-4" />
+							</button>
+							<button
+								type="button"
+								onClick={() => editor.chain().focus().toggleOrderedList().run()}
+								title="Numbered list"
+								className={`w-7 h-7 flex items-center justify-center rounded transition-colors ${editor.isActive("orderedList") ? "text-[#0B6E4F] bg-emerald-50" : "text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"}`}
+							>
+								<ListOrdered className="w-4 h-4" />
+							</button>
+
+							<div className="w-px h-4 bg-[#e5e7eb] mx-1" />
+
+							{/* Text Alignment */}
+							{([
+								{ align: "left" as const, icon: AlignLeft, label: "Align left" },
+								{ align: "center" as const, icon: AlignCenter, label: "Align center" },
+								{ align: "right" as const, icon: AlignRight, label: "Align right" },
+							]).map(({ align, icon: Icon, label }) => (
+								<button
+									key={align}
+									type="button"
+									onClick={() => editor.chain().focus().setTextAlign(align).run()}
+									title={label}
+									className={`w-7 h-7 flex items-center justify-center rounded transition-colors ${editor.isActive({ textAlign: align }) ? "text-[#0B6E4F] bg-emerald-50" : "text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"}`}
+								>
+									<Icon className="w-4 h-4" />
+								</button>
+							))}
+						</div>
+					)}
+
+					{/* Editor & Staging */}
 					<div className="px-3 py-3 flex flex-col gap-2">
 						{/* Hidden File Input */}
 						<input
@@ -436,52 +751,158 @@ export function ChatArea({
 							</div>
 						)}
 
-						<input
-							type="text"
-							value={messageInput}
-							onChange={(e) => setMessageInput(e.target.value)}
-							onKeyDown={handleKeyDown}
-							placeholder={`Message ${isDM ? "@" : "#"}${displayName}`}
-							className="w-full bg-transparent text-[#202020] placeholder-[#9a9a9a] outline-none text-[15px]"
-							disabled={isUploading}
-						/>
+						{/* Tiptap Editor */}
+						{editor && (
+							<div className="relative">
+								<EditorContent editor={editor} />
+
+								{/* Inline Link Input */}
+								{showLinkInput && (
+									<div className="absolute bottom-full left-0 mb-1 flex items-center gap-2 bg-white border border-[#e5e7eb] rounded-lg shadow-lg px-3 py-2 z-50">
+										<Link2 className="w-4 h-4 text-[#9a9a9a] shrink-0" />
+										<input
+											ref={linkInputRef}
+											type="url"
+											value={linkUrl}
+											onChange={(e) => setLinkUrl(e.target.value)}
+											onKeyDown={handleLinkKeyDown}
+											placeholder="https://example.com"
+											className="w-64 text-sm text-[#202020] placeholder-[#9a9a9a] outline-none bg-transparent"
+										/>
+										<button
+											type="button"
+											onClick={handleLinkAdd}
+											className="p-1 text-[#0B6E4F] hover:bg-emerald-50 rounded transition-colors"
+											title="Apply link"
+										>
+											<Check className="w-4 h-4" />
+										</button>
+										<button
+											type="button"
+											onClick={() => { setShowLinkInput(false); setLinkUrl(""); editor?.chain().focus().run(); }}
+											className="p-1 text-[#9a9a9a] hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+											title="Cancel"
+										>
+											<X className="w-4 h-4" />
+										</button>
+									</div>
+								)}
+
+								{/* @ Mention Dropdown */}
+								{mentionQuery !== null && filteredMembers.length > 0 && (
+									<div
+										ref={mentionRef}
+										className="absolute bottom-full left-0 mb-1 w-72 max-h-48 overflow-y-auto bg-white border border-[#e5e7eb] rounded-lg shadow-lg z-50"
+									>
+										{filteredMembers.map((member, i) => {
+											const name = [member.profile?.firstName, member.profile?.lastName].filter(Boolean).join(" ") || member.profile?.username || "Unknown";
+											const initials = name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+											return (
+												<button
+													key={member.id}
+													type="button"
+													onMouseDown={(e) => {
+														e.preventDefault();
+														insertMention(member);
+													}}
+													className={`w-full flex items-center gap-3 px-3 py-2 text-left text-sm transition-colors ${i === mentionIndex ? "bg-[#0B6E4F]/10 text-[#0B6E4F]" : "text-[#202020] hover:bg-[#f5f5f5]"}`}
+												>
+													<div className="w-7 h-7 rounded-full bg-[#e5e7eb] flex items-center justify-center text-xs font-medium text-[#404040] shrink-0">
+														{initials}
+													</div>
+													<div className="min-w-0">
+														<div className="font-medium truncate">{name}</div>
+														{member.profile?.email && (
+															<div className="text-xs text-[#9a9a9a] truncate">{member.profile.email}</div>
+														)}
+													</div>
+												</button>
+											);
+										})}
+									</div>
+								)}
+							</div>
+						)}
 					</div>
 
 					{/* Bottom Actions */}
 					<div className="flex items-center justify-between px-3 py-2 border-t border-[#e5e7eb]">
 						<div className="flex items-center gap-1">
 							<TooltipProvider delayDuration={0}>
-								{[
-									{
-										icon: PlusCircle,
-										label: "Attach",
-										onClick: () => fileInputRef.current?.click(),
-									},
-									{ icon: AtSign, label: "Mention" },
-									{ icon: Smile, label: "Emoji" },
-									{ icon: Mic, label: "Record audio" },
-								].map(({ icon: Icon, label, onClick }) => (
-									<Tooltip key={label}>
-										<TooltipTrigger asChild>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<Button
+											variant="ghost"
+											size="icon"
+											onClick={() => fileInputRef.current?.click()}
+											className="w-8 h-8 text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"
+										>
+											<PlusCircle className="w-4 h-4" />
+										</Button>
+									</TooltipTrigger>
+									<TooltipContent>Attach</TooltipContent>
+								</Tooltip>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<Button
+											variant="ghost"
+											size="icon"
+											onClick={() => {
+												editor?.chain().focus().insertContent("@").run();
+											}}
+											className="w-8 h-8 text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"
+										>
+											<AtSign className="w-4 h-4" />
+										</Button>
+									</TooltipTrigger>
+									<TooltipContent>Mention</TooltipContent>
+								</Tooltip>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<div className="relative" ref={emojiRef}>
 											<Button
 												variant="ghost"
 												size="icon"
-												onClick={onClick}
-												className="w-8 h-8 text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"
+												onClick={() => setShowEmoji((prev) => !prev)}
+												className={`w-8 h-8 ${showEmoji ? "text-[#0B6E4F] bg-emerald-50" : "text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"}`}
 											>
-												<Icon className="w-4 h-4" />
+												<Smile className="w-4 h-4" />
 											</Button>
-										</TooltipTrigger>
-										<TooltipContent>{label}</TooltipContent>
-									</Tooltip>
-								))}
+											{showEmoji && (
+												<div className="absolute bottom-10 left-0 z-50 shadow-xl rounded-xl overflow-hidden">
+													<Picker
+														data={data}
+														onEmojiSelect={handleEmojiSelect}
+														theme="light"
+														previewPosition="none"
+														skinTonePosition="none"
+														maxFrequentRows={2}
+													/>
+												</div>
+											)}
+										</div>
+									</TooltipTrigger>
+									<TooltipContent>Emoji</TooltipContent>
+								</Tooltip>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<Button
+											variant="ghost"
+											size="icon"
+											className="w-8 h-8 text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"
+										>
+											<Mic className="w-4 h-4" />
+										</Button>
+									</TooltipTrigger>
+									<TooltipContent>Record audio</TooltipContent>
+								</Tooltip>
 							</TooltipProvider>
 						</div>
 
 						<Button
 							size="icon"
 							className="w-9 h-9 rounded-lg bg-[#0B6E4F] hover:bg-[#0B6E4F]/90 text-white"
-							disabled={(!messageInput.trim() && !attachment) || isUploading}
+							disabled={(!editor?.getText().trim() && !attachment) || isUploading}
 							onClick={handleSendMessage}
 						>
 							{isUploading ? (
