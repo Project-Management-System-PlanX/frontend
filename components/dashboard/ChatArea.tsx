@@ -62,6 +62,7 @@ import {
 	Loader2,
 	Mic,
 	PlusCircle,
+	Reply,
 	Search,
 	Send,
 	Smile,
@@ -112,6 +113,7 @@ export function ChatArea({
 	const [showEmoji, setShowEmoji] = useState(false);
 	const [showLinkInput, setShowLinkInput] = useState(false);
 	const [linkUrl, setLinkUrl] = useState("");
+	const [replyTo, setReplyTo] = useState<SupabaseMessage | null>(null);
 	const [mentionQuery, setMentionQuery] = useState<string | null>(null);
 	const [mentionIndex, setMentionIndex] = useState(0);
 	const mentionRangeRef = useRef<{ from: number; to: number } | null>(null);
@@ -250,15 +252,25 @@ export function ChatArea({
 				};
 			}
 
-			await sendMessage(text ? html : "", user.id, fileDetails);
+			await sendMessage(text ? html : "", user.id, fileDetails, replyTo?.id);
 			editor.commands.clearContent();
 			setAttachment(null);
+			setReplyTo(null);
 		} catch (err) {
 			console.error("Failed to send message:", err);
 		} finally {
 			setIsUploading(false);
 		}
-	}, [editor, user?.id, isUploading, attachment, channelName, supabase.storage, sendMessage]);
+	}, [
+		editor,
+		user?.id,
+		isUploading,
+		attachment,
+		channelName,
+		supabase.storage,
+		sendMessage,
+		replyTo,
+	]);
 
 	// Handle sending a voice message after recording
 	const handleVoiceSend = useCallback(
@@ -589,8 +601,8 @@ export function ChatArea({
 							const isDeleted = !!(message.deletedAt || message.deleted_at);
 							const isOwnMessage = message.user_id === user?.id || message.userId === user?.id;
 							return (
-								<div key={message.id}>
-									<div className="flex gap-3 group relative hover:bg-[#f9fafb] rounded-lg px-2 py-1 -mx-2 transition-colors">
+								<div key={message.id} id={`msg-${message.id}`}>
+									<div className="flex gap-3 group relative hover:bg-[#f9fafb] rounded-lg px-2 py-1 -mx-2 transition-all duration-300">
 										<Avatar className="w-10 h-10 shrink-0">
 											<AvatarImage src={message.users?.imageUrl || undefined} />
 											<AvatarFallback className="bg-[#e5e7eb] text-[#404040]">
@@ -608,6 +620,16 @@ export function ChatArea({
 														message.created_at || message.createdAt || new Date().toISOString(),
 													)}
 												</span>
+												{!isDeleted && (
+													<button
+														type="button"
+														onClick={() => setReplyTo(message)}
+														className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-blue-50 text-[#9a9a9a] hover:text-blue-500"
+														title="Reply"
+													>
+														<Reply className="w-3.5 h-3.5" />
+													</button>
+												)}
 												{isOwnMessage && !isDeleted && (
 													<button
 														type="button"
@@ -626,6 +648,47 @@ export function ChatArea({
 												</p>
 											) : (
 												<>
+													{/* Quoted parent message */}
+													{message.parent && (
+														<div
+															className="mt-1 mb-1.5 flex items-start gap-2 pl-3 border-l-[3px] border-[#0B6E4F]/40 bg-[#f5f5f5] rounded-r-lg py-2 pr-3 max-w-md cursor-pointer hover:bg-[#eeeeee] transition-colors"
+															onClick={() => {
+																const parentEl = document.getElementById(
+																	`msg-${message.parent?.id}`,
+																);
+																if (parentEl) {
+																	parentEl.scrollIntoView({ behavior: "smooth", block: "center" });
+																	parentEl.classList.add("bg-yellow-50");
+																	setTimeout(() => parentEl.classList.remove("bg-yellow-50"), 2000);
+																}
+															}}
+															onKeyDown={() => {}}
+															role="button"
+															tabIndex={0}
+														>
+															<div className="min-w-0 flex-1">
+																<p className="text-xs font-semibold text-[#0B6E4F] mb-0.5">
+																	{message.parent.user
+																		? [message.parent.user.firstName, message.parent.user.lastName]
+																				.filter(Boolean)
+																				.join(" ") ||
+																			message.parent.user.username ||
+																			message.parent.user.email?.split("@")[0]
+																		: "Unknown"}
+																</p>
+																{message.parent.content ? (
+																	<p className="text-xs text-[#606060] line-clamp-2">
+																		{message.parent.content.replace(/<[^>]*>/g, "").slice(0, 150)}
+																	</p>
+																) : message.parent.fileName || message.parent.file_name ? (
+																	<p className="text-xs text-[#606060] flex items-center gap-1">
+																		<FileIcon className="w-3 h-3" />
+																		{message.parent.fileName || message.parent.file_name}
+																	</p>
+																) : null}
+															</div>
+														</div>
+													)}
 													{message.content &&
 														(isHtmlContent(message.content) ? (
 															// biome-ignore lint/a11y/noStaticElementInteractions: mention clicks navigate to DM
@@ -753,6 +816,29 @@ export function ChatArea({
 
 			{/* Message Input */}
 			<div className="pt-2 pb-4 px-4 border-t border-[#e5e7eb] shrink-0">
+				{/* Reply Preview Banner */}
+				{replyTo && (
+					<div className="mb-2 flex items-center gap-2 px-3 py-2 bg-[#f0fdf4] border border-[#0B6E4F]/20 rounded-lg">
+						<div className="w-1 h-10 bg-[#0B6E4F] rounded-full shrink-0" />
+						<div className="flex-1 min-w-0">
+							<p className="text-xs font-semibold text-[#0B6E4F]">
+								Replying to {getDisplayName(replyTo)}
+							</p>
+							<p className="text-xs text-[#606060] truncate">
+								{replyTo.content
+									? replyTo.content.replace(/<[^>]*>/g, "").slice(0, 100)
+									: replyTo.file_name || replyTo.fileName || "Attachment"}
+							</p>
+						</div>
+						<button
+							type="button"
+							onClick={() => setReplyTo(null)}
+							className="p-1 rounded hover:bg-[#0B6E4F]/10 text-[#9a9a9a] hover:text-[#0B6E4F] transition-colors shrink-0"
+						>
+							<X className="w-4 h-4" />
+						</button>
+					</div>
+				)}
 				<div className="bg-white rounded-xl border border-[#e5e7eb] shadow-sm focus-within:ring-2 focus-within:ring-[#50C878]/30 focus-within:border-[#50C878] transition-all overflow-hidden">
 					{/* Formatting Toolbar */}
 					{editor && (

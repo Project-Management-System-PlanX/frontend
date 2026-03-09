@@ -29,6 +29,26 @@ export interface Message {
 	createdAt?: string;
 	updated_at?: string;
 	updatedAt?: string;
+	parent_id?: string | null;
+	parentId?: string | null;
+	parent?: {
+		id: string;
+		content: string;
+		userId?: string;
+		user_id?: string;
+		fileUrl?: string | null;
+		file_url?: string | null;
+		fileName?: string | null;
+		file_name?: string | null;
+		fileType?: string | null;
+		file_type?: string | null;
+		user?: {
+			firstName: string | null;
+			lastName: string | null;
+			username: string | null;
+			email: string;
+		};
+	} | null;
 	users?: {
 		firstName: string | null;
 		lastName: string | null;
@@ -71,6 +91,9 @@ function normalizeMessage(msg: any): Message {
 		createdAt: msg.createdAt || msg.created_at,
 		updated_at: msg.updated_at || msg.updatedAt,
 		updatedAt: msg.updatedAt || msg.updated_at,
+		parent_id: msg.parent_id || msg.parentId || null,
+		parentId: msg.parentId || msg.parent_id || null,
+		parent: msg.parent || null,
 		users: msg.users || msg.user,
 		user: msg.user || msg.users,
 	};
@@ -150,9 +173,68 @@ export function useMessages(channelId: string | null) {
 						console.error("Exception fetching user data:", e);
 					}
 
+					// If this is a reply, resolve the parent message from local state or fetch it
+					let parentData: Message["parent"] = null;
+					const parentId = payload.new.parent_id;
+					if (parentId) {
+						// Try to find parent in current state first
+						setMessages((prev) => {
+							const found = prev.find((m) => m.id === parentId);
+							if (found) {
+								parentData = {
+									id: found.id,
+									content: found.content || "",
+									userId: found.userId || found.user_id,
+									user_id: found.user_id || found.userId,
+									fileUrl: found.fileUrl || found.file_url || null,
+									file_url: found.file_url || found.fileUrl || null,
+									fileName: found.fileName || found.file_name || null,
+									file_name: found.file_name || found.fileName || null,
+									fileType: found.fileType || found.file_type || null,
+									file_type: found.file_type || found.fileType || null,
+									user: found.users || found.user || undefined,
+								};
+							}
+							return prev; // don't mutate
+						});
+						// If not found locally, fetch from Supabase
+						if (!parentData) {
+							try {
+								const res = await supabase
+									.from("messages")
+									.select("id, content, user_id, file_url, file_name, file_type")
+									.eq("id", parentId)
+									.single();
+								if (res.data) {
+									const parentUserRes = await supabase
+										.from("users")
+										.select("firstName, lastName, username, email")
+										.eq("supabaseId", res.data.user_id)
+										.single();
+									parentData = {
+										id: res.data.id,
+										content: res.data.content,
+										userId: res.data.user_id,
+										user_id: res.data.user_id,
+										fileUrl: res.data.file_url,
+										file_url: res.data.file_url,
+										fileName: res.data.file_name,
+										file_name: res.data.file_name,
+										fileType: res.data.file_type,
+										file_type: res.data.file_type,
+										user: parentUserRes.data || undefined,
+									};
+								}
+							} catch (e) {
+								console.error("Error fetching parent message:", e);
+							}
+						}
+					}
+
 					const newMessage = normalizeMessage({
 						...(payload.new as Message),
 						users: userData || undefined,
+						parent: parentData,
 					});
 					console.log("Normalized new message:", newMessage);
 
@@ -199,6 +281,7 @@ export function useMessages(channelId: string | null) {
 			content: string,
 			_userId: string,
 			fileDetails?: { url: string; name: string; type: string; size: number; duration?: number },
+			parentId?: string,
 		) => {
 			if (!channelId || (!content.trim() && !fileDetails)) return;
 
@@ -224,6 +307,10 @@ export function useMessages(channelId: string | null) {
 				if (fileDetails.duration != null) {
 					body.duration = fileDetails.duration;
 				}
+			}
+
+			if (parentId) {
+				body.parentId = parentId;
 			}
 
 			// biome-ignore lint/suspicious/noExplicitAny: API response type
