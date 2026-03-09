@@ -190,6 +190,7 @@ function TaskRow({ task, prefix, onClick }: { task: Task; prefix: string; onClic
 			</div>
 
 			{/* Assignee */}
+			{/* biome-ignore lint/a11y/noStaticElementInteractions: Stops click propagation from the row */}
 			<div
 				className="px-3 py-2.5 flex items-center gap-2 min-w-0"
 				onClick={(e) => e.stopPropagation()}
@@ -365,6 +366,7 @@ function TaskRow({ task, prefix, onClick }: { task: Task; prefix: string; onClic
 			</div>
 
 			{/* Actions */}
+			{/* biome-ignore lint/a11y/noStaticElementInteractions: Stops click propagation from the row */}
 			<div
 				className="px-1 py-2.5"
 				onClick={(e) => e.stopPropagation()}
