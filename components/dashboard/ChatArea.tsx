@@ -650,6 +650,7 @@ export function ChatArea({
 												<>
 													{/* Quoted parent message */}
 													{message.parent && (
+														// biome-ignore lint/a11y/useSemanticElements: Complex interactive container
 														<div
 															className="mt-1 mb-1.5 flex items-start gap-2 pl-3 border-l-[3px] border-[#0B6E4F]/40 bg-[#f5f5f5] rounded-r-lg py-2 pr-3 max-w-md cursor-pointer hover:bg-[#eeeeee] transition-colors"
 															onClick={() => {

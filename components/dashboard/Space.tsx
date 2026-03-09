@@ -21,21 +21,49 @@ import {
 	User,
 	Zap,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSpace } from "@/hooks/api/use-spaces";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useTasksRealtime } from "@/hooks/use-tasks-realtime";
-import { CreateTaskModal } from "../modals/CreateTaskModal";
 import { ForYouHeader } from "./foryou/ForYouHeader";
-import { AskAIPanel } from "./space/AskAIPanel";
-import { SpaceBoardView } from "./space/SpaceBoardView";
-import { SpaceCalendarView } from "./space/SpaceCalendarView";
-import { SpaceChartView } from "./space/SpaceChartView";
-import { SpaceColumnView } from "./space/SpaceColumnView";
-import { SpaceFormsView } from "./space/SpaceFormsView";
-import { SpaceListView } from "./space/SpaceListView";
-import { SpaceTimelineView } from "./space/SpaceTimelineView";
+
+const CreateTaskModal = dynamic(
+	() => import("../modals/CreateTaskModal").then((mod) => mod.CreateTaskModal),
+	{ ssr: false },
+);
+const AskAIPanel = dynamic(() => import("./space/AskAIPanel").then((mod) => mod.AskAIPanel), {
+	ssr: false,
+});
+const SpaceBoardView = dynamic(
+	() => import("./space/SpaceBoardView").then((mod) => mod.SpaceBoardView),
+	{ ssr: false },
+);
+const SpaceCalendarView = dynamic(
+	() => import("./space/SpaceCalendarView").then((mod) => mod.SpaceCalendarView),
+	{ ssr: false },
+);
+const SpaceChartView = dynamic(
+	() => import("./space/SpaceChartView").then((mod) => mod.SpaceChartView),
+	{ ssr: false },
+);
+const SpaceColumnView = dynamic(
+	() => import("./space/SpaceColumnView").then((mod) => mod.SpaceColumnView),
+	{ ssr: false },
+);
+const SpaceFormsView = dynamic(
+	() => import("./space/SpaceFormsView").then((mod) => mod.SpaceFormsView),
+	{ ssr: false },
+);
+const SpaceListView = dynamic(
+	() => import("./space/SpaceListView").then((mod) => mod.SpaceListView),
+	{ ssr: false },
+);
+const SpaceTimelineView = dynamic(
+	() => import("./space/SpaceTimelineView").then((mod) => mod.SpaceTimelineView),
+	{ ssr: false },
+);
 
 export function Space({ spaceId }: { spaceId: string }) {
 	const [viewMode, _setViewMode] = useState<"list" | "column">("list");

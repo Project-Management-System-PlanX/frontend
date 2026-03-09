@@ -375,6 +375,7 @@ export function FilesArea() {
 								const isOwn = file.user.supabaseId === currentUserId;
 
 								return (
+									// biome-ignore lint/a11y/useSemanticElements: Interactive row containing other buttons
 									<div
 										key={file.id}
 										role="button"
