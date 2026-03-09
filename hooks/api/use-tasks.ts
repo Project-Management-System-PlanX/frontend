@@ -83,8 +83,42 @@ export const useUpdateTask = (token?: string) => {
 	return useMutation({
 		mutationFn: ({ id, data }: { id: string; data: UpdateTaskPayload }) =>
 			tasksService.update(id, data, token),
-		onSuccess: (data) => {
-			queryClient.invalidateQueries({ queryKey: taskKeys.detail(data.id) });
+		onMutate: async ({ id, data }) => {
+			await queryClient.cancelQueries({ queryKey: taskKeys.details() });
+			await queryClient.cancelQueries({ queryKey: taskKeys.lists() });
+
+			const previousDetail = queryClient.getQueryData(taskKeys.detail(id));
+			const previousAssigned = queryClient.getQueryData(taskKeys.assignedToMe());
+
+			// Optimistically update the detail view
+			if (previousDetail) {
+				queryClient.setQueryData(taskKeys.detail(id), (old: any) => ({
+					...old,
+					...data,
+				}));
+			}
+
+			// Optimistically update the list view
+			if (previousAssigned) {
+				queryClient.setQueryData(taskKeys.assignedToMe(), (old: any) =>
+					old?.map((t: any) => (t.id === id ? { ...t, ...data } : t)),
+				);
+			}
+
+			return { previousDetail, previousAssigned };
+		},
+		onError: (err, { id }, context) => {
+			if (context?.previousDetail) {
+				queryClient.setQueryData(taskKeys.detail(id), context.previousDetail);
+			}
+			if (context?.previousAssigned) {
+				queryClient.setQueryData(taskKeys.assignedToMe(), context.previousAssigned);
+			}
+		},
+		onSettled: (data) => {
+			if (data) {
+				queryClient.invalidateQueries({ queryKey: taskKeys.detail(data.id) });
+			}
 			queryClient.invalidateQueries({ queryKey: taskKeys.lists() });
 			queryClient.invalidateQueries({ queryKey: taskKeys.assignedToMe() });
 		},
@@ -108,11 +142,30 @@ export const useDeleteTask = (token?: string) => {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: (id: string) => tasksService.delete(id, token),
-		onSuccess: (_, id) => {
+		onMutate: async (id) => {
+			// Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+			await queryClient.cancelQueries({ queryKey: taskKeys.all });
+
+			// Snapshot the previous value
+			const previousAssigned = queryClient.getQueryData(taskKeys.assignedToMe());
+
+			// Optimistically update to the new value
+			queryClient.setQueryData(taskKeys.assignedToMe(), (old: any) =>
+				old?.filter((t: any) => t.id !== id),
+			);
+
+			// Return a context object with the snapshotted value
+			return { previousAssigned };
+		},
+		onError: (err, id, context) => {
+			// If the mutation fails, use the context returned from onMutate to roll back
+			queryClient.setQueryData(taskKeys.assignedToMe(), context?.previousAssigned);
+		},
+		onSettled: () => {
+			// Always refetch after error or success to synchronize with the server
 			queryClient.invalidateQueries({ queryKey: taskKeys.lists() });
 			queryClient.invalidateQueries({ queryKey: taskKeys.assignedToMe() });
 			queryClient.invalidateQueries({ queryKey: taskKeys.workedOn() });
-			queryClient.removeQueries({ queryKey: taskKeys.detail(id) });
 		},
 	});
 };

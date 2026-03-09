@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useRef } from "react";
 import { fetchClient } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/config";
 import { createClient } from "@/lib/supabase/client";
@@ -66,8 +67,7 @@ export interface Message {
 }
 
 // Normalize message fields between camelCase (backend) and snake_case (Supabase Realtime)
-// biome-ignore lint/suspicious/noExplicitAny: normalizes between camelCase and snake_case from different sources
-function normalizeMessage(msg: any): Message {
+export function normalizeMessage(msg: any): Message {
 	return {
 		...msg,
 		channel_id: msg.channel_id || msg.channelId,
@@ -99,55 +99,45 @@ function normalizeMessage(msg: any): Message {
 	};
 }
 
+export const messageKeys = {
+	all: ["messages"] as const,
+	byChannel: (channelId: string) => [...messageKeys.all, "channel", channelId] as const,
+};
+
 export function useMessages(channelId: string | null) {
-	const [messages, setMessages] = useState<Message[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
+	const queryClient = useQueryClient();
 	const supabaseRef = useRef(createClient());
 
-	// Fetch messages from backend API
-	const fetchMessages = useCallback(async () => {
-		if (!channelId) {
-			setMessages([]);
-			setIsLoading(false);
-			return;
-		}
-
-		try {
+	const {
+		data: messages = [],
+		isLoading,
+		error,
+	} = useQuery({
+		queryKey: messageKeys.byChannel(channelId || "none"),
+		queryFn: async () => {
+			if (!channelId) return [];
+			const supabase = supabaseRef.current;
 			const {
 				data: { session },
-			} = await supabaseRef.current.auth.getSession();
+			} = await supabase.auth.getSession();
 			const token = session?.access_token;
 
-			// biome-ignore lint/suspicious/noExplicitAny: API returns untyped array
 			const data = await fetchClient<any[]>(API_ENDPOINTS.MESSAGES_BY_CHANNEL(channelId), {
 				token,
 				method: "GET",
 			});
 
-			setMessages((data || []).map(normalizeMessage));
-		} catch (err: unknown) {
-			const message = err instanceof Error ? err.message : "Failed to load messages";
-			setError(message);
-		} finally {
-			setIsLoading(false);
-		}
-	}, [channelId]);
+			return (data || []).map(normalizeMessage);
+		},
+		enabled: !!channelId,
+	});
 
-	// Initial fetch + Supabase Realtime subscription
+	// Supabase Realtime subscription
 	useEffect(() => {
-		if (!channelId) {
-			setMessages([]);
-			setIsLoading(false);
-			return;
-		}
+		if (!channelId) return;
 
-		setIsLoading(true);
-		fetchMessages();
-
-		// Subscribe to Supabase Realtime for live updates from OTHER users
 		const supabase = supabaseRef.current;
-		const channel = supabase
+		const subscription = supabase
 			.channel(`room:${channelId}`)
 			.on(
 				"postgres_changes",
@@ -157,9 +147,7 @@ export function useMessages(channelId: string | null) {
 					table: "messages",
 					filter: `channel_id=eq.${channelId}`,
 				},
-				// biome-ignore lint/suspicious/noExplicitAny: Supabase realtime payload type
 				async (payload: any) => {
-					console.log("Realtime event received:", payload);
 					let userData: Record<string, unknown> | null = null;
 					try {
 						const res = await supabase
@@ -168,37 +156,31 @@ export function useMessages(channelId: string | null) {
 							.eq("supabaseId", payload.new.user_id)
 							.single();
 						userData = res.data;
-						if (res.error) console.error("Error fetching user data:", res.error);
 					} catch (e) {
-						console.error("Exception fetching user data:", e);
+						console.error("Error fetching user data:", e);
 					}
 
-					// If this is a reply, resolve the parent message from local state or fetch it
 					let parentData: Message["parent"] = null;
 					const parentId = payload.new.parent_id;
 					if (parentId) {
-						// Try to find parent in current state first
-						setMessages((prev) => {
-							const found = prev.find((m) => m.id === parentId);
-							if (found) {
-								parentData = {
-									id: found.id,
-									content: found.content || "",
-									userId: found.userId || found.user_id,
-									user_id: found.user_id || found.userId,
-									fileUrl: found.fileUrl || found.file_url || null,
-									file_url: found.file_url || found.fileUrl || null,
-									fileName: found.fileName || found.file_name || null,
-									file_name: found.file_name || found.fileName || null,
-									fileType: found.fileType || found.file_type || null,
-									file_type: found.file_type || found.fileType || null,
-									user: found.users || found.user || undefined,
-								};
-							}
-							return prev; // don't mutate
-						});
-						// If not found locally, fetch from Supabase
-						if (!parentData) {
+						const currentMsgs =
+							queryClient.getQueryData<Message[]>(messageKeys.byChannel(channelId)) || [];
+						const found = currentMsgs.find((m) => m.id === parentId);
+						if (found) {
+							parentData = {
+								id: found.id,
+								content: found.content || "",
+								userId: found.userId || found.user_id,
+								user_id: found.user_id || found.userId,
+								fileUrl: found.fileUrl || found.file_url || null,
+								file_url: found.file_url || found.fileUrl || null,
+								fileName: found.fileName || found.file_name || null,
+								file_name: found.file_name || found.fileName || null,
+								fileType: found.fileType || found.file_type || null,
+								file_type: found.file_type || found.fileType || null,
+								user: found.users || found.user || undefined,
+							};
+						} else {
 							try {
 								const res = await supabase
 									.from("messages")
@@ -232,19 +214,14 @@ export function useMessages(channelId: string | null) {
 					}
 
 					const newMessage = normalizeMessage({
-						...(payload.new as Message),
+						...payload.new,
 						users: userData || undefined,
 						parent: parentData,
 					});
-					console.log("Normalized new message:", newMessage);
 
-					setMessages((prev) => {
-						if (prev.some((msg) => msg.id === newMessage.id)) {
-							console.log("Message already exists, ignoring.");
-							return prev;
-						}
-						console.log("Adding new message to state.");
-						return [...prev, newMessage];
+					queryClient.setQueryData(messageKeys.byChannel(channelId), (old: Message[] = []) => {
+						if (old.some((msg) => msg.id === newMessage.id)) return old;
+						return [...old, newMessage];
 					});
 				},
 			)
@@ -256,26 +233,20 @@ export function useMessages(channelId: string | null) {
 					table: "messages",
 					filter: `channel_id=eq.${channelId}`,
 				},
-				// biome-ignore lint/suspicious/noExplicitAny: Supabase realtime payload type
 				(payload: any) => {
-					const updated = normalizeMessage(payload.new as Message);
-					setMessages((prev) =>
-						prev.map((msg) => (msg.id === updated.id ? { ...msg, ...updated } : msg)),
+					const updated = normalizeMessage(payload.new);
+					queryClient.setQueryData(messageKeys.byChannel(channelId), (old: Message[] = []) =>
+						old.map((msg) => (msg.id === updated.id ? { ...msg, ...updated } : msg)),
 					);
 				},
 			)
-			.subscribe((status, err) => {
-				console.log("Supabase Realtime Status:", status);
-				if (err) console.error("Realtime Error:", err);
-			});
+			.subscribe();
 
 		return () => {
-			console.log("Cleaning up realtime channel...");
-			supabase.removeChannel(channel);
+			supabase.removeChannel(subscription);
 		};
-	}, [channelId, fetchMessages]);
+	}, [channelId, queryClient]);
 
-	// Send message via backend API + immediately add to state
 	const sendMessage = useCallback(
 		async (
 			content: string,
@@ -293,7 +264,6 @@ export function useMessages(channelId: string | null) {
 			const userEmail = session?.user?.email || "";
 			const userMeta = session?.user?.user_metadata;
 
-			// biome-ignore lint/suspicious/noExplicitAny: message body built dynamically
 			const body: any = {
 				channelId,
 				content: content.trim() || null,
@@ -304,16 +274,11 @@ export function useMessages(channelId: string | null) {
 				body.fileName = fileDetails.name;
 				body.fileType = fileDetails.type;
 				body.fileSize = fileDetails.size;
-				if (fileDetails.duration != null) {
-					body.duration = fileDetails.duration;
-				}
+				if (fileDetails.duration != null) body.duration = fileDetails.duration;
 			}
 
-			if (parentId) {
-				body.parentId = parentId;
-			}
+			if (parentId) body.parentId = parentId;
 
-			// biome-ignore lint/suspicious/noExplicitAny: API response type
 			const result = await fetchClient<any>(API_ENDPOINTS.MESSAGES, {
 				token,
 				method: "POST",
@@ -332,25 +297,23 @@ export function useMessages(channelId: string | null) {
 				},
 			});
 
-			setMessages((prev) => {
-				if (prev.some((msg) => msg.id === newMsg.id)) return prev;
-				return [...prev, newMsg];
+			queryClient.setQueryData(messageKeys.byChannel(channelId), (old: Message[] = []) => {
+				if (old.some((msg) => msg.id === newMsg.id)) return old;
+				return [...old, newMsg];
 			});
 
 			return result;
 		},
-		[channelId],
+		[channelId, queryClient],
 	);
 
-	// Delete message via backend API + immediately update state
 	const deleteMessage = useCallback(
 		async (messageId: string) => {
 			if (!channelId) return;
 
-			const supabase = supabaseRef.current;
 			const {
 				data: { session },
-			} = await supabase.auth.getSession();
+			} = await supabaseRef.current.auth.getSession();
 			const token = session?.access_token;
 
 			await fetchClient(API_ENDPOINTS.MESSAGE_DELETE(messageId), {
@@ -358,9 +321,8 @@ export function useMessages(channelId: string | null) {
 				method: "DELETE",
 			});
 
-			// Optimistically update the local state
-			setMessages((prev) =>
-				prev.map((msg) =>
+			queryClient.setQueryData(messageKeys.byChannel(channelId), (old: Message[] = []) =>
+				old.map((msg) =>
 					msg.id === messageId
 						? {
 								...msg,
@@ -381,18 +343,16 @@ export function useMessages(channelId: string | null) {
 				),
 			);
 		},
-		[channelId],
+		[channelId, queryClient],
 	);
 
-	// Edit message via backend API + immediately update state
 	const editMessage = useCallback(
 		async (messageId: string, content: string) => {
 			if (!channelId || !content.trim()) return;
 
-			const supabase = supabaseRef.current;
 			const {
 				data: { session },
-			} = await supabase.auth.getSession();
+			} = await supabaseRef.current.auth.getSession();
 			const token = session?.access_token;
 
 			const updatedMsgData = await fetchClient(API_ENDPOINTS.MESSAGE_UPDATE(messageId), {
@@ -403,26 +363,18 @@ export function useMessages(channelId: string | null) {
 
 			const normalizedUpdate = normalizeMessage(updatedMsgData);
 
-			// Optimistically update the local state
-			setMessages((prev) =>
-				prev.map((msg) =>
-					msg.id === messageId
-						? {
-								...msg,
-								...normalizedUpdate,
-							}
-						: msg,
-				),
+			queryClient.setQueryData(messageKeys.byChannel(channelId), (old: Message[] = []) =>
+				old.map((msg) => (msg.id === messageId ? { ...msg, ...normalizedUpdate } : msg)),
 			);
 			return normalizedUpdate;
 		},
-		[channelId],
+		[channelId, queryClient],
 	);
 
 	return {
 		messages,
 		isLoading,
-		error,
+		error: error ? (error instanceof Error ? error.message : String(error)) : null,
 		sendMessage,
 		deleteMessage,
 		editMessage,
