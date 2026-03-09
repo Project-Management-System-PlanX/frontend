@@ -36,6 +36,7 @@ interface MessageInputProps {
 export function MessageInput({ onSendMessage, disabled, channelName }: MessageInputProps) {
 	const [isSending, setIsSending] = useState(false);
 	const [showEmoji, setShowEmoji] = useState(false);
+	const [, forceUpdate] = useState({});
 	const emojiRef = useRef<HTMLDivElement>(null);
 
 	const editor = useEditor({
@@ -68,6 +69,7 @@ export function MessageInput({ onSendMessage, disabled, channelName }: MessageIn
 			},
 		},
 		editable: !disabled,
+		onTransaction: () => forceUpdate({}),
 	});
 
 	const handleSend = useCallback(async () => {
@@ -151,7 +153,7 @@ export function MessageInput({ onSendMessage, disabled, channelName }: MessageIn
 			title={title}
 			className={`p-1 rounded transition-colors ${
 				isActive
-					? "text-[#0B6E4F] bg-emerald-50"
+					? "bg-[#0B6E4F]/20 text-[#0B6E4F] shadow-sm"
 					: "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
 			}`}
 		>

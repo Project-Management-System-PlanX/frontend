@@ -324,7 +324,9 @@ export function DashboardHome() {
 														<span className="font-bold text-[#0B6E4F]">#{msg.channel.name}</span>
 													)}
 												</p>
-												<p className="text-sm text-slate-700 truncate">{msg.content}</p>
+												<p className="text-sm text-slate-700 truncate">
+													{msg.content.replace(/<[^>]*>?/gm, "")}
+												</p>
 											</div>
 											<span className="text-[10px] text-slate-400 font-medium whitespace-nowrap">
 												{new Date(msg.createdAt).toLocaleTimeString([], {

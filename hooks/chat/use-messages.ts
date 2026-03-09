@@ -384,11 +384,47 @@ export function useMessages(channelId: string | null) {
 		[channelId],
 	);
 
+	// Edit message via backend API + immediately update state
+	const editMessage = useCallback(
+		async (messageId: string, content: string) => {
+			if (!channelId || !content.trim()) return;
+
+			const supabase = supabaseRef.current;
+			const {
+				data: { session },
+			} = await supabase.auth.getSession();
+			const token = session?.access_token;
+
+			const updatedMsgData = await fetchClient(API_ENDPOINTS.MESSAGE_UPDATE(messageId), {
+				token,
+				method: "PATCH",
+				body: JSON.stringify({ content: content.trim() }),
+			});
+
+			const normalizedUpdate = normalizeMessage(updatedMsgData);
+
+			// Optimistically update the local state
+			setMessages((prev) =>
+				prev.map((msg) =>
+					msg.id === messageId
+						? {
+								...msg,
+								...normalizedUpdate,
+							}
+						: msg,
+				),
+			);
+			return normalizedUpdate;
+		},
+		[channelId],
+	);
+
 	return {
 		messages,
 		isLoading,
 		error,
 		sendMessage,
 		deleteMessage,
+		editMessage,
 	};
 }

@@ -1,11 +1,30 @@
 "use client";
 
-import { CheckSquare, FolderOpen, Home, LayoutGrid, MessageSquare, Settings } from "lucide-react";
+import {
+	CheckSquare,
+	FolderOpen,
+	Home,
+	LayoutGrid,
+	LogOut,
+	MessageSquare,
+	Settings,
+	User as UserIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { ProfileCompletionModal } from "@/components/modals/ProfileCompletionModal";
+import { SettingsModal } from "@/components/modals/SettingsModal";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { cn } from "@/lib/utils";
@@ -19,7 +38,8 @@ const navItems = [
 
 export function IconRail() {
 	const pathname = usePathname();
-	const { user } = useSupabaseAuth();
+	const { user, signOut } = useSupabaseAuth();
+	const [settingsOpen, setSettingsOpen] = useState(false);
 
 	const avatarUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.picture || undefined;
 	const firstName =
@@ -100,6 +120,7 @@ export function IconRail() {
 						<Button
 							variant="ghost"
 							size="icon"
+							onClick={() => setSettingsOpen(true)}
 							className="w-9 h-9 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200"
 						>
 							<Settings className="w-5 h-5" />
@@ -109,12 +130,45 @@ export function IconRail() {
 				</Tooltip>
 			</TooltipProvider>
 
-			<Avatar className="w-9 h-9 ring-2 ring-[#0B6E4F]/20">
-				<AvatarImage src={avatarUrl} />
-				<AvatarFallback className="bg-[#0B6E4F] text-white text-sm font-medium">
-					{initials}
-				</AvatarFallback>
-			</Avatar>
+			<DropdownMenu>
+				<DropdownMenuTrigger asChild>
+					<button
+						type="button"
+						suppressHydrationWarning
+						className="rounded-full focus:outline-none focus:ring-2 focus:ring-[#0B6E4F] focus:ring-offset-2 transition-all mt-auto"
+					>
+						<Avatar className="w-9 h-9 ring-2 ring-[#0B6E4F]/20 cursor-pointer hover:opacity-80 transition-opacity">
+							<AvatarImage src={avatarUrl} />
+							<AvatarFallback className="bg-[#0B6E4F] text-white text-sm font-medium">
+								{initials}
+							</AvatarFallback>
+						</Avatar>
+					</button>
+				</DropdownMenuTrigger>
+				<DropdownMenuContent className="w-56" align="end" side="right" sideOffset={16}>
+					<DropdownMenuLabel>
+						<p className="font-semibold text-slate-800 truncate">
+							{firstName} {lastName}
+						</p>
+						<p className="text-xs font-normal text-slate-500 truncate">{email}</p>
+					</DropdownMenuLabel>
+					<DropdownMenuSeparator />
+					<DropdownMenuItem onClick={() => setSettingsOpen(true)} className="cursor-pointer gap-2">
+						<UserIcon className="w-4 h-4" />
+						<span>Profile Settings</span>
+					</DropdownMenuItem>
+					<DropdownMenuSeparator />
+					<DropdownMenuItem
+						onClick={() => signOut()}
+						className="cursor-pointer gap-2 text-red-600 focus:text-red-600 focus:bg-red-50"
+					>
+						<LogOut className="w-4 h-4" />
+						<span>Log out</span>
+					</DropdownMenuItem>
+				</DropdownMenuContent>
+			</DropdownMenu>
+
+			<SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
 		</div>
 	);
 }

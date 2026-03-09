@@ -52,6 +52,7 @@ import {
 	AtSign,
 	Bold,
 	Check,
+	Edit2,
 	File as FileIcon,
 	Image as ImageIcon,
 	Info,
@@ -118,7 +119,9 @@ export function ChatArea({
 	const [mentionIndex, setMentionIndex] = useState(0);
 	const mentionRangeRef = useRef<{ from: number; to: number } | null>(null);
 	const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+	const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
 	const [isRecording, setIsRecording] = useState(false);
+	const [, forceUpdate] = useState({});
 
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
@@ -137,7 +140,8 @@ export function ChatArea({
 	const displayName = isDM && dmDisplayName ? dmDisplayName : channel ? channel.name : channelName;
 
 	// Use real Supabase messages for this channel
-	const { messages, isLoading, error, sendMessage, deleteMessage } = useMessages(channelName);
+	const { messages, isLoading, error, sendMessage, deleteMessage, editMessage } =
+		useMessages(channelName);
 
 	// Filtered member list for @ mentions
 	const filteredMembers = useMemo(() => {
@@ -203,6 +207,7 @@ export function ChatArea({
 			},
 		},
 		editable: !isUploading,
+		onTransaction: () => forceUpdate({}),
 	});
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: Scroll to bottom when messages change
@@ -252,7 +257,13 @@ export function ChatArea({
 				};
 			}
 
-			await sendMessage(text ? html : "", user.id, fileDetails, replyTo?.id);
+			if (editingMessageId) {
+				await editMessage(editingMessageId, html);
+				setEditingMessageId(null);
+			} else {
+				await sendMessage(text ? html : "", user.id, fileDetails, replyTo?.id);
+			}
+
 			editor.commands.clearContent();
 			setAttachment(null);
 			setReplyTo(null);
@@ -270,6 +281,8 @@ export function ChatArea({
 		supabase.storage,
 		sendMessage,
 		replyTo,
+		editingMessageId,
+		editMessage,
 	]);
 
 	// Handle sending a voice message after recording
@@ -600,6 +613,10 @@ export function ChatArea({
 						messages.map((message) => {
 							const isDeleted = !!(message.deletedAt || message.deleted_at);
 							const isOwnMessage = message.user_id === user?.id || message.userId === user?.id;
+							const createdTime = new Date(message.created_at || message.createdAt || Date.now());
+							const diffInMinutes = (Date.now() - createdTime.getTime()) / (1000 * 60);
+							const canEdit =
+								isOwnMessage && !isDeleted && diffInMinutes <= 15 && !message.file_url;
 							return (
 								<div key={message.id} id={`msg-${message.id}`}>
 									<div className="flex gap-3 group relative hover:bg-[#f9fafb] rounded-lg px-2 py-1 -mx-2 transition-all duration-300">
@@ -618,6 +635,9 @@ export function ChatArea({
 												<span className="text-xs text-[#9a9a9a]">
 													{formatMessageTime(
 														message.created_at || message.createdAt || new Date().toISOString(),
+													)}
+													{(message.isEdited || message.is_edited) && (
+														<span className="ml-1 italic text-[10px]">(edited)</span>
 													)}
 												</span>
 												{!isDeleted && (
@@ -638,6 +658,20 @@ export function ChatArea({
 														title="Delete message"
 													>
 														<Trash2 className="w-3.5 h-3.5" />
+													</button>
+												)}
+												{canEdit && (
+													<button
+														type="button"
+														onClick={() => {
+															setEditingMessageId(message.id);
+															editor?.commands.setContent(message.content || "");
+															editor?.commands.focus();
+														}}
+														className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-emerald-50 text-[#9a9a9a] hover:text-[#0B6E4F]"
+														title="Edit message"
+													>
+														<Edit2 className="w-3.5 h-3.5" />
 													</button>
 												)}
 											</div>
@@ -840,6 +874,24 @@ export function ChatArea({
 						</button>
 					</div>
 				)}
+				{editingMessageId && (
+					<div className="mb-2 flex items-center justify-between px-3 py-2 bg-[#fffbeb] border border-amber-200/50 rounded-lg">
+						<div className="flex items-center gap-2">
+							<div className="w-1 h-5 bg-amber-400 rounded-full shrink-0" />
+							<p className="text-xs font-semibold text-amber-700">Editing message</p>
+						</div>
+						<button
+							type="button"
+							onClick={() => {
+								setEditingMessageId(null);
+								editor?.commands.clearContent();
+							}}
+							className="p-1 rounded hover:bg-amber-100 text-[#9a9a9a] hover:text-amber-700 transition-colors shrink-0"
+						>
+							<X className="w-4 h-4" />
+						</button>
+					</div>
+				)}
 				<div className="bg-white rounded-xl border border-[#e5e7eb] shadow-sm focus-within:ring-2 focus-within:ring-[#50C878]/30 focus-within:border-[#50C878] transition-all overflow-hidden">
 					{/* Formatting Toolbar */}
 					{editor && (
@@ -878,7 +930,7 @@ export function ChatArea({
 									type="button"
 									onClick={cmd}
 									title={label}
-									className={`w-7 h-7 flex items-center justify-center rounded transition-colors ${active ? "text-[#0B6E4F] bg-emerald-50" : "text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"}`}
+									className={`w-7 h-7 flex items-center justify-center rounded transition-colors ${active ? "bg-[#0B6E4F]/20 text-[#0B6E4F] shadow-sm" : "text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"}`}
 								>
 									<Icon className="w-4 h-4" />
 								</button>
@@ -891,7 +943,7 @@ export function ChatArea({
 								type="button"
 								onClick={handleLinkAdd}
 								title="Add link"
-								className={`w-7 h-7 flex items-center justify-center rounded transition-colors ${editor.isActive("link") ? "text-[#0B6E4F] bg-emerald-50" : "text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"}`}
+								className={`w-7 h-7 flex items-center justify-center rounded transition-colors ${editor.isActive("link") ? "bg-[#0B6E4F]/20 text-[#0B6E4F] shadow-sm" : "text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"}`}
 							>
 								<Link2 className="w-4 h-4" />
 							</button>
@@ -901,7 +953,7 @@ export function ChatArea({
 								type="button"
 								onClick={() => editor.chain().focus().toggleBulletList().run()}
 								title="Bulleted list"
-								className={`w-7 h-7 flex items-center justify-center rounded transition-colors ${editor.isActive("bulletList") ? "text-[#0B6E4F] bg-emerald-50" : "text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"}`}
+								className={`w-7 h-7 flex items-center justify-center rounded transition-colors ${editor.isActive("bulletList") ? "bg-[#0B6E4F]/20 text-[#0B6E4F] shadow-sm" : "text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"}`}
 							>
 								<List className="w-4 h-4" />
 							</button>
@@ -909,7 +961,7 @@ export function ChatArea({
 								type="button"
 								onClick={() => editor.chain().focus().toggleOrderedList().run()}
 								title="Numbered list"
-								className={`w-7 h-7 flex items-center justify-center rounded transition-colors ${editor.isActive("orderedList") ? "text-[#0B6E4F] bg-emerald-50" : "text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"}`}
+								className={`w-7 h-7 flex items-center justify-center rounded transition-colors ${editor.isActive("orderedList") ? "bg-[#0B6E4F]/20 text-[#0B6E4F] shadow-sm" : "text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"}`}
 							>
 								<ListOrdered className="w-4 h-4" />
 							</button>
@@ -927,7 +979,7 @@ export function ChatArea({
 									type="button"
 									onClick={() => editor.chain().focus().setTextAlign(align).run()}
 									title={label}
-									className={`w-7 h-7 flex items-center justify-center rounded transition-colors ${editor.isActive({ textAlign: align }) ? "text-[#0B6E4F] bg-emerald-50" : "text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"}`}
+									className={`w-7 h-7 flex items-center justify-center rounded transition-colors ${editor.isActive({ textAlign: align }) ? "bg-[#0B6E4F]/20 text-[#0B6E4F] shadow-sm" : "text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"}`}
 								>
 									<Icon className="w-4 h-4" />
 								</button>
