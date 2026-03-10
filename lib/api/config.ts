@@ -20,6 +20,7 @@ export const API_ENDPOINTS = {
 	CHANNEL_BY_ID: (id: string) => `/channels/${id}`,
 	CHANNEL_MEMBERS: (channelId: string) => `/channels/${channelId}/members`,
 	CHANNEL_MEMBER: (channelId: string, userId: string) => `/channels/${channelId}/members/${userId}`,
+	CHANNEL_STAR: (channelId: string) => `/channels/${channelId}/star`,
 
 	// Groups
 	GROUPS: "/groups",
@@ -67,6 +68,7 @@ export const API_ENDPOINTS = {
 	MESSAGES_FILES_BY_WORKSPACE: (workspaceId: string) => `/messages/workspace/${workspaceId}/files`,
 	MESSAGE_DELETE: (messageId: string) => `/messages/${messageId}`,
 	MESSAGE_UPDATE: (messageId: string) => `/messages/${messageId}`,
+	MESSAGE_PIN: (messageId: string) => `/messages/${messageId}/pin`,
 
 	// Meetings (proxied to meeting-service via Next.js rewrites)
 	MEETINGS_CREATE: "/meetings/create",

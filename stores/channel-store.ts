@@ -10,6 +10,7 @@ export interface Channel {
 	members?: number;
 	description?: string;
 	isJoined?: boolean;
+	isStarred?: boolean;
 	avatars?: string[];
 	createdAt?: string;
 	updatedAt?: string;
@@ -20,6 +21,7 @@ interface ChannelState {
 	isLoaded: boolean;
 	addChannel: (channel: Channel) => void;
 	removeChannel: (channelId: string) => void;
+	updateChannel: (channelId: string, updates: Partial<Channel>) => void;
 	setChannels: (channels: Channel[]) => void;
 }
 
@@ -44,6 +46,14 @@ export const useChannelStore = create<ChannelState>()(
 					}),
 					false,
 					"removeChannel",
+				),
+			updateChannel: (channelId, updates) =>
+				set(
+					(state) => ({
+						channels: state.channels.map((c) => (c.id === channelId ? { ...c, ...updates } : c)),
+					}),
+					false,
+					"updateChannel",
 				),
 			setChannels: (channels) => set({ channels, isLoaded: true }, false, "setChannels"),
 		}),

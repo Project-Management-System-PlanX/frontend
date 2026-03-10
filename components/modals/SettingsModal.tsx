@@ -49,7 +49,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
 	// Handle avatar selection
 	const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-		if (e.target.files && e.target.files[0]) {
+		if (e.target.files?.[0]) {
 			const file = e.target.files[0];
 			setAvatarFile(file);
 			setAvatarPreviewUrl(URL.createObjectURL(file));

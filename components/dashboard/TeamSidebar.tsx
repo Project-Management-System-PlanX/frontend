@@ -3,7 +3,7 @@
 import { ChevronDown, ExternalLink, Hash, Loader2, Plus, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -33,9 +33,15 @@ export function TeamSidebar(_props: TeamSidebarProps) {
 	const { addChannel } = useChannelStore();
 	const { activeWorkspaceName } = useWorkspaceStore();
 	const [channelsExpanded, setChannelsExpanded] = useState(true);
+	const [starredExpanded, setStarredExpanded] = useState(true);
 	const [dmsExpanded, setDmsExpanded] = useState(true);
 	const [createChannelOpen, setCreateChannelOpen] = useState(false);
 	const [inviteOpen, setInviteOpen] = useState(false);
+
+	const starredChannels = useMemo(
+		() => channels.filter((c) => c.isStarred && c.type !== "DIRECT_MESSAGE"),
+		[channels],
+	);
 
 	const isChannelActive = (channelId: string) => {
 		return pathname === `/dashboard/chat/channel/${channelId}`;
@@ -136,6 +142,47 @@ export function TeamSidebar(_props: TeamSidebarProps) {
 
 				<ScrollArea className="flex-1">
 					<div className="p-3">
+						{/* Starred Section */}
+						{starredChannels.length > 0 && (
+							<div className="mb-4">
+								<div className="flex items-center justify-between w-full px-2 py-1.5">
+									<button
+										type="button"
+										onClick={() => setStarredExpanded(!starredExpanded)}
+										className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 uppercase tracking-wider hover:text-slate-900"
+									>
+										<ChevronDown
+											className={cn(
+												"w-3.5 h-3.5 transition-transform",
+												!starredExpanded && "-rotate-90",
+											)}
+										/>
+										<span>Starred</span>
+									</button>
+								</div>
+
+								{starredExpanded && (
+									<div className="mt-1.5 space-y-0.5">
+										{starredChannels.map((channel) => (
+											<Link
+												key={`starred-${channel.id}`}
+												href={`/dashboard/chat/channel/${channel.id}`}
+												className={cn(
+													"flex items-center gap-2 w-full px-2 py-1.5 rounded-md text-sm transition-colors",
+													isChannelActive(channel.id)
+														? "bg-[#0B6E4F] text-white"
+														: "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+												)}
+											>
+												<Hash className="w-4 h-4 shrink-0" />
+												<span className="truncate">{channel.name}</span>
+											</Link>
+										))}
+									</div>
+								)}
+							</div>
+						)}
+
 						{/* Channels Section */}
 						<div className="mb-4">
 							<div className="flex items-center justify-between w-full px-2 py-1.5">

@@ -62,6 +62,7 @@ import {
 	ListOrdered,
 	Loader2,
 	Mic,
+	Pin,
 	PlusCircle,
 	Reply,
 	Search,
@@ -91,6 +92,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { type Message as SupabaseMessage, useMessages } from "@/hooks/chat/use-messages";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useWorkspaceMembers } from "@/hooks/use-workspace-members";
+import { fetchClient } from "@/lib/api/client";
+import { API_ENDPOINTS } from "@/lib/api/config";
 import { createClient } from "@/lib/supabase/client";
 import { useChannelStore } from "@/stores/channel-store";
 
@@ -129,9 +132,9 @@ export function ChatArea({
 	const linkInputRef = useRef<HTMLInputElement>(null);
 	const mentionRef = useRef<HTMLDivElement>(null);
 
-	const { user } = useSupabaseAuth();
+	const { user, token } = useSupabaseAuth();
 	const { members } = useWorkspaceMembers();
-	const { channels } = useChannelStore();
+	const { channels, updateChannel } = useChannelStore();
 	const supabase = createClient();
 	const router = useRouter();
 
@@ -140,8 +143,32 @@ export function ChatArea({
 	const displayName = isDM && dmDisplayName ? dmDisplayName : channel ? channel.name : channelName;
 
 	// Use real Supabase messages for this channel
-	const { messages, isLoading, error, sendMessage, deleteMessage, editMessage } =
+	const { messages, isLoading, error, sendMessage, deleteMessage, editMessage, togglePinMessage } =
 		useMessages(channelName);
+
+	const handleToggleStar = async () => {
+		if (!channel || !token) return;
+		const newStarredStatus = !channel.isStarred;
+		// Optimistically update
+		updateChannel(channel.id, { isStarred: newStarredStatus });
+
+		try {
+			await fetchClient(API_ENDPOINTS.CHANNEL_STAR(channel.id), {
+				token,
+				method: "PATCH",
+				body: JSON.stringify({ isStarred: newStarredStatus }),
+			});
+		} catch (error) {
+			console.error("Failed to toggle star:", error);
+			// Revert on error
+			updateChannel(channel.id, { isStarred: !newStarredStatus });
+		}
+	};
+
+	const pinnedMessages = useMemo(
+		() => messages.filter((m) => !m.deleted_at && !m.deletedAt && (m.isPinned || m.is_pinned)),
+		[messages],
+	);
 
 	// Filtered member list for @ mentions
 	const filteredMembers = useMemo(() => {
@@ -518,8 +545,13 @@ export function ChatArea({
 					<span className="text-[#202020] font-medium text-lg flex items-center gap-2">
 						<span className="text-[#9a9a9a]">{isDM ? "@" : "#"}</span> {displayName}
 					</span>
-					<Button variant="ghost" size="icon" className="w-6 h-6 text-amber-400">
-						<Star className="w-4 h-4 fill-current" />
+					<Button
+						variant="ghost"
+						size="icon"
+						onClick={handleToggleStar}
+						className={`w-6 h-6 hover:bg-transparent ${channel?.isStarred ? "text-amber-400 hover:text-amber-500" : "text-[#d1d5db] hover:text-[#9a9a9a]"}`}
+					>
+						<Star className={`w-4 h-4 ${channel?.isStarred ? "fill-current" : ""}`} />
 					</Button>
 				</div>
 
@@ -571,6 +603,38 @@ export function ChatArea({
 					</TooltipProvider>
 				</div>
 			</div>
+
+			{/* Pinned Messages Bar */}
+			{pinnedMessages.length > 0 && (
+				<div className="bg-amber-50/50 border-b border-amber-100 px-4 py-2 flex items-start gap-3 flex-shrink-0">
+					<Pin className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+					<div className="flex-1 min-w-0">
+						<p className="text-xs font-medium text-amber-800 mb-0.5">
+							{pinnedMessages.length} Pinned Messages
+						</p>
+						<div className="text-xs text-amber-700/80 truncate">
+							{pinnedMessages[pinnedMessages.length - 1].content?.replace(/<[^>]*>/g, "") ||
+								"Attachment"}
+						</div>
+					</div>
+					<button
+						type="button"
+						onClick={() => {
+							const msgEl = document.getElementById(
+								`msg-${pinnedMessages[pinnedMessages.length - 1].id}`,
+							);
+							if (msgEl) {
+								msgEl.scrollIntoView({ behavior: "smooth", block: "center" });
+								msgEl.classList.add("bg-amber-50");
+								setTimeout(() => msgEl.classList.remove("bg-amber-50"), 2000);
+							}
+						}}
+						className="text-xs font-medium text-amber-600 hover:text-amber-700 bg-amber-100/50 hover:bg-amber-100 px-2 py-1 rounded"
+					>
+						Jump
+					</button>
+				</div>
+			)}
 
 			{/* Messages Area */}
 			<ScrollArea className="flex-1 h-0 overflow-y-auto w-full">
@@ -640,6 +704,9 @@ export function ChatArea({
 														<span className="ml-1 italic text-[10px]">(edited)</span>
 													)}
 												</span>
+												{(message.isPinned || message.is_pinned) && (
+													<Pin className="w-3 h-3 text-amber-500 fill-amber-500" />
+												)}
 												{!isDeleted && (
 													<button
 														type="button"
@@ -672,6 +739,22 @@ export function ChatArea({
 														title="Edit message"
 													>
 														<Edit2 className="w-3.5 h-3.5" />
+													</button>
+												)}
+												{!isDeleted && togglePinMessage && (
+													<button
+														type="button"
+														onClick={() =>
+															togglePinMessage(message.id, !(message.isPinned || message.is_pinned))
+														}
+														className={`opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-amber-50 ${message.isPinned || message.is_pinned ? "text-amber-500" : "text-[#9a9a9a] hover:text-amber-500"}`}
+														title={
+															message.isPinned || message.is_pinned
+																? "Unpin message"
+																: "Pin message"
+														}
+													>
+														<Pin className="w-3.5 h-3.5" />
 													</button>
 												)}
 											</div>
@@ -744,31 +827,35 @@ export function ChatArea({
 																		}
 																	}
 																}}
+																suppressHydrationWarning
 																// biome-ignore lint/security/noDangerouslySetInnerHtml: Sanitized via DOMPurify
 																dangerouslySetInnerHTML={{
-																	__html: DOMPurify.sanitize(message.content, {
-																		ALLOWED_TAGS: [
-																			"p",
-																			"br",
-																			"strong",
-																			"em",
-																			"u",
-																			"s",
-																			"a",
-																			"ul",
-																			"ol",
-																			"li",
-																			"span",
-																		],
-																		ALLOWED_ATTR: [
-																			"href",
-																			"target",
-																			"rel",
-																			"style",
-																			"class",
-																			"data-mention",
-																		],
-																	}),
+																	__html:
+																		typeof DOMPurify.sanitize === "function"
+																			? DOMPurify.sanitize(message.content, {
+																					ALLOWED_TAGS: [
+																						"p",
+																						"br",
+																						"strong",
+																						"em",
+																						"u",
+																						"s",
+																						"a",
+																						"ul",
+																						"ol",
+																						"li",
+																						"span",
+																					],
+																					ALLOWED_ATTR: [
+																						"href",
+																						"target",
+																						"rel",
+																						"style",
+																						"class",
+																						"data-mention",
+																					],
+																				})
+																			: "",
 																}}
 															/>
 														) : (

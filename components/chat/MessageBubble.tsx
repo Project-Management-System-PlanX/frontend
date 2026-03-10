@@ -1,5 +1,6 @@
 import { format } from "date-fns";
 import DOMPurify from "dompurify";
+import { Pin } from "lucide-react";
 import type { Message } from "@/hooks/chat/use-messages";
 
 interface MessageBubbleProps {
@@ -69,12 +70,27 @@ export function MessageBubble({ message, isOwnMessage, showAvatar = true }: Mess
 										? "[&_a]:text-emerald-200 [&_strong]:text-white [&_em]:text-white/90"
 										: "[&_a]:text-blue-500"
 								}`}
+								suppressHydrationWarning
 								// biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized via DOMPurify
 								dangerouslySetInnerHTML={{
-									__html: DOMPurify.sanitize(content, {
-										ALLOWED_TAGS: ["p", "br", "strong", "em", "u", "s", "a", "ul", "ol", "li"],
-										ALLOWED_ATTR: ["href", "target", "rel", "style", "class"],
-									}),
+									__html:
+										typeof DOMPurify.sanitize === "function"
+											? DOMPurify.sanitize(content, {
+													ALLOWED_TAGS: [
+														"p",
+														"br",
+														"strong",
+														"em",
+														"u",
+														"s",
+														"a",
+														"ul",
+														"ol",
+														"li",
+													],
+													ALLOWED_ATTR: ["href", "target", "rel", "style", "class"],
+												})
+											: "",
 								}}
 							/>
 						) : (
@@ -93,7 +109,12 @@ export function MessageBubble({ message, isOwnMessage, showAvatar = true }: Mess
 						className={`text-[10px] text-gray-400 mt-1 flex items-center gap-1 ${isOwnMessage ? "justify-end mr-1" : "justify-start ml-1"}`}
 					>
 						{timeString}
-						{message.is_edited && <span className="italic opacity-70">(edited)</span>}
+						{(message.is_edited || message.isEdited) && (
+							<span className="italic opacity-70">(edited)</span>
+						)}
+						{(message.is_pinned || message.isPinned) && (
+							<Pin className="w-2.5 h-2.5 ml-1 inline text-amber-500 fill-amber-500" />
+						)}
 					</div>
 				</div>
 			</div>

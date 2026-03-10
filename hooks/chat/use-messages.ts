@@ -6,103 +6,10 @@ import { fetchClient } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/config";
 import { createClient } from "@/lib/supabase/client";
 
-export interface Message {
-	id: string;
-	channel_id?: string;
-	channelId?: string;
-	user_id?: string;
-	userId?: string;
-	content?: string;
-	file_url?: string;
-	fileUrl?: string;
-	file_name?: string;
-	fileName?: string;
-	file_type?: string;
-	fileType?: string;
-	file_size?: number;
-	fileSize?: number;
-	duration?: number;
-	is_edited?: boolean;
-	isEdited?: boolean;
-	deleted_at?: string | null;
-	deletedAt?: string | null;
-	created_at?: string;
-	createdAt?: string;
-	updated_at?: string;
-	updatedAt?: string;
-	parent_id?: string | null;
-	parentId?: string | null;
-	parent?: {
-		id: string;
-		content: string;
-		userId?: string;
-		user_id?: string;
-		fileUrl?: string | null;
-		file_url?: string | null;
-		fileName?: string | null;
-		file_name?: string | null;
-		fileType?: string | null;
-		file_type?: string | null;
-		user?: {
-			firstName: string | null;
-			lastName: string | null;
-			username: string | null;
-			email: string;
-		};
-	} | null;
-	users?: {
-		firstName: string | null;
-		lastName: string | null;
-		username: string | null;
-		imageUrl: string | null;
-		email: string;
-	};
-	user?: {
-		firstName: string | null;
-		lastName: string | null;
-		username: string | null;
-		imageUrl: string | null;
-		email: string;
-	};
-}
-
-// Normalize message fields between camelCase (backend) and snake_case (Supabase Realtime)
-export function normalizeMessage(msg: any): Message {
-	return {
-		...msg,
-		channel_id: msg.channel_id || msg.channelId,
-		channelId: msg.channelId || msg.channel_id,
-		user_id: msg.user_id || msg.userId,
-		userId: msg.userId || msg.user_id,
-		file_url: msg.file_url || msg.fileUrl,
-		fileUrl: msg.fileUrl || msg.file_url,
-		file_name: msg.file_name || msg.fileName,
-		fileName: msg.fileName || msg.file_name,
-		file_type: msg.file_type || msg.fileType,
-		fileType: msg.fileType || msg.file_type,
-		file_size: msg.file_size || msg.fileSize,
-		fileSize: msg.fileSize || msg.file_size,
-		duration: msg.duration ?? undefined,
-		is_edited: msg.is_edited ?? msg.isEdited ?? false,
-		isEdited: msg.isEdited ?? msg.is_edited ?? false,
-		deleted_at: msg.deleted_at || msg.deletedAt || null,
-		deletedAt: msg.deletedAt || msg.deleted_at || null,
-		created_at: msg.created_at || msg.createdAt,
-		createdAt: msg.createdAt || msg.created_at,
-		updated_at: msg.updated_at || msg.updatedAt,
-		updatedAt: msg.updatedAt || msg.updated_at,
-		parent_id: msg.parent_id || msg.parentId || null,
-		parentId: msg.parentId || msg.parent_id || null,
-		parent: msg.parent || null,
-		users: msg.users || msg.user,
-		user: msg.user || msg.users,
-	};
-}
-
-export const messageKeys = {
-	all: ["messages"] as const,
-	byChannel: (channelId: string) => [...messageKeys.all, "channel", channelId] as const,
-};
+import type { Message } from "./message-types";
+import { messageKeys, normalizeMessage } from "./message-utils";
+export { messageKeys, normalizeMessage };
+export type { Message };
 
 export function useMessages(channelId: string | null) {
 	const queryClient = useQueryClient();
@@ -371,6 +278,31 @@ export function useMessages(channelId: string | null) {
 		[channelId, queryClient],
 	);
 
+	const togglePinMessage = useCallback(
+		async (messageId: string, isPinned: boolean) => {
+			if (!channelId) return;
+
+			const {
+				data: { session },
+			} = await supabaseRef.current.auth.getSession();
+			const token = session?.access_token;
+
+			const updatedMsgData = await fetchClient(API_ENDPOINTS.MESSAGE_PIN(messageId), {
+				token,
+				method: "PATCH",
+				body: JSON.stringify({ isPinned }),
+			});
+
+			const normalizedUpdate = normalizeMessage(updatedMsgData);
+
+			queryClient.setQueryData(messageKeys.byChannel(channelId), (old: Message[] = []) =>
+				old.map((msg) => (msg.id === messageId ? { ...msg, ...normalizedUpdate } : msg)),
+			);
+			return normalizedUpdate;
+		},
+		[channelId, queryClient],
+	);
+
 	return {
 		messages,
 		isLoading,
@@ -378,5 +310,6 @@ export function useMessages(channelId: string | null) {
 		sendMessage,
 		deleteMessage,
 		editMessage,
+		togglePinMessage,
 	};
 }

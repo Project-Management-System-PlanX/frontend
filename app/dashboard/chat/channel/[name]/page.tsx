@@ -1,6 +1,6 @@
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { ChannelView } from "@/components/dashboard/ChannelView";
-import { messageKeys, normalizeMessage } from "@/hooks/chat/use-messages";
+import { messageKeys, normalizeMessage } from "@/hooks/chat/message-utils";
 import { fetchClient } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/config";
 import { getQueryClient } from "@/lib/query-client";

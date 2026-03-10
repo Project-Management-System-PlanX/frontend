@@ -6,7 +6,6 @@ import {
 } from "@tanstack/query-persist-client-core";
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { useEffect, useState } from "react";
 import { getQueryClient } from "@/lib/query-client";
 
@@ -41,9 +40,9 @@ export function QueryProvider({ children }: QueryProviderProps) {
 	return (
 		<QueryClientProvider client={queryClient}>
 			{children}
-			{process.env.NODE_ENV === "development" && (
+			{/* process.env.NODE_ENV === "development" && (
 				<ReactQueryDevtools buttonPosition="bottom-left" />
-			)}
+			) */}
 		</QueryClientProvider>
 	);
 }

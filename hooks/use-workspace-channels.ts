@@ -11,7 +11,7 @@ import { useWorkspaceStore } from "@/stores/workspace-store";
  * Should be used once at the chat layout level.
  */
 export function useWorkspaceChannels() {
-	const { token, isAuthenticated, isLoading: authLoading } = useSupabaseAuth();
+	const { token, isAuthenticated, isLoading: authLoading, user } = useSupabaseAuth();
 	const { activeWorkspaceId, setActiveWorkspace } = useWorkspaceStore();
 	const { channels, setChannels, isLoaded } = useChannelStore();
 
@@ -49,6 +49,8 @@ export function useWorkspaceChannels() {
 					description: ch.description,
 					members: ch.members?.length ?? 0,
 					isJoined: true,
+					isStarred:
+						(ch.members as any[])?.find((m: any) => m.userId === user?.id)?.isStarred ?? false,
 					createdAt: ch.createdAt,
 					updatedAt: ch.updatedAt,
 				}));
@@ -62,7 +64,7 @@ export function useWorkspaceChannels() {
 		};
 
 		fetchChannels();
-	}, [token, activeWorkspaceId, setChannels]);
+	}, [token, activeWorkspaceId, user?.id, setChannels]);
 
 	return {
 		channels,

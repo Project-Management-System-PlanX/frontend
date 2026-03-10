@@ -107,7 +107,7 @@ export const useUpdateTask = (token?: string) => {
 
 			return { previousDetail, previousAssigned };
 		},
-		onError: (err, { id }, context) => {
+		onError: (_err, { id }, context) => {
 			if (context?.previousDetail) {
 				queryClient.setQueryData(taskKeys.detail(id), context.previousDetail);
 			}
@@ -157,7 +157,7 @@ export const useDeleteTask = (token?: string) => {
 			// Return a context object with the snapshotted value
 			return { previousAssigned };
 		},
-		onError: (err, id, context) => {
+		onError: (_err, _id, context) => {
 			// If the mutation fails, use the context returned from onMutate to roll back
 			queryClient.setQueryData(taskKeys.assignedToMe(), context?.previousAssigned);
 		},
