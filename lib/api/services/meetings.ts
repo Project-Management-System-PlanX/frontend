@@ -48,6 +48,7 @@ export const meetingService = {
 		await fetchClient<{ success: boolean }>(API_ENDPOINTS.MEETINGS_LEAVE(meetingId), {
 			token,
 			method: "POST",
+			body: "{}",
 			baseUrl: _MEETING_BASE,
 		});
 	},
@@ -56,6 +57,7 @@ export const meetingService = {
 		await fetchClient<{ success: boolean }>(API_ENDPOINTS.MEETINGS_END(meetingId), {
 			token,
 			method: "POST",
+			body: "{}",
 			baseUrl: _MEETING_BASE,
 		});
 	},

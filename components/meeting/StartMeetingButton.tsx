@@ -3,12 +3,7 @@
 import { Loader2, Phone, Video } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCreateMeeting, useJoinMeeting } from "@/hooks/api/use-meetings";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { createClient } from "@/lib/supabase/client";
@@ -84,27 +79,38 @@ export function StartMeetingButton({ channelId, channelName }: StartMeetingButto
 	};
 
 	return (
-		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
-				<Button
-					variant="ghost"
-					size="icon"
-					disabled={isPending}
-					className="w-8 h-8 text-[#9a9a9a] hover:text-[#0B6E4F] hover:bg-[#0B6E4F]/10"
-				>
-					{isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Video className="w-4 h-4" />}
-				</Button>
-			</DropdownMenuTrigger>
-			<DropdownMenuContent align="end" className="w-48">
-				<DropdownMenuItem onClick={() => handleStartMeeting("VIDEO")} className="cursor-pointer">
-					<Video className="w-4 h-4 mr-2 text-[#0B6E4F]" />
-					Start video call
-				</DropdownMenuItem>
-				<DropdownMenuItem onClick={() => handleStartMeeting("AUDIO")} className="cursor-pointer">
-					<Phone className="w-4 h-4 mr-2 text-blue-500" />
-					Start audio call
-				</DropdownMenuItem>
-			</DropdownMenuContent>
-		</DropdownMenu>
+		<TooltipProvider delayDuration={0}>
+			{/* Audio Call Button */}
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<Button
+						variant="ghost"
+						size="icon"
+						disabled={isPending}
+						onClick={() => handleStartMeeting("AUDIO")}
+						className="w-8 h-8 rounded-full hover:bg-[#e5e5ea] text-[#007aff] bg-transparent focus:outline-none"
+					>
+						{isStarting ? <Loader2 className="w-[18px] h-[18px] animate-spin" /> : <Phone className="w-[18px] h-[18px]" strokeWidth={2} />}
+					</Button>
+				</TooltipTrigger>
+				<TooltipContent>Audio Call</TooltipContent>
+			</Tooltip>
+
+			{/* Video Call Button */}
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<Button
+						variant="ghost"
+						size="icon"
+						disabled={isPending}
+						onClick={() => handleStartMeeting("VIDEO")}
+						className="w-8 h-8 rounded-full hover:bg-[#e5e5ea] text-[#007aff] bg-transparent focus:outline-none"
+					>
+						{isStarting ? <Loader2 className="w-[20px] h-[20px] animate-spin" /> : <Video className="w-[20px] h-[20px]" strokeWidth={2} />}
+					</Button>
+				</TooltipTrigger>
+				<TooltipContent>Video Call</TooltipContent>
+			</Tooltip>
+		</TooltipProvider>
 	);
 }

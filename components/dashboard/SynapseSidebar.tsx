@@ -440,21 +440,13 @@ export function SynapseSidebar() {
 								</button>
 							)}
 
-							{/* —— Folders / Files —— */}
+							{/* —— Documents —— */}
 							<SidebarNavItem
-								icon={FolderOpen}
-								label="Folders"
-								href="/dashboard/files"
-								badge={fileCount > 0 ? String(fileCount) : ""}
-								active={isActive("/dashboard/files")}
-							/>
-
-							{/* —— Documents tree item —— */}
-							<SidebarTreeItem
 								icon={FileText}
 								label="Documents"
 								href="/dashboard/files"
-								active={isActive("/dashboard/files", true)}
+								badge={fileCount > 0 ? String(fileCount) : ""}
+								active={isActive("/dashboard/files")}
 							/>
 
 							{/* —— Tasks —— */}

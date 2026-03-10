@@ -54,7 +54,11 @@ export function VoicePlayer({ src, duration: initialDuration }: VoicePlayerProps
 		};
 	}, [src]);
 
-	const togglePlay = useCallback(() => {
+	const togglePlay = useCallback((e?: React.MouseEvent) => {
+		if (e) {
+			e.stopPropagation();
+			e.preventDefault();
+		}
 		const audio = audioRef.current;
 		if (!audio) return;
 
@@ -69,6 +73,7 @@ export function VoicePlayer({ src, duration: initialDuration }: VoicePlayerProps
 
 	const handleSeek = useCallback(
 		(e: React.MouseEvent<HTMLDivElement>) => {
+			e.stopPropagation();
 			const audio = audioRef.current;
 			const bar = progressRef.current;
 			if (!audio || !bar || !duration) return;
@@ -95,9 +100,10 @@ export function VoicePlayer({ src, duration: initialDuration }: VoicePlayerProps
 			<button
 				type="button"
 				onClick={togglePlay}
-				className="w-9 h-9 flex items-center justify-center rounded-full bg-[#0B6E4F] text-white hover:bg-[#0B6E4F]/90 transition-colors shrink-0"
+				onPointerDown={(e) => e.stopPropagation()}
+				className="w-9 h-9 flex items-center justify-center rounded-full bg-[#0B6E4F] text-white hover:bg-[#0B6E4F]/90 transition-colors shrink-0 outline-none"
 			>
-				{isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+				{isPlaying ? <Pause className="w-5 h-5 fill-current border-0" /> : <Play className="w-5 h-5 ml-0.5 fill-current border-0" />}
 			</button>
 
 			{/* Progress bar + time */}
@@ -111,8 +117,9 @@ export function VoicePlayer({ src, duration: initialDuration }: VoicePlayerProps
 					aria-valuenow={Math.round(currentTime)}
 					aria-valuemin={0}
 					aria-valuemax={Math.round(duration)}
-					className="h-2 bg-[#0B6E4F]/15 rounded-full cursor-pointer relative overflow-hidden"
+					className="h-[6px] bg-[#0B6E4F]/20 rounded-full cursor-pointer relative overflow-hidden"
 					onClick={handleSeek}
+					onPointerDown={(e) => e.stopPropagation()}
 				>
 					<div
 						className="absolute inset-y-0 left-0 bg-[#0B6E4F] rounded-full transition-all duration-100"

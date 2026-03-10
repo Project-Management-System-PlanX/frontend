@@ -1,5 +1,13 @@
 "use client";
 
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+	DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+
 import data from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
 import { Node } from "@tiptap/core";
@@ -62,6 +70,7 @@ import {
 	ListOrdered,
 	Loader2,
 	Mic,
+	Phone,
 	Pin,
 	PlusCircle,
 	Reply,
@@ -72,6 +81,7 @@ import {
 	Strikethrough,
 	Trash2,
 	Underline as UnderlineIcon,
+	Video,
 	X,
 } from "lucide-react";
 import dynamic from "next/dynamic";
@@ -222,7 +232,7 @@ export function ChatArea({
 		editorProps: {
 			attributes: {
 				class:
-					"prose prose-sm max-w-none focus:outline-none min-h-[40px] max-h-[160px] overflow-y-auto px-3 py-2 text-sm text-[#202020] [&_p]:my-0 [&_ul]:my-1 [&_ol]:my-1",
+					"prose prose-sm max-w-none focus:outline-none min-h-[40px] max-h-[160px] overflow-y-auto pl-3 pr-[90px] py-[9px] text-[15px] text-[#000] [&_p]:my-0 [&_ul]:my-1 [&_ol]:my-1 leading-normal",
 			},
 			handleKeyDown: (_view, event) => {
 				if (event.key === "Enter" && !event.shiftKey) {
@@ -540,67 +550,16 @@ export function ChatArea({
 			style={{ fontFamily: "var(--font-figtree), Figtree" }}
 		>
 			{/* Channel Header */}
-			<div className="h-14 px-4 flex items-center justify-between border-b border-[#e5e7eb] shrink-0">
-				<div className="flex items-center gap-3">
-					<span className="text-[#202020] font-medium text-lg flex items-center gap-2">
-						<span className="text-[#9a9a9a]">{isDM ? "@" : "#"}</span> {displayName}
+			<div className="h-14 px-4 flex items-center justify-between border-b border-[#e5e5ea] bg-white/90 backdrop-blur-md shrink-0 z-10 sticky top-0">
+				<div className="flex items-center gap-2">
+					<span className="text-[#8e8e93] text-[15px]">To:</span>
+					<span className="text-[#000] font-medium text-[15px]">
+						{displayName}
 					</span>
-					<Button
-						variant="ghost"
-						size="icon"
-						onClick={handleToggleStar}
-						className={`w-6 h-6 hover:bg-transparent ${channel?.isStarred ? "text-amber-400 hover:text-amber-500" : "text-[#d1d5db] hover:text-[#9a9a9a]"}`}
-					>
-						<Star className={`w-4 h-4 ${channel?.isStarred ? "fill-current" : ""}`} />
-					</Button>
 				</div>
 
-				<div className="flex items-center gap-2">
-					{/* Member Count Badge */}
-					{channel?.members != null && channel.members > 0 && (
-						<div className="flex items-center gap-1.5 ml-4 px-2.5 py-1 bg-slate-100 rounded-full">
-							<div className="w-2 h-2 rounded-full bg-[#22c55e]" />
-							<span className="text-xs font-medium text-slate-600">{channel.members} members</span>
-						</div>
-					)}
-
-					<div className="w-px h-6 bg-[#e5e7eb] mx-2" />
-
-					<TooltipProvider delayDuration={0}>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<StartMeetingButton channelId={channelName} channelName={displayName} />
-							</TooltipTrigger>
-							<TooltipContent>Start a call</TooltipContent>
-						</Tooltip>
-
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									variant="ghost"
-									size="icon"
-									className="w-8 h-8 text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"
-								>
-									<Search className="w-4 h-4" />
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>Search</TooltipContent>
-						</Tooltip>
-
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									variant="ghost"
-									size="icon"
-									onClick={onToggleDetails}
-									className={`w-8 h-8 hover:bg-[#f5f5f5] ${detailsOpen ? "text-[#0B6E4F]" : "text-[#9a9a9a] hover:text-[#202020]"}`}
-								>
-									<Info className="w-4 h-4" />
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>{detailsOpen ? "Hide details" : "Show details"}</TooltipContent>
-						</Tooltip>
-					</TooltipProvider>
+				<div className="flex items-center gap-1">
+					<StartMeetingButton channelId={channelName} channelName={displayName} />
 				</div>
 			</div>
 
@@ -637,40 +596,23 @@ export function ChatArea({
 			)}
 
 			{/* Messages Area */}
-			<ScrollArea className="flex-1 h-0 overflow-y-auto w-full">
-				<div className="p-4 space-y-6">
+			<ScrollArea className="flex-1 h-0 overflow-y-auto w-full bg-white">
+				<div className="p-4 space-y-1">
 					{isLoading ? (
 						<div className="flex items-center justify-center py-16">
-							<Loader2 className="w-6 h-6 animate-spin text-[#0B6E4F]" />
-							<span className="ml-3 text-sm text-slate-500">Loading messages...</span>
+							<Loader2 className="w-[20px] h-[20px] animate-spin text-[#8e8e93]" />
 						</div>
 					) : error ? (
 						<div className="flex items-center justify-center py-16">
-							<p className="text-sm text-red-500">Failed to load messages: {error}</p>
+							<p className="text-[13px] text-[#ff3b30]">{error}</p>
 						</div>
 					) : messages.length === 0 ? (
-						<div className="flex flex-col items-center justify-center py-16 text-center">
-							<div className="w-16 h-16 rounded-2xl bg-[#0B6E4F]/10 flex items-center justify-center mb-4">
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									className="w-6 h-6 text-[#0B6E4F]"
-									fill="none"
-									viewBox="0 0 24 24"
-									stroke="currentColor"
-									strokeWidth={2}
-								>
-									<title>Chat icon</title>
-									<path
-										strokeLinecap="round"
-										strokeLinejoin="round"
-										d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-									/>
-								</svg>
-							</div>
-							<h3 className="font-semibold text-slate-900 mb-1">No messages yet</h3>
-							<p className="text-sm text-slate-500 max-w-xs">
-								Be the first to send a message in{" "}
-								<span className="font-medium text-[#0B6E4F]">#{displayName}</span>
+						<div className="flex flex-col items-center justify-center py-12 text-center select-none">
+							<p className="text-[12px] font-semibold text-[#8e8e93] tracking-wide">
+								iMessage
+							</p>
+							<p className="text-[11px] text-[#8e8e93] font-medium mt-1">
+								Today {new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
 							</p>
 						</div>
 					) : (
@@ -682,230 +624,278 @@ export function ChatArea({
 							const canEdit =
 								isOwnMessage && !isDeleted && diffInMinutes <= 15 && !message.file_url;
 							return (
-								<div key={message.id} id={`msg-${message.id}`}>
-									<div className="flex gap-3 group relative hover:bg-[#f9fafb] rounded-lg px-2 py-1 -mx-2 transition-all duration-300">
-										<Avatar className="w-10 h-10 shrink-0">
-											<AvatarImage src={message.users?.imageUrl || undefined} />
-											<AvatarFallback className="bg-[#e5e7eb] text-[#404040]">
-												{getInitials(message)}
-											</AvatarFallback>
-										</Avatar>
+								<div key={message.id} id={`msg-${message.id}`} className="mb-4">
+									<div className={`flex w-full group ${isOwnMessage ? "justify-end" : "justify-start"}`}>
+										{/* Avatar for others */}
+										{!isOwnMessage && (
+											<div className="flex flex-col justify-end pb-1 mr-2 shrink-0">
+												<Avatar className="w-8 h-8 select-none">
+													<AvatarImage src={message.users?.imageUrl || undefined} />
+													<AvatarFallback className="bg-[#e5e7eb] text-[#8e8e93] text-xs font-medium">
+														{getInitials(message)}
+													</AvatarFallback>
+												</Avatar>
+											</div>
+										)}
 
-										<div className="flex-1 min-w-0">
-											<div className="flex items-center gap-2">
-												<span className="font-medium text-[#202020]">
+										<div className={`flex flex-col max-w-[75%] ${isOwnMessage ? "items-end" : "items-start"}`}>
+											{/* Name above bubble for others */}
+											{!isOwnMessage && (
+												<span className="text-[11px] text-[#8e8e93] px-2 mb-[2px] font-medium tracking-wide">
 													{getDisplayName(message)}
 												</span>
-												<span className="text-xs text-[#9a9a9a]">
-													{formatMessageTime(
-														message.created_at || message.createdAt || new Date().toISOString(),
-													)}
-													{(message.isEdited || message.is_edited) && (
-														<span className="ml-1 italic text-[10px]">(edited)</span>
-													)}
-												</span>
-												{(message.isPinned || message.is_pinned) && (
-													<Pin className="w-3 h-3 text-amber-500 fill-amber-500" />
-												)}
-												{!isDeleted && (
-													<button
-														type="button"
-														onClick={() => setReplyTo(message)}
-														className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-blue-50 text-[#9a9a9a] hover:text-blue-500"
-														title="Reply"
-													>
-														<Reply className="w-3.5 h-3.5" />
-													</button>
-												)}
+											)}
+
+											{/* Pinned Indicator on top if pinned */}
+											{(message.isPinned || message.is_pinned) && (
+												<div className={`flex items-center gap-1 mb-1 px-1 ${isOwnMessage ? "text-amber-500" : "text-amber-500"}`}>
+													<Pin className="w-3 h-3 fill-current" />
+													<span className="text-[10px] uppercase font-bold tracking-wider">Pinned</span>
+												</div>
+											)}
+
+											<div className={`flex items-end gap-2 relative ${isOwnMessage ? "justify-end" : "justify-start"}`}>
+												{/* Left Side Actions (if isOwnMessage) */}
 												{isOwnMessage && !isDeleted && (
-													<button
-														type="button"
-														onClick={() => setDeleteConfirmId(message.id)}
-														className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-red-50 text-[#9a9a9a] hover:text-red-500"
-														title="Delete message"
-													>
-														<Trash2 className="w-3.5 h-3.5" />
-													</button>
+													<div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0 mb-[2px]">
+														<button
+															type="button"
+															onClick={() => setDeleteConfirmId(message.id)}
+															className="p-1.5 rounded-full hover:bg-[#f2f2f7]/80 text-[#8e8e93] hover:text-[#ff3b30] transition-colors focus:outline-none"
+															title="Delete message"
+														>
+															<Trash2 className="w-[15px] h-[15px]" strokeWidth={2} />
+														</button>
+														{canEdit && (
+															<button
+																type="button"
+																onClick={() => {
+																	setEditingMessageId(message.id);
+																	editor?.commands.setContent(message.content || "");
+																	editor?.commands.focus();
+																}}
+																className="p-1.5 rounded-full hover:bg-[#f2f2f7]/80 text-[#8e8e93] hover:text-[#007aff] transition-colors focus:outline-none"
+																title="Edit message"
+															>
+																<Edit2 className="w-[15px] h-[15px]" strokeWidth={2} />
+															</button>
+														)}
+														{togglePinMessage && (
+															<button
+																type="button"
+																onClick={() => togglePinMessage(message.id, !(message.isPinned || message.is_pinned))}
+																className={`p-1.5 rounded-full hover:bg-[#f2f2f7]/80 transition-colors focus:outline-none ${message.isPinned || message.is_pinned ? "text-[#ff9f0a]" : "text-[#8e8e93] hover:text-[#ff9f0a]"}`}
+																title={message.isPinned || message.is_pinned ? "Unpin message" : "Pin message"}
+															>
+																<Pin className="w-[15px] h-[15px]" strokeWidth={2} />
+															</button>
+														)}
+														<button
+															type="button"
+															onClick={() => setReplyTo(message)}
+															className="p-1.5 rounded-full hover:bg-[#f2f2f7]/80 text-[#8e8e93] hover:text-[#007aff] transition-colors focus:outline-none"
+															title="Reply"
+														>
+															<Reply className="w-[15px] h-[15px]" strokeWidth={2} />
+														</button>
+													</div>
 												)}
-												{canEdit && (
-													<button
-														type="button"
-														onClick={() => {
-															setEditingMessageId(message.id);
-															editor?.commands.setContent(message.content || "");
-															editor?.commands.focus();
-														}}
-														className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-emerald-50 text-[#9a9a9a] hover:text-[#0B6E4F]"
-														title="Edit message"
-													>
-														<Edit2 className="w-3.5 h-3.5" />
-													</button>
-												)}
-												{!isDeleted && togglePinMessage && (
-													<button
-														type="button"
-														onClick={() =>
-															togglePinMessage(message.id, !(message.isPinned || message.is_pinned))
-														}
-														className={`opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-amber-50 ${message.isPinned || message.is_pinned ? "text-amber-500" : "text-[#9a9a9a] hover:text-amber-500"}`}
-														title={
-															message.isPinned || message.is_pinned
-																? "Unpin message"
-																: "Pin message"
-														}
-													>
-														<Pin className="w-3.5 h-3.5" />
-													</button>
+
+												<div
+													className={`relative px-[16px] py-[8px] text-[15px] break-words leading-[1.4] transition-opacity hover:opacity-[0.95] max-w-full ${
+														isDeleted
+															? "bg-transparent text-[#8e8e93] italic border border-[#e5e5ea] rounded-2xl"
+															: isOwnMessage
+																? "bg-[#007aff] text-white rounded-[18px] rounded-br-[4px]"
+																: "bg-[#e5e5ea] text-black rounded-[18px] rounded-bl-[4px]"
+													}`}
+													title={formatMessageTime(message.created_at || message.createdAt || new Date().toISOString())}
+												>
+													{isDeleted ? (
+														<p className="text-[#8e8e93] italic text-[14px] m-0">
+															This message was deleted
+														</p>
+													) : (
+														<>
+															{/* Quoted parent message */}
+															{message.parent && (
+																<div
+																	className={`mt-1 mb-2 flex items-start gap-2 pl-2 border-l-[3px] rounded-r py-1 pr-2 max-w-sm cursor-pointer transition-colors ${
+																		isOwnMessage
+																			? "border-white/40 bg-white/10 hover:bg-white/20"
+																			: "border-black/20 bg-black/5 hover:bg-black/10"
+																	}`}
+																	onClick={(e) => {
+																		e.stopPropagation();
+																		const parentEl = document.getElementById(
+																			`msg-${message.parent?.id}`,
+																		);
+																		if (parentEl) {
+																			parentEl.scrollIntoView({ behavior: "smooth", block: "center" });
+																			parentEl.classList.add("ring-2", "ring-[#007aff]", "ring-offset-2");
+																			setTimeout(() => parentEl.classList.remove("ring-2", "ring-[#007aff]", "ring-offset-2"), 2000);
+																		}
+																	}}
+																	onKeyDown={() => {}}
+																	role="button"
+																	tabIndex={0}
+																>
+																	<div className="min-w-0 flex-1">
+																		<p className={`text-[11px] font-semibold mb-0.5 ${isOwnMessage ? "text-white/90" : "text-black/60"}`}>
+																			{message.parent.user
+																				? [message.parent.user.firstName, message.parent.user.lastName]
+																						.filter(Boolean)
+																						.join(" ") ||
+																					message.parent.user.username ||
+																					message.parent.user.email?.split("@")[0]
+																				: "Unknown"}
+																		</p>
+																		{message.parent.content ? (
+																			<p className={`text-[12px] line-clamp-2 ${isOwnMessage ? "text-white/80" : "text-black/60"}`}>
+																				{message.parent.content.replace(/<[^>]*>/g, "").slice(0, 150)}
+																			</p>
+																		) : message.parent.fileName || message.parent.file_name ? (
+																			<p className={`text-[12px] flex items-center gap-1 ${isOwnMessage ? "text-white/80" : "text-black/60"}`}>
+																				<FileIcon className="w-3 h-3" />
+																				{message.parent.fileName || message.parent.file_name}
+																			</p>
+																		) : null}
+																	</div>
+																</div>
+															)}
+
+															{message.content &&
+																(isHtmlContent(message.content) ? (
+																	<div
+																		className={`mt-1 leading-relaxed text-[15px] prose prose-sm max-w-none [&_p]:my-0 [&_ul]:my-1 [&_ol]:my-1 ${
+																			isOwnMessage ? "[&_a]:text-white [&_a]:underline text-white" : "[&_a]:text-[#007aff] text-black"
+																		}`}
+																		onClick={(e) => {
+																			e.stopPropagation();
+																			const target = e.target as HTMLElement;
+																			const mentionId = target.getAttribute("data-mention");
+																			if (mentionId) {
+																				const mentionedMember = members.find(
+																					(m) => m.userId === mentionId,
+																				);
+																				if (mentionedMember?.slug) {
+																					router.push(
+																						`/dashboard/chat/dm/${encodeURIComponent(mentionedMember.slug)}`,
+																					);
+																				}
+																			}
+																		}}
+																		onPointerDown={(e) => {
+																			// only stop propagation if we are clicking an interactive element like a link
+																			if ((e.target as HTMLElement).tagName.toLowerCase() === 'a' || (e.target as HTMLElement).closest('a')) {
+																				e.stopPropagation();
+																			}
+																		}}
+																		suppressHydrationWarning
+																		dangerouslySetInnerHTML={{
+																			__html:
+																				typeof DOMPurify.sanitize === "function"
+																					? DOMPurify.sanitize(message.content, {
+																							ALLOWED_TAGS: [
+																								"p", "br", "strong", "em", "u", "s", "a", "ul", "ol", "li", "span",
+																							],
+																							ALLOWED_ATTR: [
+																								"href", "target", "rel", "style", "class", "data-mention",
+																							],
+																						})
+																					: "",
+																		}}
+																	/>
+																) : (
+																	<p className={`mt-1 leading-relaxed text-[15px] m-0 ${isOwnMessage ? "text-white" : "text-black"}`}>
+																		{message.content}
+																	</p>
+																))}
+
+															{/* Attachments */}
+															{message.file_url && (
+																<div 
+																	className="mt-2" 
+																	onClick={(e) => e.stopPropagation()}
+																	onPointerDown={(e) => e.stopPropagation()}
+																>
+																	{message.file_type?.startsWith("audio/") ? (
+																		<VoicePlayer src={message.file_url} duration={message.duration} />
+																	) : message.file_type?.startsWith("image/") ? (
+																		<a href={message.file_url} target="_blank" rel="noreferrer">
+																			<img
+																				src={message.file_url}
+																				alt={message.file_name || "Attachment"}
+																				className="max-w-[260px] max-h-[260px] rounded-lg border border-black/10 object-contain hover:opacity-90 transition-opacity"
+																			/>
+																		</a>
+																	) : (
+																		<a
+																			href={message.file_url}
+																			target="_blank"
+																			rel="noreferrer"
+																			className={`flex items-center gap-3 p-3 rounded-lg border max-w-sm transition-colors ${
+																				isOwnMessage 
+																					? "bg-white/10 border-white/20 hover:bg-white/20 text-white" 
+																					: "bg-black/5 border-black/10 hover:bg-black/10 text-black"
+																			}`}
+																		>
+																			<div className={`w-10 h-10 rounded flex items-center justify-center shrink-0 ${isOwnMessage ? "bg-white/20" : "bg-black/10"}`}>
+																				<FileIcon className="w-5 h-5" />
+																			</div>
+																			<div className="min-w-0 flex-1">
+																				<p className="text-sm font-medium truncate">
+																					{message.file_name || "Attached File"}
+																				</p>
+																				{message.file_size && (
+																					<p className={`text-xs ${isOwnMessage ? "text-white/70" : "text-black/60"}`}>
+																						{(message.file_size / 1024).toFixed(1)} KB
+																					</p>
+																				)}
+																			</div>
+																		</a>
+																	)}
+																</div>
+															)}
+														</>
+													)}
+
+													{/* Edit indicator */}
+													{(message.isEdited || message.is_edited) && (
+														<span className={`block text-[10px] mt-1 text-right italic font-medium ${isOwnMessage ? "text-white/60" : "text-black/40"}`}>
+															Edited
+														</span>
+													)}
+												</div>
+
+												{/* Right Side Actions (if !isOwnMessage) */}
+												{!isOwnMessage && !isDeleted && (
+													<div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0 mb-[2px]">
+														<button
+															type="button"
+															onClick={() => setReplyTo(message)}
+															className="p-1.5 rounded-full hover:bg-[#f2f2f7]/80 text-[#8e8e93] hover:text-[#007aff] transition-colors focus:outline-none"
+															title="Reply"
+														>
+															<Reply className="w-[15px] h-[15px]" strokeWidth={2} />
+														</button>
+														{togglePinMessage && (
+															<button
+																type="button"
+																onClick={() => togglePinMessage(message.id, !(message.isPinned || message.is_pinned))}
+																className={`p-1.5 rounded-full hover:bg-[#f2f2f7]/80 transition-colors focus:outline-none ${message.isPinned || message.is_pinned ? "text-[#ff9f0a]" : "text-[#8e8e93] hover:text-[#ff9f0a]"}`}
+																title={message.isPinned || message.is_pinned ? "Unpin message" : "Pin message"}
+															>
+																<Pin className="w-[15px] h-[15px]" strokeWidth={2} />
+															</button>
+														)}
+													</div>
 												)}
 											</div>
 
-											{isDeleted ? (
-												<p className="text-[#9a9a9a] mt-1 italic text-sm">
-													This message was deleted
-												</p>
-											) : (
-												<>
-													{/* Quoted parent message */}
-													{message.parent && (
-														// biome-ignore lint/a11y/useSemanticElements: Complex interactive container
-														<div
-															className="mt-1 mb-1.5 flex items-start gap-2 pl-3 border-l-[3px] border-[#0B6E4F]/40 bg-[#f5f5f5] rounded-r-lg py-2 pr-3 max-w-md cursor-pointer hover:bg-[#eeeeee] transition-colors"
-															onClick={() => {
-																const parentEl = document.getElementById(
-																	`msg-${message.parent?.id}`,
-																);
-																if (parentEl) {
-																	parentEl.scrollIntoView({ behavior: "smooth", block: "center" });
-																	parentEl.classList.add("bg-yellow-50");
-																	setTimeout(() => parentEl.classList.remove("bg-yellow-50"), 2000);
-																}
-															}}
-															onKeyDown={() => {}}
-															role="button"
-															tabIndex={0}
-														>
-															<div className="min-w-0 flex-1">
-																<p className="text-xs font-semibold text-[#0B6E4F] mb-0.5">
-																	{message.parent.user
-																		? [message.parent.user.firstName, message.parent.user.lastName]
-																				.filter(Boolean)
-																				.join(" ") ||
-																			message.parent.user.username ||
-																			message.parent.user.email?.split("@")[0]
-																		: "Unknown"}
-																</p>
-																{message.parent.content ? (
-																	<p className="text-xs text-[#606060] line-clamp-2">
-																		{message.parent.content.replace(/<[^>]*>/g, "").slice(0, 150)}
-																	</p>
-																) : message.parent.fileName || message.parent.file_name ? (
-																	<p className="text-xs text-[#606060] flex items-center gap-1">
-																		<FileIcon className="w-3 h-3" />
-																		{message.parent.fileName || message.parent.file_name}
-																	</p>
-																) : null}
-															</div>
-														</div>
-													)}
-													{message.content &&
-														(isHtmlContent(message.content) ? (
-															// biome-ignore lint/a11y/noStaticElementInteractions: mention clicks navigate to DM
-															// biome-ignore lint/a11y/useKeyWithClickEvents: mention clicks handled statically
-															<div
-																className="text-[#404040] mt-1 leading-relaxed text-[15px] prose prose-sm max-w-none [&_p]:my-0 [&_ul]:my-1 [&_ol]:my-1 [&_a]:text-blue-500"
-																onClick={(e) => {
-																	const target = e.target as HTMLElement;
-																	const mentionId = target.getAttribute("data-mention");
-																	if (mentionId) {
-																		const mentionedMember = members.find(
-																			(m) => m.userId === mentionId,
-																		);
-																		if (mentionedMember?.slug) {
-																			router.push(
-																				`/dashboard/chat/dm/${encodeURIComponent(mentionedMember.slug)}`,
-																			);
-																		}
-																	}
-																}}
-																suppressHydrationWarning
-																// biome-ignore lint/security/noDangerouslySetInnerHtml: Sanitized via DOMPurify
-																dangerouslySetInnerHTML={{
-																	__html:
-																		typeof DOMPurify.sanitize === "function"
-																			? DOMPurify.sanitize(message.content, {
-																					ALLOWED_TAGS: [
-																						"p",
-																						"br",
-																						"strong",
-																						"em",
-																						"u",
-																						"s",
-																						"a",
-																						"ul",
-																						"ol",
-																						"li",
-																						"span",
-																					],
-																					ALLOWED_ATTR: [
-																						"href",
-																						"target",
-																						"rel",
-																						"style",
-																						"class",
-																						"data-mention",
-																					],
-																				})
-																			: "",
-																}}
-															/>
-														) : (
-															<p className="text-[#404040] mt-1 leading-relaxed text-[15px]">
-																{message.content}
-															</p>
-														))}
-
-													{message.file_url && (
-														<div className="mt-2">
-															{message.file_type?.startsWith("audio/") ? (
-																<VoicePlayer src={message.file_url} duration={message.duration} />
-															) : message.file_type?.startsWith("image/") ? (
-																<a href={message.file_url} target="_blank" rel="noreferrer">
-																	{/* biome-ignore lint/performance/noImgElement: user content image */}
-																	<img
-																		src={message.file_url}
-																		alt={message.file_name || "Attachment"}
-																		className="max-w-[300px] max-h-[300px] rounded-lg border border-slate-200 object-contain hover:opacity-90 transition-opacity"
-																	/>
-																</a>
-															) : (
-																<a
-																	href={message.file_url}
-																	target="_blank"
-																	rel="noreferrer"
-																	className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 max-w-sm transition-colors"
-																>
-																	<div className="w-10 h-10 rounded bg-[#0B6E4F]/10 flex items-center justify-center shrink-0">
-																		<FileIcon className="w-5 h-5 text-[#0B6E4F]" />
-																	</div>
-																	<div className="min-w-0 flex-1">
-																		<p className="text-sm font-medium text-slate-900 truncate">
-																			{message.file_name || "Attached File"}
-																		</p>
-																		{message.file_size && (
-																			<p className="text-xs text-slate-500">
-																				{(message.file_size / 1024).toFixed(1)} KB
-																			</p>
-																		)}
-																	</div>
-																</a>
-															)}
-														</div>
-													)}
-												</>
-											)}
-
+											{/* Delete Confirmation explicitly placed out of the bubble */}
 											{deleteConfirmId === message.id && (
-												<div className="mt-2 flex items-center gap-2 p-2 rounded-lg bg-red-50 border border-red-200">
+												<div className={`mt-2 flex items-center gap-2 p-2 rounded-lg bg-red-50 border border-red-200 ${isOwnMessage && "self-end"}`}>
 													<span className="text-sm text-red-700">Delete this message?</span>
 													<button
 														type="button"
@@ -937,368 +927,236 @@ export function ChatArea({
 			</ScrollArea>
 
 			{/* Message Input */}
-			<div className="pt-2 pb-4 px-4 border-t border-[#e5e7eb] shrink-0">
-				{/* Reply Preview Banner */}
-				{replyTo && (
-					<div className="mb-2 flex items-center gap-2 px-3 py-2 bg-[#f0fdf4] border border-[#0B6E4F]/20 rounded-lg">
-						<div className="w-1 h-10 bg-[#0B6E4F] rounded-full shrink-0" />
-						<div className="flex-1 min-w-0">
-							<p className="text-xs font-semibold text-[#0B6E4F]">
-								Replying to {getDisplayName(replyTo)}
-							</p>
-							<p className="text-xs text-[#606060] truncate">
-								{replyTo.content
-									? replyTo.content.replace(/<[^>]*>/g, "").slice(0, 100)
-									: replyTo.file_name || replyTo.fileName || "Attachment"}
-							</p>
-						</div>
-						<button
-							type="button"
-							onClick={() => setReplyTo(null)}
-							className="p-1 rounded hover:bg-[#0B6E4F]/10 text-[#9a9a9a] hover:text-[#0B6E4F] transition-colors shrink-0"
-						>
-							<X className="w-4 h-4" />
-						</button>
-					</div>
-				)}
-				{editingMessageId && (
-					<div className="mb-2 flex items-center justify-between px-3 py-2 bg-[#fffbeb] border border-amber-200/50 rounded-lg">
-						<div className="flex items-center gap-2">
-							<div className="w-1 h-5 bg-amber-400 rounded-full shrink-0" />
-							<p className="text-xs font-semibold text-amber-700">Editing message</p>
-						</div>
-						<button
-							type="button"
-							onClick={() => {
-								setEditingMessageId(null);
-								editor?.commands.clearContent();
-							}}
-							className="p-1 rounded hover:bg-amber-100 text-[#9a9a9a] hover:text-amber-700 transition-colors shrink-0"
-						>
-							<X className="w-4 h-4" />
-						</button>
-					</div>
-				)}
-				<div className="bg-white rounded-xl border border-[#e5e7eb] shadow-sm focus-within:ring-2 focus-within:ring-[#50C878]/30 focus-within:border-[#50C878] transition-all overflow-hidden">
-					{/* Formatting Toolbar */}
-					{editor && (
-						<div className="flex items-center gap-1 px-3 py-2 border-b border-[#e5e7eb]">
-							{/* Bold / Italic / Underline / Strikethrough */}
-							{(
-								[
-									{
-										cmd: () => editor.chain().focus().toggleBold().run(),
-										active: editor.isActive("bold"),
-										icon: Bold,
-										label: "Bold",
-									},
-									{
-										cmd: () => editor.chain().focus().toggleItalic().run(),
-										active: editor.isActive("italic"),
-										icon: Italic,
-										label: "Italic",
-									},
-									{
-										cmd: () => editor.chain().focus().toggleUnderline().run(),
-										active: editor.isActive("underline"),
-										icon: UnderlineIcon,
-										label: "Underline",
-									},
-									{
-										cmd: () => editor.chain().focus().toggleStrike().run(),
-										active: editor.isActive("strike"),
-										icon: Strikethrough,
-										label: "Strikethrough",
-									},
-								] as const
-							).map(({ cmd, active, icon: Icon, label }) => (
-								<button
-									key={label}
-									type="button"
-									onClick={cmd}
-									title={label}
-									className={`w-7 h-7 flex items-center justify-center rounded transition-colors ${active ? "bg-[#0B6E4F]/20 text-[#0B6E4F] shadow-sm" : "text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"}`}
-								>
-									<Icon className="w-4 h-4" />
-								</button>
-							))}
-
-							<div className="w-px h-4 bg-[#e5e7eb] mx-1" />
-
-							{/* Link */}
+			<div className="pt-2 pb-6 px-4 bg-white/95 backdrop-blur-md shrink-0 border-t border-[#e5e5ea] pb-safe z-10 w-full">
+				<div className="max-w-4xl mx-auto flex flex-col gap-2">
+					{/* Reply Preview Banner */}
+					{replyTo && (
+						<div className="mb-1 flex items-center gap-2 px-3 py-2 bg-[#f2f2f7] rounded-xl relative">
+							<div className="flex-1 min-w-0">
+								<p className="text-[11px] font-semibold text-[#8e8e93] uppercase tracking-wider mb-[2px]">
+									Replying to {getDisplayName(replyTo)}
+								</p>
+								<p className="text-[13px] text-black/80 truncate">
+									{replyTo.content
+										? replyTo.content.replace(/<[^>]*>/g, "").slice(0, 100)
+										: replyTo.file_name || replyTo.fileName || "Attachment"}
+								</p>
+							</div>
 							<button
 								type="button"
-								onClick={handleLinkAdd}
-								title="Add link"
-								className={`w-7 h-7 flex items-center justify-center rounded transition-colors ${editor.isActive("link") ? "bg-[#0B6E4F]/20 text-[#0B6E4F] shadow-sm" : "text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"}`}
+								onClick={() => setReplyTo(null)}
+								className="w-6 h-6 rounded-full bg-[#e5e5ea] flex items-center justify-center text-[#8e8e93] hover:text-[#000] transition-colors shrink-0"
 							>
-								<Link2 className="w-4 h-4" />
+								<X className="w-[14px] h-[14px]" strokeWidth={2.5} />
 							</button>
-
-							{/* Lists */}
-							<button
-								type="button"
-								onClick={() => editor.chain().focus().toggleBulletList().run()}
-								title="Bulleted list"
-								className={`w-7 h-7 flex items-center justify-center rounded transition-colors ${editor.isActive("bulletList") ? "bg-[#0B6E4F]/20 text-[#0B6E4F] shadow-sm" : "text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"}`}
-							>
-								<List className="w-4 h-4" />
-							</button>
-							<button
-								type="button"
-								onClick={() => editor.chain().focus().toggleOrderedList().run()}
-								title="Numbered list"
-								className={`w-7 h-7 flex items-center justify-center rounded transition-colors ${editor.isActive("orderedList") ? "bg-[#0B6E4F]/20 text-[#0B6E4F] shadow-sm" : "text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"}`}
-							>
-								<ListOrdered className="w-4 h-4" />
-							</button>
-
-							<div className="w-px h-4 bg-[#e5e7eb] mx-1" />
-
-							{/* Text Alignment */}
-							{[
-								{ align: "left" as const, icon: AlignLeft, label: "Align left" },
-								{ align: "center" as const, icon: AlignCenter, label: "Align center" },
-								{ align: "right" as const, icon: AlignRight, label: "Align right" },
-							].map(({ align, icon: Icon, label }) => (
-								<button
-									key={align}
-									type="button"
-									onClick={() => editor.chain().focus().setTextAlign(align).run()}
-									title={label}
-									className={`w-7 h-7 flex items-center justify-center rounded transition-colors ${editor.isActive({ textAlign: align }) ? "bg-[#0B6E4F]/20 text-[#0B6E4F] shadow-sm" : "text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"}`}
-								>
-									<Icon className="w-4 h-4" />
-								</button>
-							))}
 						</div>
 					)}
-
-					{/* Editor & Staging */}
-					<div className="px-3 py-3 flex flex-col gap-2">
-						{/* Hidden File Input */}
-						<input
-							type="file"
-							ref={fileInputRef}
-							hidden
-							onChange={handleFileSelect}
-							accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
-						/>
-
-						{/* Attachment Staging Area */}
-						{attachment && (
-							<div className="flex items-center gap-3 p-2 rounded-lg border border-slate-200 bg-slate-50 w-max pr-8 relative group">
-								<div className="w-10 h-10 rounded bg-[#0B6E4F]/10 flex items-center justify-center">
-									{attachment.type.startsWith("image/") ? (
-										<ImageIcon className="w-5 h-5 text-[#0B6E4F]" />
-									) : (
-										<FileIcon className="w-5 h-5 text-[#0B6E4F]" />
-									)}
-								</div>
-								<div className="flex flex-col">
-									<span className="text-sm font-medium text-slate-700 max-w-[200px] truncate">
-										{attachment.name}
-									</span>
-									<span className="text-xs text-slate-500">
-										{(attachment.size / 1024).toFixed(1)} KB
-									</span>
-								</div>
-								<button
-									type="button"
-									onClick={() => {
-										setAttachment(null);
-										if (fileInputRef.current) fileInputRef.current.value = "";
-									}}
-									className="absolute -top-2 -right-2 w-6 h-6 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-red-500 hover:border-red-200 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
-								>
-									<X className="w-3 h-3" />
-								</button>
+					{editingMessageId && (
+						<div className="mb-1 flex items-center justify-between px-3 py-2 bg-[#f2f2f7] rounded-xl relative">
+							<div className="flex items-center gap-2">
+								<Edit2 className="w-4 h-4 text-[#8e8e93]" />
+								<p className="text-[13px] font-medium text-black">Editing message</p>
 							</div>
-						)}
-
-						{/* Tiptap Editor */}
-						{editor && (
-							<div className="relative">
-								<EditorContent editor={editor} />
-
-								{/* Inline Link Input */}
-								{showLinkInput && (
-									<div className="absolute bottom-full left-0 mb-1 flex items-center gap-2 bg-white border border-[#e5e7eb] rounded-lg shadow-lg px-3 py-2 z-50">
-										<Link2 className="w-4 h-4 text-[#9a9a9a] shrink-0" />
-										<input
-											ref={linkInputRef}
-											type="url"
-											value={linkUrl}
-											onChange={(e) => setLinkUrl(e.target.value)}
-											onKeyDown={handleLinkKeyDown}
-											placeholder="https://example.com"
-											className="w-64 text-sm text-[#202020] placeholder-[#9a9a9a] outline-none bg-transparent"
-										/>
+							<button
+								type="button"
+								onClick={() => {
+									setEditingMessageId(null);
+									editor?.commands.clearContent();
+								}}
+								className="w-6 h-6 rounded-full bg-[#e5e5ea] flex items-center justify-center text-[#8e8e93] hover:text-[#000] transition-colors shrink-0"
+							>
+								<X className="w-[14px] h-[14px]" strokeWidth={2.5} />
+							</button>
+						</div>
+					)}
+					
+					<div className="flex items-end gap-[10px] w-full pl-0">
+						{/* Attach Button (Left) */}
+						<div className="pb-[4px] shrink-0">
+							<TooltipProvider delayDuration={0}>
+								<Tooltip>
+									<TooltipTrigger asChild>
 										<button
 											type="button"
-											onClick={handleLinkAdd}
-											className="p-1 text-[#0B6E4F] hover:bg-emerald-50 rounded transition-colors"
-											title="Apply link"
+											onClick={() => fileInputRef.current?.click()}
+											className="w-[32px] h-[32px] rounded-full text-[#8e8e93] hover:text-[#000] flex items-center justify-center transition-colors focus:outline-none"
 										>
-											<Check className="w-4 h-4" />
+											<PlusCircle className="w-[26px] h-[26px]" strokeWidth={1.5} />
 										</button>
+									</TooltipTrigger>
+									<TooltipContent>Attach Payload</TooltipContent>
+								</Tooltip>
+							</TooltipProvider>
+						</div>
+
+						{/* Input Pill Container */}
+						<div className="flex-1 bg-white border border-[#c6c6c8] rounded-[22px] focus-within:border-[#8e8e93] transition-colors relative flex flex-col min-h-[40px]">
+							{/* Formatting Toolbar (Absolutely positioned above pill to not interrupt design, hidden unless focused) */}
+							{editor && (
+                                <div className="absolute bottom-[calc(100%+4px)] left-0 flex items-center gap-0.5 px-3 py-1.5 bg-white border border-[#d1d5db] rounded-full shadow-sm opacity-0 pointer-events-none group-focus-within:opacity-100 group-focus-within:pointer-events-auto transition-opacity z-20">
+									{(
+										[
+											{ cmd: () => editor.chain().focus().toggleBold().run(), active: editor.isActive("bold"), icon: Bold, label: "Bold" },
+											{ cmd: () => editor.chain().focus().toggleItalic().run(), active: editor.isActive("italic"), icon: Italic, label: "Italic" },
+											{ cmd: () => editor.chain().focus().toggleBulletList().run(), active: editor.isActive("bulletList"), icon: List, label: "List" },
+										] as const
+									).map(({ cmd, active, icon: Icon, label }) => (
+										<button
+											key={label}
+											type="button"
+											onClick={(e) => { e.preventDefault(); cmd(); }}
+											className={`w-7 h-7 flex items-center justify-center rounded-full transition-colors ${active ? "bg-[#007aff] text-white" : "text-[#8e8e93] hover:bg-[#f2f2f7] hover:text-[#000]"}`}
+										>
+											<Icon className="w-4 h-4" />
+										</button>
+									))}
+								</div>
+							)}
+
+							{/* Editing/Attachment content */}
+							<div className="flex flex-col overflow-x-hidden">
+								{/* Hidden file input */}
+								<input
+									type="file"
+									ref={fileInputRef}
+									hidden
+									onChange={handleFileSelect}
+									accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+								/>
+
+								{/* Attachment Staging Area */}
+								{attachment && (
+									<div className="flex items-center gap-3 p-2 m-2 rounded-xl border border-[#e5e5ea] bg-[#f9f9f9] w-max pr-8 relative group">
+										<div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center shadow-sm">
+											{attachment.type.startsWith("image/") ? (
+												<ImageIcon className="w-[18px] h-[18px] text-[#007aff]" />
+											) : (
+												<FileIcon className="w-[18px] h-[18px] text-[#007aff]" />
+											)}
+										</div>
+										<div className="flex flex-col">
+											<span className="text-[13px] font-medium text-black max-w-[200px] truncate">
+												{attachment.name}
+											</span>
+											<span className="text-[11px] text-[#8e8e93]">
+												{(attachment.size / 1024).toFixed(1)} KB
+											</span>
+										</div>
 										<button
 											type="button"
 											onClick={() => {
-												setShowLinkInput(false);
-												setLinkUrl("");
-												editor?.chain().focus().run();
+												setAttachment(null);
+												if (fileInputRef.current) fileInputRef.current.value = "";
 											}}
-											className="p-1 text-[#9a9a9a] hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-											title="Cancel"
+											className="absolute -top-[6px] -right-[6px] w-[20px] h-[20px] bg-white border border-[#e5e5ea] rounded-full flex items-center justify-center text-[#8e8e93] hover:text-[#ff3b30] shadow-sm transition-colors"
 										>
-											<X className="w-4 h-4" />
+											<X className="w-3 h-3" strokeWidth={2.5} />
 										</button>
 									</div>
 								)}
 
-								{/* @ Mention Dropdown */}
-								{mentionQuery !== null && filteredMembers.length > 0 && (
-									<div
-										ref={mentionRef}
-										className="absolute bottom-full left-0 mb-1 w-72 max-h-48 overflow-y-auto bg-white border border-[#e5e7eb] rounded-lg shadow-lg z-50"
-									>
-										{filteredMembers.map((member, i) => {
-											const name =
-												[member.profile?.firstName, member.profile?.lastName]
-													.filter(Boolean)
-													.join(" ") ||
-												member.profile?.username ||
-												"Unknown";
-											const initials = name
-												.split(" ")
-												.map((n) => n[0])
-												.join("")
-												.toUpperCase()
-												.slice(0, 2);
-											return (
-												<button
-													key={member.id}
-													type="button"
-													onMouseDown={(e) => {
-														e.preventDefault();
-														insertMention(member);
-													}}
-													className={`w-full flex items-center gap-3 px-3 py-2 text-left text-sm transition-colors ${i === mentionIndex ? "bg-[#0B6E4F]/10 text-[#0B6E4F]" : "text-[#202020] hover:bg-[#f5f5f5]"}`}
-												>
-													<div className="w-7 h-7 rounded-full bg-[#e5e7eb] flex items-center justify-center text-xs font-medium text-[#404040] shrink-0">
-														{initials}
-													</div>
-													<div className="min-w-0">
-														<div className="font-medium truncate">{name}</div>
-														{member.profile?.email && (
-															<div className="text-xs text-[#9a9a9a] truncate">
-																{member.profile.email}
+								{/* Tiptap Editor */}
+								{editor && (
+									<div className="relative flex-1 group" tabIndex={-1}>
+										<EditorContent editor={editor} />
+
+										{/* @ Mention Dropdown */}
+										{mentionQuery !== null && filteredMembers.length > 0 && (
+											<div
+												ref={mentionRef}
+												className="absolute bottom-full left-0 mb-2 w-64 max-h-40 overflow-y-auto bg-white/95 backdrop-blur-md rounded-xl shadow-lg border border-[#e5e5ea] z-50 p-1"
+											>
+												{filteredMembers.map((member, i) => {
+													const name = [member.profile?.firstName, member.profile?.lastName].filter(Boolean).join(" ") || member.profile?.username || "Unknown";
+													const initials = name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+													return (
+														<button
+															key={member.id}
+															type="button"
+															onMouseDown={(e) => {
+																e.preventDefault();
+																insertMention(member);
+															}}
+															className={`w-full flex items-center gap-3 px-2 py-1.5 text-left rounded-lg transition-colors ${i === mentionIndex ? "bg-[#007aff] text-white" : "text-black hover:bg-[#f2f2f7]"}`}
+														>
+															<div className={`w-[26px] h-[26px] rounded-full flex items-center justify-center text-[10px] font-medium shrink-0 ${i === mentionIndex ? "bg-white/20 text-white" : "bg-[#e5e5ea] text-[#8e8e93]"}`}>
+																{initials}
 															</div>
-														)}
-													</div>
-												</button>
-											);
-										})}
+															<div className="min-w-0">
+																<div className="font-medium text-[13px] truncate">{name}</div>
+															</div>
+														</button>
+													);
+												})}
+											</div>
+										)}
 									</div>
 								)}
 							</div>
-						)}
-					</div>
 
-					{/* Bottom Actions */}
-					<div className="flex items-center justify-between px-3 py-2 border-t border-[#e5e7eb]">
-						{isRecording ? (
-							<VoiceRecorder onSend={handleVoiceSend} onCancel={() => setIsRecording(false)} />
-						) : (
-							<>
-								<div className="flex items-center gap-1">
-									<TooltipProvider delayDuration={0}>
-										<Tooltip>
-											<TooltipTrigger asChild>
-												<Button
-													variant="ghost"
-													size="icon"
-													onClick={() => fileInputRef.current?.click()}
-													className="w-8 h-8 text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"
-												>
-													<PlusCircle className="w-4 h-4" />
-												</Button>
-											</TooltipTrigger>
-											<TooltipContent>Attach</TooltipContent>
-										</Tooltip>
-										<Tooltip>
-											<TooltipTrigger asChild>
-												<Button
-													variant="ghost"
-													size="icon"
-													onClick={() => {
-														editor?.chain().focus().insertContent("@").run();
-													}}
-													className="w-8 h-8 text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"
-												>
-													<AtSign className="w-4 h-4" />
-												</Button>
-											</TooltipTrigger>
-											<TooltipContent>Mention</TooltipContent>
-										</Tooltip>
-										<Tooltip>
-											<TooltipTrigger asChild>
-												<div className="relative" ref={emojiRef}>
-													<Button
-														variant="ghost"
-														size="icon"
-														onClick={() => setShowEmoji((prev) => !prev)}
-														className={`w-8 h-8 ${showEmoji ? "text-[#0B6E4F] bg-emerald-50" : "text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"}`}
-													>
-														<Smile className="w-4 h-4" />
-													</Button>
-													{showEmoji && (
-														<div className="absolute bottom-10 left-0 z-50 shadow-xl rounded-xl overflow-hidden">
-															<Picker
-																data={data}
-																onEmojiSelect={handleEmojiSelect}
-																theme="light"
-																previewPosition="none"
-																skinTonePosition="none"
-																maxFrequentRows={2}
-															/>
-														</div>
-													)}
+							{/* Right Actions inside the Pill */}
+							<div className="absolute right-[5px] bottom-[5px] flex items-center gap-[2px]">
+								{isRecording ? (
+									<div className="flex items-center gap-2 pr-2">
+										<VoiceRecorder onSend={handleVoiceSend} onCancel={() => setIsRecording(false)} />
+									</div>
+								) : (
+									<>
+										{/* Microphone Button (visible when input is empty) */}
+										{((!editor?.getText().trim() && !attachment) && !isUploading) && (
+											<button
+												type="button"
+												onClick={() => setIsRecording(true)}
+												className="w-[28px] h-[28px] rounded-full text-[#8e8e93] hover:text-[#000] flex items-center justify-center transition-colors focus:outline-none"
+											>
+												<Mic className="w-[18px] h-[18px]" strokeWidth={1.5} />
+											</button>
+										)}
+
+										{/* Emoji Picker */}
+										<div className="relative" ref={emojiRef}>
+											<button
+												type="button"
+												onClick={() => setShowEmoji((prev) => !prev)}
+												className={`w-[28px] h-[28px] rounded-full flex items-center justify-center transition-colors focus:outline-none ${showEmoji ? "text-[#007aff]" : "text-[#8e8e93] hover:text-[#000]"}`}
+											>
+												<Smile className="w-[18px] h-[18px]" strokeWidth={1.5} />
+											</button>
+											{showEmoji && (
+												<div className="absolute bottom-[120%] right-[-10px] z-50 shadow-xl rounded-xl overflow-hidden border border-[#e5e5ea]">
+													<Picker
+														data={data}
+														onEmojiSelect={handleEmojiSelect}
+														theme="light"
+														previewPosition="none"
+														skinTonePosition="none"
+														maxFrequentRows={2}
+													/>
 												</div>
-											</TooltipTrigger>
-											<TooltipContent>Emoji</TooltipContent>
-										</Tooltip>
-										<Tooltip>
-											<TooltipTrigger asChild>
-												<Button
-													variant="ghost"
-													size="icon"
-													onClick={() => setIsRecording(true)}
-													className="w-8 h-8 text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"
-												>
-													<Mic className="w-4 h-4" />
-												</Button>
-											</TooltipTrigger>
-											<TooltipContent>Record audio</TooltipContent>
-										</Tooltip>
-									</TooltipProvider>
-								</div>
+											)}
+										</div>
 
-								<Button
-									size="icon"
-									className="w-9 h-9 rounded-lg bg-[#0B6E4F] hover:bg-[#0B6E4F]/90 text-white"
-									disabled={(!editor?.getText().trim() && !attachment) || isUploading}
-									onClick={handleSendMessage}
-								>
-									{isUploading ? (
-										<Loader2 className="w-4 h-4 animate-spin text-white" />
-									) : (
-										<Send className="w-4 h-4" />
-									)}
-								</Button>
-							</>
-						)}
+										{/* Send Button (visible when not empty) */}
+										{((editor?.getText().trim() || attachment) && !isUploading) ? (
+											<button
+												type="button"
+												onClick={handleSendMessage}
+												className="w-[28px] h-[28px] rounded-full bg-[#007aff] hover:bg-[#0062cc] text-white flex items-center justify-center shadow-sm transition-transform active:scale-95 focus:outline-none ml-[2px]"
+											>
+												{/* Simple up-arrow style for sending */}
+												<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+													<path d="M12 19V5M5 12l7-7 7 7"/>
+												</svg>
+											</button>
+										) : isUploading ? (
+											<div className="w-[28px] h-[28px] rounded-full bg-[#007aff]/70 text-white flex items-center justify-center ml-[2px]">
+												<Loader2 className="w-3.5 h-3.5 animate-spin" />
+											</div>
+										) : null}
+									</>
+								)}
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>
