@@ -30,12 +30,16 @@ export default function WorkspaceLayout({ children }: { children: React.ReactNod
 	}
 
 	return (
-		<div className="flex h-screen w-full bg-[#F8FCFA] overflow-hidden">
+		<div className="flex h-screen w-full bg-[#f2f2f4] overflow-hidden">
 			{/* Sidebar */}
 			<WorkspaceSidebar workspace={workspace} />
 
 			{/* Main Content Area */}
-			<main className="flex-1 flex flex-col h-full bg-white relative">{children}</main>
+			<main className="flex-1 flex flex-col h-full bg-[#f2f2f4] p-3 pl-2">
+				<div className="w-full h-full bg-white rounded-[24px] shadow-sm overflow-hidden flex flex-col relative">
+					{children}
+				</div>
+			</main>
 		</div>
 	);
 }

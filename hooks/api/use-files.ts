@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/config";
 
@@ -44,5 +44,19 @@ export const useFilesByWorkspace = (workspaceId: string, token?: string) => {
 				token,
 			}),
 		enabled: !!workspaceId && !!token,
+	});
+};
+
+export const useDeleteFile = () => {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: async ({ messageId, token }: { messageId: string; token?: string }) => {
+			return apiClient.delete(API_ENDPOINTS.MESSAGE_DELETE(messageId), { token });
+		},
+		onSuccess: (_, variables) => {
+			// Invalidate file lists so it refetches immediately
+			queryClient.invalidateQueries({ queryKey: fileKeys.all });
+		},
 	});
 };

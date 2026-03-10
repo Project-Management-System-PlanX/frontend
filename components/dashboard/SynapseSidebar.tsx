@@ -161,7 +161,7 @@ export function SynapseSidebar() {
 
 	if (isCollapsed) {
 		return (
-			<aside className="w-[60px] bg-[#f2f2f4] flex flex-col items-center border-r border-[#e8e8e8] shrink-0 h-full select-none pt-5 pb-5 transition-all duration-300">
+			<aside className="w-[60px] bg-[#f2f2f4] flex flex-col items-center shrink-0 h-full select-none pt-5 pb-5 transition-all duration-300">
 				<div
 					role="button"
 					tabIndex={0}
@@ -169,10 +169,12 @@ export function SynapseSidebar() {
 					onKeyDown={(e) => {
 						if (e.key === "Enter" || e.key === " ") setIsCollapsed(false);
 					}}
-					className="text-[#aaa] cursor-pointer hover:text-[#555] transition-colors p-2 rounded-md hover:bg-[#e4e4e6]"
+					className="cursor-pointer hover:opacity-80 transition-all p-1 mt-1"
 					title="Expand sidebar"
 				>
-					<PanelLeftOpen className="w-5 h-5" />
+					<div className="w-8 h-8 rounded-[9px] bg-gradient-to-br from-[#4f8ef7] to-[#3b6fd4] flex items-center justify-center shadow-md ring-2 ring-white/10">
+						<Zap className="w-[18px] h-[18px] text-white" strokeWidth={2.4} />
+					</div>
 				</div>
 			</aside>
 		);
@@ -181,13 +183,19 @@ export function SynapseSidebar() {
 	return (
 		<>
 			<aside
-				className="w-[220px] bg-[#f2f2f4] flex flex-col border-r border-[#e8e8e8] shrink-0 h-full select-none transition-all duration-300"
+				className="w-[220px] bg-[#f2f2f4] flex flex-col shrink-0 h-full select-none transition-all duration-300"
 				style={{
 					fontFamily: "var(--font-figtree), Figtree, -apple-system, sans-serif",
 				}}
 			>
 				{/* ──── Logo / Brand ──── */}
 				<div className="flex items-center gap-2 px-[18px] pt-5 pb-5">
+					<div className="w-7 h-7 rounded-[7px] bg-gradient-to-br from-[#4f8ef7] to-[#3b6fd4] flex items-center justify-center shadow-sm">
+						<Zap className="w-[14px] h-[14px] text-white" strokeWidth={2.2} />
+					</div>
+					<span className="text-[15px] font-bold text-[#111] truncate flex-1 leading-none pt-0.5">
+						{activeWorkspaceName || "Synapse"}
+					</span>
 					<div
 						role="button"
 						tabIndex={0}
@@ -195,17 +203,11 @@ export function SynapseSidebar() {
 						onKeyDown={(e) => {
 							if (e.key === "Enter" || e.key === " ") setIsCollapsed(true);
 						}}
-						className="text-[#aaa] cursor-pointer hover:text-[#555] transition-colors p-[3px] rounded hover:bg-[#e4e4e6] -ml-1 mr-0.5"
+						className="text-[#aaa] cursor-pointer hover:text-[#555] transition-colors p-[5px] rounded hover:bg-[#e4e4e6]"
 						title="Close sidebar"
 					>
 						<PanelLeftClose className="w-[15px] h-[15px]" />
 					</div>
-					<div className="w-7 h-7 rounded-[7px] bg-gradient-to-br from-[#4f8ef7] to-[#3b6fd4] flex items-center justify-center shadow-sm">
-						<Zap className="w-[14px] h-[14px] text-white" strokeWidth={2.2} />
-					</div>
-					<span className="text-[15px] font-bold text-[#111] truncate flex-1 leading-none pt-0.5">
-						{activeWorkspaceName || "Synapse"}
-					</span>
 				</div>
 
 				{/* ──── Scrollable Content ──── */}
