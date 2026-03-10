@@ -219,6 +219,32 @@
 	}
 }
 
+html {
+	scrollbar-color: rgba(142, 142, 147, 0.55) transparent;
+	scrollbar-width: thin;
+}
+
+*::-webkit-scrollbar {
+	width: 10px;
+	height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+	background: rgba(142, 142, 147, 0.55);
+	border: 2px solid transparent;
+	border-radius: 9999px;
+	background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+	background: rgba(142, 142, 147, 0.72);
+	background-clip: padding-box;
+}
+
 /* ─── For You page animations ─── */
 @keyframes fadeInUp {
 	from {
@@ -324,10 +350,10 @@
 .ProseMirror .mention,
 .prose .mention {
 	color: #1d4ed8;
-	background-color: rgba(29, 78, 216, 0.08);
+	background-color: transparent;
 	border-radius: 4px;
-	padding: 1px 4px;
-	font-weight: 500;
+	padding: 0;
+	font-weight: inherit;
 	cursor: pointer;
 }
 .prose .mention:hover {

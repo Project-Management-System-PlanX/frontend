@@ -5,21 +5,20 @@ import {
 	ChevronDown,
 	ChevronRight,
 	FileText,
-	FolderOpen,
 	Hash,
 	ListChecks,
 	Loader2,
 	PanelLeftClose,
-	PanelLeftOpen,
 	Plus,
 	Settings,
 	Sparkles,
+	Star,
 	UserPlus,
 	Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { SettingsModal } from "@/components/modals/SettingsModal";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -30,7 +29,10 @@ import { useTasksAssignedToMe } from "@/hooks/api/use-tasks";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useWorkspaceChannels } from "@/hooks/use-workspace-channels";
 import { useWorkspaceMembers } from "@/hooks/use-workspace-members";
+import { fetchClient } from "@/lib/api/client";
+import { API_ENDPOINTS } from "@/lib/api/config";
 import { channelService } from "@/lib/api/services";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { type Channel, useChannelStore } from "@/stores/channel-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
@@ -49,7 +51,8 @@ export function SynapseSidebar() {
 	const { activeWorkspaceName, activeWorkspaceId } = useWorkspaceStore();
 	const { channels, isLoaded: channelsLoaded } = useWorkspaceChannels();
 	const { members, currentUserProfile } = useWorkspaceMembers();
-	const { addChannel } = useChannelStore();
+	const { addChannel, updateChannel } = useChannelStore();
+	const supabaseRef = useRef(createClient());
 
 	// ── Backend data hooks ──
 	const { data: spaces, isLoading: isLoadingSpaces } = useSpaces(
@@ -94,7 +97,22 @@ export function SynapseSidebar() {
 
 	// ── Derived data ──
 	const nonDMChannels = useMemo(
-		() => channels.filter((c) => c.type !== "DIRECT_MESSAGE"),
+		() =>
+			[...channels]
+				.filter((c) => c.type !== "DIRECT_MESSAGE")
+				.sort((left, right) => {
+					const pinnedOrder = Number(right.isStarred) - Number(left.isStarred);
+					if (pinnedOrder !== 0) return pinnedOrder;
+
+					const unreadOrder = Number(!!right.unread) - Number(!!left.unread);
+					if (unreadOrder !== 0) return unreadOrder;
+
+					const rightUpdated = right.updatedAt ? new Date(right.updatedAt).getTime() : 0;
+					const leftUpdated = left.updatedAt ? new Date(left.updatedAt).getTime() : 0;
+					if (rightUpdated !== leftUpdated) return rightUpdated - leftUpdated;
+
+					return left.name.localeCompare(right.name);
+				}),
 		[channels],
 	);
 
@@ -107,6 +125,11 @@ export function SynapseSidebar() {
 		if (exact) return pathname === href;
 		return pathname.startsWith(href);
 	};
+
+	const activeChannelId = useMemo(() => {
+		const match = pathname.match(/^\/dashboard\/chat\/channel\/([^/]+)$/);
+		return match?.[1] ?? null;
+	}, [pathname]);
 
 	// ── Channel creation handler ──
 	const handleChannelCreated = async (channel: {
@@ -144,6 +167,23 @@ export function SynapseSidebar() {
 		}
 	};
 
+	const handleToggleChannelStar = async (channelId: string, isStarred: boolean) => {
+		if (!token) return;
+
+		updateChannel(channelId, { isStarred });
+
+		try {
+			await fetchClient(API_ENDPOINTS.CHANNEL_STAR(channelId), {
+				token,
+				method: "PATCH",
+				body: JSON.stringify({ isStarred }),
+			});
+		} catch (error) {
+			console.error("Failed to toggle channel star:", error);
+			updateChannel(channelId, { isStarred: !isStarred });
+		}
+	};
+
 	// ── DM helpers ──
 	const getMemberDisplayName = (member: (typeof members)[0]) => {
 		if (member.profile) {
@@ -158,6 +198,46 @@ export function SynapseSidebar() {
 		}
 		return member.userId.slice(0, 8);
 	};
+
+	useEffect(() => {
+		if (!activeChannelId) return;
+		const activeChannel = channels.find((channel) => channel.id === activeChannelId);
+		if (activeChannel?.unread) {
+			updateChannel(activeChannelId, { unread: false });
+		}
+	}, [activeChannelId, channels, updateChannel]);
+
+	useEffect(() => {
+		if (!activeWorkspaceId || channels.length === 0) return;
+
+		const trackedChannelIds = new Set(channels.map((channel) => channel.id));
+		const supabase = supabaseRef.current;
+		const subscription = supabase
+			.channel(`sidebar-unread:${activeWorkspaceId}`)
+			.on(
+				"postgres_changes",
+				{
+					event: "INSERT",
+					schema: "public",
+					table: "messages",
+				},
+				(payload: { new: { channel_id?: string; user_id?: string; created_at?: string } }) => {
+					const messageChannelId = payload.new.channel_id;
+					if (!messageChannelId || !trackedChannelIds.has(messageChannelId)) return;
+
+					const fromCurrentUser = payload.new.user_id === user?.id;
+					updateChannel(messageChannelId, {
+						updatedAt: payload.new.created_at || new Date().toISOString(),
+						unread: !fromCurrentUser && messageChannelId !== activeChannelId,
+					});
+				},
+			)
+			.subscribe();
+
+		return () => {
+			supabase.removeChannel(subscription);
+		};
+	}, [activeChannelId, activeWorkspaceId, channels, updateChannel, user?.id]);
 
 	if (isCollapsed) {
 		return (
@@ -282,6 +362,9 @@ export function SynapseSidebar() {
 												label={channel.name}
 												href={`/dashboard/chat/channel/${channel.id}`}
 												active={pathname === `/dashboard/chat/channel/${channel.id}`}
+												starred={!!channel.isStarred}
+												unread={!!channel.unread}
+												onToggleStar={() => handleToggleChannelStar(channel.id, !channel.isStarred)}
 											/>
 										))
 									)}
@@ -327,8 +410,8 @@ export function SynapseSidebar() {
 														className={cn(
 															"flex items-center gap-2 py-[5px] px-[18px] pl-8 text-[12.5px] cursor-pointer rounded-[7px] mx-[6px] transition-colors",
 															dmActive
-																? "bg-[#e8eefb] text-[#2b5fcc] font-medium"
-																: "text-[#555] hover:bg-[#eee]",
+																? "bg-[rgba(0,122,255,0.12)] text-[#1f5fbf] font-medium shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]"
+																: "text-[#555] hover:bg-white/70",
 														)}
 													>
 														<Avatar className="w-4 h-4">
@@ -345,7 +428,7 @@ export function SynapseSidebar() {
 														</Avatar>
 														<span className="truncate">{displayName}</span>
 														{member.online && (
-															<span className="w-1.5 h-1.5 rounded-full bg-[#22c55e] shrink-0 ml-auto" />
+															<span className="w-1.5 h-1.5 rounded-full bg-[#34c759] shrink-0" />
 														)}
 													</div>
 												</Link>
@@ -583,8 +666,10 @@ function SidebarItem({
 				if (e.key === "Enter" || e.key === " ") onClick?.();
 			}}
 			className={cn(
-				"flex items-center justify-between py-[6px] px-[18px] rounded-[7px] mx-[6px] cursor-pointer text-[13px] transition-colors",
-				active ? "bg-[#e8eefb] text-[#2b5fcc]" : "text-[#444] hover:bg-[#eee]",
+				"flex items-center justify-between py-[6px] px-[18px] rounded-[11px] mx-[6px] cursor-pointer text-[13px] transition-colors",
+				active
+					? "bg-[rgba(0,122,255,0.12)] text-[#1f5fbf] shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]"
+					: "text-[#444] hover:bg-white/70",
 			)}
 		>
 			{children}
@@ -649,6 +734,9 @@ function SidebarTreeItem({
 	label,
 	href,
 	active,
+	starred,
+	unread,
+	onToggleStar,
 }: {
 	icon: React.ComponentType<{
 		className?: string;
@@ -657,22 +745,58 @@ function SidebarTreeItem({
 	label: string;
 	href: string;
 	active: boolean;
+	starred: boolean;
+	unread: boolean;
+	onToggleStar: () => void;
 }) {
 	return (
-		<Link href={href}>
-			<div
-				className={cn(
-					"flex items-center gap-2 py-[5px] px-[18px] pl-8 text-[12.5px] cursor-pointer rounded-[7px] mx-[6px] transition-colors",
-					active ? "bg-[#e8eefb] text-[#2b5fcc] font-medium" : "text-[#555] hover:bg-[#eee]",
-				)}
+		<div
+			className={cn(
+				"group mx-[6px] flex items-center rounded-[11px] transition-colors",
+				active
+					? "bg-[rgba(0,122,255,0.12)] text-[#1f5fbf] shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]"
+					: "text-[#555] hover:bg-white/70",
+			)}
+		>
+			<Link
+				href={href}
+				className="flex min-w-0 flex-1 items-center gap-2 py-[6px] px-[18px] pl-8 text-[12.5px]"
 			>
 				<Icon
-					className={cn("w-[13px] h-[13px] shrink-0", active ? "text-[#2b5fcc]" : "text-current")}
+					className={cn("w-[13px] h-[13px] shrink-0", active ? "text-[#1f5fbf]" : "text-current")}
 					strokeWidth={2}
 				/>
-				<span className="truncate">{label}</span>
+				<span className={cn("truncate", unread && !active && "font-semibold text-[#1f1f23]")}>
+					{label}
+				</span>
+			</Link>
+			<div className="flex items-center gap-1 pr-2">
+				{unread && !active && (
+					<span className="h-2 w-2 rounded-full bg-[#0a84ff] shadow-[0_0_0_4px_rgba(10,132,255,0.12)]" />
+				)}
+				<button
+					type="button"
+					onClick={(event) => {
+						event.preventDefault();
+						event.stopPropagation();
+						onToggleStar();
+					}}
+					className={cn(
+						"flex h-6 w-6 items-center justify-center rounded-full transition-all focus:outline-none",
+						starred
+							? "text-[#ff9f0a] opacity-100"
+							: "text-[#a1a1aa] opacity-0 hover:text-[#8e8e93] group-hover:opacity-100 focus:opacity-100",
+					)}
+					title={starred ? "Unpin channel" : "Pin channel"}
+				>
+					<Star
+						className="h-3.5 w-3.5"
+						fill={starred ? "currentColor" : "none"}
+						strokeWidth={1.9}
+					/>
+				</button>
 			</div>
-		</Link>
+		</div>
 	);
 }
 
@@ -692,7 +816,7 @@ function SidebarBottomItem({
 		<button
 			type="button"
 			onClick={onClick}
-			className="flex items-center gap-2 px-[18px] py-[7px] text-[13px] text-[#555] cursor-pointer hover:bg-[#eee] transition-colors w-full text-left"
+			className="flex items-center gap-2 px-[18px] py-[7px] text-[13px] text-[#555] cursor-pointer hover:bg-white/70 transition-colors w-full text-left rounded-[11px] mx-[6px]"
 		>
 			<Icon className="w-[15px] h-[15px] opacity-60" strokeWidth={1.8} />
 			{label}

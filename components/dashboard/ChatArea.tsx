@@ -1,13 +1,5 @@
 "use client";
 
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-	DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-
 import data from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
 import { Node } from "@tiptap/core";
@@ -54,34 +46,20 @@ const MentionNode = Node.create({
 
 import DOMPurify from "dompurify";
 import {
-	AlignCenter,
-	AlignLeft,
-	AlignRight,
-	AtSign,
 	Bold,
-	Check,
 	Edit2,
 	File as FileIcon,
 	Image as ImageIcon,
-	Info,
 	Italic,
-	Link2,
 	List,
-	ListOrdered,
 	Loader2,
 	Mic,
-	Phone,
 	Pin,
 	PlusCircle,
 	Reply,
-	Search,
-	Send,
 	Smile,
-	Star,
-	Strikethrough,
 	Trash2,
 	Underline as UnderlineIcon,
-	Video,
 	X,
 } from "lucide-react";
 import dynamic from "next/dynamic";
@@ -96,7 +74,6 @@ const StartMeetingButton = dynamic(
 import { VoicePlayer } from "@/components/chat/VoicePlayer";
 import { VoiceRecorder } from "@/components/chat/VoiceRecorder";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { type Message as SupabaseMessage, useMessages } from "@/hooks/chat/use-messages";
@@ -117,8 +94,8 @@ interface ChatAreaProps {
 
 export function ChatArea({
 	channelName,
-	detailsOpen,
-	onToggleDetails,
+	detailsOpen: _detailsOpen,
+	onToggleDetails: _onToggleDetails,
 	isDM,
 	dmDisplayName,
 }: ChatAreaProps) {
@@ -156,7 +133,7 @@ export function ChatArea({
 	const { messages, isLoading, error, sendMessage, deleteMessage, editMessage, togglePinMessage } =
 		useMessages(channelName);
 
-	const handleToggleStar = async () => {
+	const _handleToggleStar = async () => {
 		if (!channel || !token) return;
 		const newStarredStatus = !channel.isStarred;
 		// Optimistically update
@@ -179,6 +156,32 @@ export function ChatArea({
 		() => messages.filter((m) => !m.deleted_at && !m.deletedAt && (m.isPinned || m.is_pinned)),
 		[messages],
 	);
+
+	const updateMentionState = useCallback((editorInstance: NonNullable<typeof editor>) => {
+		const { from } = editorInstance.state.selection;
+		const textBefore = editorInstance.state.doc.textBetween(
+			Math.max(0, from - 80),
+			from,
+			"\n",
+			"\0",
+		);
+		const mentionMatch = textBefore.match(/(?:^|\s)@([^\s@]*)$/);
+
+		if (!mentionMatch) {
+			setMentionQuery(null);
+			mentionRangeRef.current = null;
+			return;
+		}
+
+		const fullMatch = mentionMatch[0];
+		const query = mentionMatch[1] ?? "";
+		const triggerOffset = fullMatch.lastIndexOf("@");
+		const mentionLength = fullMatch.length - triggerOffset;
+
+		setMentionQuery(query);
+		setMentionIndex(0);
+		mentionRangeRef.current = { from: from - mentionLength, to: from };
+	}, []);
 
 	// Filtered member list for @ mentions
 	const filteredMembers = useMemo(() => {
@@ -216,18 +219,7 @@ export function ChatArea({
 			MentionNode,
 		],
 		onUpdate: ({ editor: ed }) => {
-			// Detect @ mention trigger
-			const { from } = ed.state.selection;
-			const textBefore = ed.state.doc.textBetween(Math.max(0, from - 50), from, "\n");
-			const mentionMatch = textBefore.match(/@(\w*)$/);
-			if (mentionMatch) {
-				setMentionQuery(mentionMatch[1]);
-				setMentionIndex(0);
-				mentionRangeRef.current = { from: from - mentionMatch[0].length, to: from };
-			} else {
-				setMentionQuery(null);
-				mentionRangeRef.current = null;
-			}
+			updateMentionState(ed);
 		},
 		editorProps: {
 			attributes: {
@@ -235,6 +227,29 @@ export function ChatArea({
 					"prose prose-sm max-w-none focus:outline-none min-h-[40px] max-h-[160px] overflow-y-auto pl-3 pr-[90px] py-[9px] text-[15px] text-[#000] [&_p]:my-0 [&_ul]:my-1 [&_ol]:my-1 leading-normal",
 			},
 			handleKeyDown: (_view, event) => {
+				// Handle mention navigation explicitly first
+				if (mentionQuery !== null && filteredMembers.length > 0) {
+					if (event.key === "ArrowDown") {
+						event.preventDefault();
+						setMentionIndex((prev) => (prev + 1) % filteredMembers.length);
+						return true;
+					}
+					if (event.key === "ArrowUp") {
+						event.preventDefault();
+						setMentionIndex((prev) => (prev - 1 + filteredMembers.length) % filteredMembers.length);
+						return true;
+					}
+					if (event.key === "Enter") {
+						event.preventDefault();
+						insertMention(filteredMembers[mentionIndex]);
+						return true;
+					}
+					if (event.key === "Escape") {
+						setMentionQuery(null);
+						return true;
+					}
+				}
+
 				if (event.key === "Enter" && !event.shiftKey) {
 					event.preventDefault();
 					handleSendMessage();
@@ -358,24 +373,6 @@ export function ChatArea({
 		[user?.id, channelName, supabase.storage, sendMessage],
 	);
 
-	// Re-bind handleSendMessage to the editor's keydown handler when dependencies change
-	useEffect(() => {
-		if (!editor) return;
-		editor.setOptions({
-			editorProps: {
-				...editor.options.editorProps,
-				handleKeyDown: (_view, event) => {
-					if (event.key === "Enter" && !event.shiftKey) {
-						event.preventDefault();
-						handleSendMessage();
-						return true;
-					}
-					return false;
-				},
-			},
-		});
-	}, [editor, handleSendMessage]);
-
 	// Close emoji picker on outside click
 	useEffect(() => {
 		const handleClickOutside = (e: MouseEvent) => {
@@ -393,7 +390,7 @@ export function ChatArea({
 		setShowEmoji(false);
 	};
 
-	const handleLinkAdd = () => {
+	const _handleLinkAdd = () => {
 		if (!editor) return;
 		if (showLinkInput) {
 			// Apply the link
@@ -413,7 +410,7 @@ export function ChatArea({
 		}
 	};
 
-	const handleLinkKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+	const _handleLinkKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
 		if (e.key === "Enter") {
 			e.preventDefault();
 			if (linkUrl.trim() && editor) {
@@ -453,6 +450,57 @@ export function ChatArea({
 		},
 		[editor],
 	);
+
+	// Re-bind handleSendMessage to the editor's keydown handler when dependencies change
+	useEffect(() => {
+		if (!editor) return;
+		editor.setOptions({
+			editorProps: {
+				...editor.options.editorProps,
+				handleKeyDown: (_view, event) => {
+					if (mentionQuery !== null && filteredMembers.length > 0) {
+						if (event.key === "ArrowDown") {
+							event.preventDefault();
+							setMentionIndex((prev) => (prev + 1) % filteredMembers.length);
+							return true;
+						}
+						if (event.key === "ArrowUp") {
+							event.preventDefault();
+							setMentionIndex(
+								(prev) => (prev - 1 + filteredMembers.length) % filteredMembers.length,
+							);
+							return true;
+						}
+						if (event.key === "Enter") {
+							event.preventDefault();
+							insertMention(filteredMembers[mentionIndex]);
+							return true;
+						}
+						if (event.key === "Escape") {
+							setMentionQuery(null);
+							return true;
+						}
+					}
+
+					if (event.key === "Enter" && !event.shiftKey) {
+						event.preventDefault();
+						handleSendMessage();
+						return true;
+					}
+					return false;
+				},
+			},
+		});
+		updateMentionState(editor);
+	}, [
+		editor,
+		filteredMembers,
+		handleSendMessage,
+		insertMention,
+		mentionIndex,
+		mentionQuery,
+		updateMentionState,
+	]);
 
 	// Handle @ mention keyboard navigation
 	const handleMentionKeyDown = useCallback(
@@ -553,13 +601,14 @@ export function ChatArea({
 			<div className="h-14 px-4 flex items-center justify-between border-b border-[#e5e5ea] bg-white/90 backdrop-blur-md shrink-0 z-10 sticky top-0">
 				<div className="flex items-center gap-2">
 					<span className="text-[#8e8e93] text-[15px]">To:</span>
-					<span className="text-[#000] font-medium text-[15px]">
-						{displayName}
-					</span>
+					<span className="text-[#000] font-medium text-[15px]">{displayName}</span>
 				</div>
 
 				<div className="flex items-center gap-1">
-					<StartMeetingButton channelId={channelName} channelName={displayName} />
+					<StartMeetingButton
+						channelId={isDM ? undefined : channelName}
+						channelName={displayName}
+					/>
 				</div>
 			</div>
 
@@ -608,11 +657,9 @@ export function ChatArea({
 						</div>
 					) : messages.length === 0 ? (
 						<div className="flex flex-col items-center justify-center py-12 text-center select-none">
-							<p className="text-[12px] font-semibold text-[#8e8e93] tracking-wide">
-								iMessage
-							</p>
+							<p className="text-[12px] font-semibold text-[#8e8e93] tracking-wide">iMessage</p>
 							<p className="text-[11px] text-[#8e8e93] font-medium mt-1">
-								Today {new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+								Today {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
 							</p>
 						</div>
 					) : (
@@ -625,7 +672,9 @@ export function ChatArea({
 								isOwnMessage && !isDeleted && diffInMinutes <= 15 && !message.file_url;
 							return (
 								<div key={message.id} id={`msg-${message.id}`} className="mb-4">
-									<div className={`flex w-full group ${isOwnMessage ? "justify-end" : "justify-start"}`}>
+									<div
+										className={`flex w-full group ${isOwnMessage ? "justify-end" : "justify-start"}`}
+									>
 										{/* Avatar for others */}
 										{!isOwnMessage && (
 											<div className="flex flex-col justify-end pb-1 mr-2 shrink-0">
@@ -638,7 +687,9 @@ export function ChatArea({
 											</div>
 										)}
 
-										<div className={`flex flex-col max-w-[75%] ${isOwnMessage ? "items-end" : "items-start"}`}>
+										<div
+											className={`flex flex-col max-w-[75%] ${isOwnMessage ? "items-end" : "items-start"}`}
+										>
 											{/* Name above bubble for others */}
 											{!isOwnMessage && (
 												<span className="text-[11px] text-[#8e8e93] px-2 mb-[2px] font-medium tracking-wide">
@@ -648,13 +699,19 @@ export function ChatArea({
 
 											{/* Pinned Indicator on top if pinned */}
 											{(message.isPinned || message.is_pinned) && (
-												<div className={`flex items-center gap-1 mb-1 px-1 ${isOwnMessage ? "text-amber-500" : "text-amber-500"}`}>
+												<div
+													className={`flex items-center gap-1 mb-1 px-1 ${isOwnMessage ? "text-amber-500" : "text-amber-500"}`}
+												>
 													<Pin className="w-3 h-3 fill-current" />
-													<span className="text-[10px] uppercase font-bold tracking-wider">Pinned</span>
+													<span className="text-[10px] uppercase font-bold tracking-wider">
+														Pinned
+													</span>
 												</div>
 											)}
 
-											<div className={`flex items-end gap-2 relative ${isOwnMessage ? "justify-end" : "justify-start"}`}>
+											<div
+												className={`flex items-end gap-2 relative ${isOwnMessage ? "justify-end" : "justify-start"}`}
+											>
 												{/* Left Side Actions (if isOwnMessage) */}
 												{isOwnMessage && !isDeleted && (
 													<div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0 mb-[2px]">
@@ -683,9 +740,18 @@ export function ChatArea({
 														{togglePinMessage && (
 															<button
 																type="button"
-																onClick={() => togglePinMessage(message.id, !(message.isPinned || message.is_pinned))}
+																onClick={() =>
+																	togglePinMessage(
+																		message.id,
+																		!(message.isPinned || message.is_pinned),
+																	)
+																}
 																className={`p-1.5 rounded-full hover:bg-[#f2f2f7]/80 transition-colors focus:outline-none ${message.isPinned || message.is_pinned ? "text-[#ff9f0a]" : "text-[#8e8e93] hover:text-[#ff9f0a]"}`}
-																title={message.isPinned || message.is_pinned ? "Unpin message" : "Pin message"}
+																title={
+																	message.isPinned || message.is_pinned
+																		? "Unpin message"
+																		: "Pin message"
+																}
 															>
 																<Pin className="w-[15px] h-[15px]" strokeWidth={2} />
 															</button>
@@ -709,7 +775,9 @@ export function ChatArea({
 																? "bg-[#007aff] text-white rounded-[18px] rounded-br-[4px]"
 																: "bg-[#e5e5ea] text-black rounded-[18px] rounded-bl-[4px]"
 													}`}
-													title={formatMessageTime(message.created_at || message.createdAt || new Date().toISOString())}
+													title={formatMessageTime(
+														message.created_at || message.createdAt || new Date().toISOString(),
+													)}
 												>
 													{isDeleted ? (
 														<p className="text-[#8e8e93] italic text-[14px] m-0">
@@ -731,9 +799,24 @@ export function ChatArea({
 																			`msg-${message.parent?.id}`,
 																		);
 																		if (parentEl) {
-																			parentEl.scrollIntoView({ behavior: "smooth", block: "center" });
-																			parentEl.classList.add("ring-2", "ring-[#007aff]", "ring-offset-2");
-																			setTimeout(() => parentEl.classList.remove("ring-2", "ring-[#007aff]", "ring-offset-2"), 2000);
+																			parentEl.scrollIntoView({
+																				behavior: "smooth",
+																				block: "center",
+																			});
+																			parentEl.classList.add(
+																				"ring-2",
+																				"ring-[#007aff]",
+																				"ring-offset-2",
+																			);
+																			setTimeout(
+																				() =>
+																					parentEl.classList.remove(
+																						"ring-2",
+																						"ring-[#007aff]",
+																						"ring-offset-2",
+																					),
+																				2000,
+																			);
 																		}
 																	}}
 																	onKeyDown={() => {}}
@@ -741,9 +824,14 @@ export function ChatArea({
 																	tabIndex={0}
 																>
 																	<div className="min-w-0 flex-1">
-																		<p className={`text-[11px] font-semibold mb-0.5 ${isOwnMessage ? "text-white/90" : "text-black/60"}`}>
+																		<p
+																			className={`text-[11px] font-semibold mb-0.5 ${isOwnMessage ? "text-white/90" : "text-black/60"}`}
+																		>
 																			{message.parent.user
-																				? [message.parent.user.firstName, message.parent.user.lastName]
+																				? [
+																						message.parent.user.firstName,
+																						message.parent.user.lastName,
+																					]
 																						.filter(Boolean)
 																						.join(" ") ||
 																					message.parent.user.username ||
@@ -751,11 +839,17 @@ export function ChatArea({
 																				: "Unknown"}
 																		</p>
 																		{message.parent.content ? (
-																			<p className={`text-[12px] line-clamp-2 ${isOwnMessage ? "text-white/80" : "text-black/60"}`}>
-																				{message.parent.content.replace(/<[^>]*>/g, "").slice(0, 150)}
+																			<p
+																				className={`text-[12px] line-clamp-2 ${isOwnMessage ? "text-white/80" : "text-black/60"}`}
+																			>
+																				{message.parent.content
+																					.replace(/<[^>]*>/g, "")
+																					.slice(0, 150)}
 																			</p>
 																		) : message.parent.fileName || message.parent.file_name ? (
-																			<p className={`text-[12px] flex items-center gap-1 ${isOwnMessage ? "text-white/80" : "text-black/60"}`}>
+																			<p
+																				className={`text-[12px] flex items-center gap-1 ${isOwnMessage ? "text-white/80" : "text-black/60"}`}
+																			>
 																				<FileIcon className="w-3 h-3" />
 																				{message.parent.fileName || message.parent.file_name}
 																			</p>
@@ -768,7 +862,9 @@ export function ChatArea({
 																(isHtmlContent(message.content) ? (
 																	<div
 																		className={`mt-1 leading-relaxed text-[15px] prose prose-sm max-w-none [&_p]:my-0 [&_ul]:my-1 [&_ol]:my-1 ${
-																			isOwnMessage ? "[&_a]:text-white [&_a]:underline text-white" : "[&_a]:text-[#007aff] text-black"
+																			isOwnMessage
+																				? "[&_a]:text-white [&_a]:underline text-white"
+																				: "[&_a]:text-[#007aff] text-black"
 																		}`}
 																		onClick={(e) => {
 																			e.stopPropagation();
@@ -785,42 +881,68 @@ export function ChatArea({
 																				}
 																			}
 																		}}
+																		onKeyDown={(e) => e.stopPropagation()}
 																		onPointerDown={(e) => {
 																			// only stop propagation if we are clicking an interactive element like a link
-																			if ((e.target as HTMLElement).tagName.toLowerCase() === 'a' || (e.target as HTMLElement).closest('a')) {
+																			if (
+																				(e.target as HTMLElement).tagName.toLowerCase() === "a" ||
+																				(e.target as HTMLElement).closest("a")
+																			) {
 																				e.stopPropagation();
 																			}
 																		}}
 																		suppressHydrationWarning
+																		// biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized with DOMPurify
 																		dangerouslySetInnerHTML={{
 																			__html:
 																				typeof DOMPurify.sanitize === "function"
 																					? DOMPurify.sanitize(message.content, {
 																							ALLOWED_TAGS: [
-																								"p", "br", "strong", "em", "u", "s", "a", "ul", "ol", "li", "span",
+																								"p",
+																								"br",
+																								"strong",
+																								"em",
+																								"u",
+																								"s",
+																								"a",
+																								"ul",
+																								"ol",
+																								"li",
+																								"span",
 																							],
 																							ALLOWED_ATTR: [
-																								"href", "target", "rel", "style", "class", "data-mention",
+																								"href",
+																								"target",
+																								"rel",
+																								"style",
+																								"class",
+																								"data-mention",
 																							],
 																						})
 																					: "",
 																		}}
 																	/>
 																) : (
-																	<p className={`mt-1 leading-relaxed text-[15px] m-0 ${isOwnMessage ? "text-white" : "text-black"}`}>
+																	<p
+																		className={`mt-1 leading-relaxed text-[15px] m-0 ${isOwnMessage ? "text-white" : "text-black"}`}
+																	>
 																		{message.content}
 																	</p>
 																))}
 
 															{/* Attachments */}
 															{message.file_url && (
-																<div 
-																	className="mt-2" 
+																<div
+																	className="mt-2"
 																	onClick={(e) => e.stopPropagation()}
+																	onKeyDown={(e) => e.stopPropagation()}
 																	onPointerDown={(e) => e.stopPropagation()}
 																>
 																	{message.file_type?.startsWith("audio/") ? (
-																		<VoicePlayer src={message.file_url} duration={message.duration} />
+																		<VoicePlayer
+																			src={message.file_url}
+																			duration={message.duration}
+																		/>
 																	) : message.file_type?.startsWith("image/") ? (
 																		<a href={message.file_url} target="_blank" rel="noreferrer">
 																			<img
@@ -835,12 +957,14 @@ export function ChatArea({
 																			target="_blank"
 																			rel="noreferrer"
 																			className={`flex items-center gap-3 p-3 rounded-lg border max-w-sm transition-colors ${
-																				isOwnMessage 
-																					? "bg-white/10 border-white/20 hover:bg-white/20 text-white" 
+																				isOwnMessage
+																					? "bg-white/10 border-white/20 hover:bg-white/20 text-white"
 																					: "bg-black/5 border-black/10 hover:bg-black/10 text-black"
 																			}`}
 																		>
-																			<div className={`w-10 h-10 rounded flex items-center justify-center shrink-0 ${isOwnMessage ? "bg-white/20" : "bg-black/10"}`}>
+																			<div
+																				className={`w-10 h-10 rounded flex items-center justify-center shrink-0 ${isOwnMessage ? "bg-white/20" : "bg-black/10"}`}
+																			>
 																				<FileIcon className="w-5 h-5" />
 																			</div>
 																			<div className="min-w-0 flex-1">
@@ -848,7 +972,9 @@ export function ChatArea({
 																					{message.file_name || "Attached File"}
 																				</p>
 																				{message.file_size && (
-																					<p className={`text-xs ${isOwnMessage ? "text-white/70" : "text-black/60"}`}>
+																					<p
+																						className={`text-xs ${isOwnMessage ? "text-white/70" : "text-black/60"}`}
+																					>
 																						{(message.file_size / 1024).toFixed(1)} KB
 																					</p>
 																				)}
@@ -862,7 +988,9 @@ export function ChatArea({
 
 													{/* Edit indicator */}
 													{(message.isEdited || message.is_edited) && (
-														<span className={`block text-[10px] mt-1 text-right italic font-medium ${isOwnMessage ? "text-white/60" : "text-black/40"}`}>
+														<span
+															className={`block text-[10px] mt-1 text-right italic font-medium ${isOwnMessage ? "text-white/60" : "text-black/40"}`}
+														>
 															Edited
 														</span>
 													)}
@@ -882,9 +1010,18 @@ export function ChatArea({
 														{togglePinMessage && (
 															<button
 																type="button"
-																onClick={() => togglePinMessage(message.id, !(message.isPinned || message.is_pinned))}
+																onClick={() =>
+																	togglePinMessage(
+																		message.id,
+																		!(message.isPinned || message.is_pinned),
+																	)
+																}
 																className={`p-1.5 rounded-full hover:bg-[#f2f2f7]/80 transition-colors focus:outline-none ${message.isPinned || message.is_pinned ? "text-[#ff9f0a]" : "text-[#8e8e93] hover:text-[#ff9f0a]"}`}
-																title={message.isPinned || message.is_pinned ? "Unpin message" : "Pin message"}
+																title={
+																	message.isPinned || message.is_pinned
+																		? "Unpin message"
+																		: "Pin message"
+																}
 															>
 																<Pin className="w-[15px] h-[15px]" strokeWidth={2} />
 															</button>
@@ -895,7 +1032,9 @@ export function ChatArea({
 
 											{/* Delete Confirmation explicitly placed out of the bubble */}
 											{deleteConfirmId === message.id && (
-												<div className={`mt-2 flex items-center gap-2 p-2 rounded-lg bg-red-50 border border-red-200 ${isOwnMessage && "self-end"}`}>
+												<div
+													className={`mt-2 flex items-center gap-2 p-2 rounded-lg bg-red-50 border border-red-200 ${isOwnMessage && "self-end"}`}
+												>
 													<span className="text-sm text-red-700">Delete this message?</span>
 													<button
 														type="button"
@@ -969,7 +1108,7 @@ export function ChatArea({
 							</button>
 						</div>
 					)}
-					
+
 					<div className="flex items-end gap-[10px] w-full pl-0">
 						{/* Attach Button (Left) */}
 						<div className="pb-[4px] shrink-0">
@@ -990,22 +1129,47 @@ export function ChatArea({
 						</div>
 
 						{/* Input Pill Container */}
-						<div className="flex-1 bg-white border border-[#c6c6c8] rounded-[22px] focus-within:border-[#8e8e93] transition-colors relative flex flex-col min-h-[40px]">
-							{/* Formatting Toolbar (Absolutely positioned above pill to not interrupt design, hidden unless focused) */}
-							{editor && (
-                                <div className="absolute bottom-[calc(100%+4px)] left-0 flex items-center gap-0.5 px-3 py-1.5 bg-white border border-[#d1d5db] rounded-full shadow-sm opacity-0 pointer-events-none group-focus-within:opacity-100 group-focus-within:pointer-events-auto transition-opacity z-20">
+						<div className="group flex-1 bg-white border border-[#c6c6c8] rounded-[22px] focus-within:border-[#8e8e93] transition-colors relative flex flex-col min-h-[40px]">
+							{/* Formatting Toolbar (Absolutely positioned above pill, only shown when input has focus) */}
+							{editor && !isDM && (
+								<div className="absolute bottom-[calc(100%+4px)] left-0 flex items-center gap-0.5 px-3 py-1.5 bg-white border border-[#d1d5db] rounded-full shadow-sm opacity-0 pointer-events-none group-focus-within:opacity-100 group-focus-within:pointer-events-auto transition-all translate-y-2 group-focus-within:translate-y-0 z-20">
 									{(
 										[
-											{ cmd: () => editor.chain().focus().toggleBold().run(), active: editor.isActive("bold"), icon: Bold, label: "Bold" },
-											{ cmd: () => editor.chain().focus().toggleItalic().run(), active: editor.isActive("italic"), icon: Italic, label: "Italic" },
-											{ cmd: () => editor.chain().focus().toggleBulletList().run(), active: editor.isActive("bulletList"), icon: List, label: "List" },
+											{
+												cmd: () => editor.chain().focus().toggleBold().run(),
+												active: editor.isActive("bold"),
+												icon: Bold,
+												label: "Bold",
+											},
+											{
+												cmd: () => editor.chain().focus().toggleItalic().run(),
+												active: editor.isActive("italic"),
+												icon: Italic,
+												label: "Italic",
+											},
+											{
+												cmd: () => editor.chain().focus().toggleUnderline().run(),
+												active: editor.isActive("underline"),
+												icon: UnderlineIcon,
+												label: "Underline",
+											},
+											{
+												cmd: () => editor.chain().focus().toggleBulletList().run(),
+												active: editor.isActive("bulletList"),
+												icon: List,
+												label: "List",
+											},
 										] as const
 									).map(({ cmd, active, icon: Icon, label }) => (
 										<button
 											key={label}
 											type="button"
-											onClick={(e) => { e.preventDefault(); cmd(); }}
+											onClick={(e) => {
+												e.preventDefault();
+												cmd();
+											}}
 											className={`w-7 h-7 flex items-center justify-center rounded-full transition-colors ${active ? "bg-[#007aff] text-white" : "text-[#8e8e93] hover:bg-[#f2f2f7] hover:text-[#000]"}`}
+											title={label}
 										>
 											<Icon className="w-4 h-4" />
 										</button>
@@ -1014,7 +1178,7 @@ export function ChatArea({
 							)}
 
 							{/* Editing/Attachment content */}
-							<div className="flex flex-col overflow-x-hidden">
+							<div className="flex flex-col">
 								{/* Hidden file input */}
 								<input
 									type="file"
@@ -1061,33 +1225,51 @@ export function ChatArea({
 										<EditorContent editor={editor} />
 
 										{/* @ Mention Dropdown */}
-										{mentionQuery !== null && filteredMembers.length > 0 && (
+										{mentionQuery !== null && (
 											<div
 												ref={mentionRef}
-												className="absolute bottom-full left-0 mb-2 w-64 max-h-40 overflow-y-auto bg-white/95 backdrop-blur-md rounded-xl shadow-lg border border-[#e5e5ea] z-50 p-1"
+												className="absolute bottom-full left-0 mb-2 w-64 max-h-40 overflow-y-auto bg-white/95 backdrop-blur-md rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.1)] border border-[#e5e5ea] z-50 p-1"
 											>
-												{filteredMembers.map((member, i) => {
-													const name = [member.profile?.firstName, member.profile?.lastName].filter(Boolean).join(" ") || member.profile?.username || "Unknown";
-													const initials = name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
-													return (
-														<button
-															key={member.id}
-															type="button"
-															onMouseDown={(e) => {
-																e.preventDefault();
-																insertMention(member);
-															}}
-															className={`w-full flex items-center gap-3 px-2 py-1.5 text-left rounded-lg transition-colors ${i === mentionIndex ? "bg-[#007aff] text-white" : "text-black hover:bg-[#f2f2f7]"}`}
-														>
-															<div className={`w-[26px] h-[26px] rounded-full flex items-center justify-center text-[10px] font-medium shrink-0 ${i === mentionIndex ? "bg-white/20 text-white" : "bg-[#e5e5ea] text-[#8e8e93]"}`}>
-																{initials}
-															</div>
-															<div className="min-w-0">
-																<div className="font-medium text-[13px] truncate">{name}</div>
-															</div>
-														</button>
-													);
-												})}
+												{filteredMembers.length > 0 ? (
+													filteredMembers.map((member, i) => {
+														const name =
+															[member.profile?.firstName, member.profile?.lastName]
+																.filter(Boolean)
+																.join(" ") ||
+															member.profile?.username ||
+															"Unknown";
+														const initials = name
+															.split(" ")
+															.map((n) => n[0])
+															.join("")
+															.toUpperCase()
+															.slice(0, 2);
+														return (
+															<button
+																key={member.id}
+																type="button"
+																onMouseDown={(e) => {
+																	e.preventDefault();
+																	insertMention(member);
+																}}
+																className={`w-full flex items-center gap-3 px-2 py-1.5 text-left rounded-lg transition-colors ${i === mentionIndex ? "bg-[#007aff] text-white" : "text-black hover:bg-[#f2f2f7]"}`}
+															>
+																<div
+																	className={`w-[26px] h-[26px] rounded-full flex items-center justify-center text-[10px] font-medium shrink-0 ${i === mentionIndex ? "bg-white/20 text-white" : "bg-[#e5e5ea] text-[#8e8e93]"}`}
+																>
+																	{initials}
+																</div>
+																<div className="min-w-0">
+																	<div className="font-medium text-[13px] truncate">{name}</div>
+																</div>
+															</button>
+														);
+													})
+												) : (
+													<div className="px-3 py-2 text-[13px] text-gray-500 text-center">
+														No members found
+													</div>
+												)}
 											</div>
 										)}
 									</div>
@@ -1098,12 +1280,15 @@ export function ChatArea({
 							<div className="absolute right-[5px] bottom-[5px] flex items-center gap-[2px]">
 								{isRecording ? (
 									<div className="flex items-center gap-2 pr-2">
-										<VoiceRecorder onSend={handleVoiceSend} onCancel={() => setIsRecording(false)} />
+										<VoiceRecorder
+											onSend={handleVoiceSend}
+											onCancel={() => setIsRecording(false)}
+										/>
 									</div>
 								) : (
 									<>
 										{/* Microphone Button (visible when input is empty) */}
-										{((!editor?.getText().trim() && !attachment) && !isUploading) && (
+										{!editor?.getText().trim() && !attachment && !isUploading && (
 											<button
 												type="button"
 												onClick={() => setIsRecording(true)}
@@ -1137,15 +1322,25 @@ export function ChatArea({
 										</div>
 
 										{/* Send Button (visible when not empty) */}
-										{((editor?.getText().trim() || attachment) && !isUploading) ? (
+										{(editor?.getText().trim() || attachment) && !isUploading ? (
 											<button
 												type="button"
 												onClick={handleSendMessage}
 												className="w-[28px] h-[28px] rounded-full bg-[#007aff] hover:bg-[#0062cc] text-white flex items-center justify-center shadow-sm transition-transform active:scale-95 focus:outline-none ml-[2px]"
 											>
 												{/* Simple up-arrow style for sending */}
-												<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-													<path d="M12 19V5M5 12l7-7 7 7"/>
+												<svg
+													width="15"
+													height="15"
+													viewBox="0 0 24 24"
+													fill="none"
+													stroke="currentColor"
+													strokeWidth="2.5"
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													aria-hidden="true"
+												>
+													<path d="M12 19V5M5 12l7-7 7 7" />
 												</svg>
 											</button>
 										) : isUploading ? (
