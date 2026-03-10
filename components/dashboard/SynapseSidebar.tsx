@@ -161,15 +161,19 @@ export function SynapseSidebar() {
 
 	if (isCollapsed) {
 		return (
-			<aside className="w-[60px] bg-[#f9f9fa] flex flex-col items-center border-r border-[#ebebeb] shrink-0 h-full select-none pt-5 pb-5">
-				<button
-					type="button"
+			<aside className="w-[60px] bg-[#f2f2f4] flex flex-col items-center border-r border-[#e8e8e8] shrink-0 h-full select-none pt-5 pb-5 transition-all duration-300">
+				<div
+					role="button"
+					tabIndex={0}
 					onClick={() => setIsCollapsed(false)}
-					className="text-[#aaa] hover:text-[#555] transition-colors p-2 rounded-md hover:bg-[#e8e8e8]"
+					onKeyDown={(e) => {
+						if (e.key === "Enter" || e.key === " ") setIsCollapsed(false);
+					}}
+					className="text-[#aaa] cursor-pointer hover:text-[#555] transition-colors p-2 rounded-md hover:bg-[#e4e4e6]"
 					title="Expand sidebar"
 				>
 					<PanelLeftOpen className="w-5 h-5" />
-				</button>
+				</div>
 			</aside>
 		);
 	}
@@ -177,21 +181,25 @@ export function SynapseSidebar() {
 	return (
 		<>
 			<aside
-				className="w-[220px] bg-[#f9f9fa] flex flex-col border-r border-[#ebebeb] shrink-0 h-full select-none transition-all duration-300"
+				className="w-[220px] bg-[#f2f2f4] flex flex-col border-r border-[#e8e8e8] shrink-0 h-full select-none transition-all duration-300"
 				style={{
 					fontFamily: "var(--font-figtree), Figtree, -apple-system, sans-serif",
 				}}
 			>
 				{/* ──── Logo / Brand ──── */}
 				<div className="flex items-center gap-2 px-[18px] pt-5 pb-5">
-					<button
-						type="button"
+					<div
+						role="button"
+						tabIndex={0}
 						onClick={() => setIsCollapsed(true)}
-						className="text-[#aaa] hover:text-[#555] transition-colors p-[3px] rounded hover:bg-[#e8e8e8] -ml-1 mr-0.5"
+						onKeyDown={(e) => {
+							if (e.key === "Enter" || e.key === " ") setIsCollapsed(true);
+						}}
+						className="text-[#aaa] cursor-pointer hover:text-[#555] transition-colors p-[3px] rounded hover:bg-[#e4e4e6] -ml-1 mr-0.5"
 						title="Close sidebar"
 					>
 						<PanelLeftClose className="w-[15px] h-[15px]" />
-					</button>
+					</div>
 					<div className="w-7 h-7 rounded-[7px] bg-gradient-to-br from-[#4f8ef7] to-[#3b6fd4] flex items-center justify-center shadow-sm">
 						<Zap className="w-[14px] h-[14px] text-white" strokeWidth={2.2} />
 					</div>
