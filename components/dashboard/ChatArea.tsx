@@ -265,7 +265,12 @@ export function ChatArea({
 	// biome-ignore lint/correctness/useExhaustiveDependencies: Scroll to bottom when messages change
 	useEffect(() => {
 		if (scrollRef.current) {
-			scrollRef.current.scrollIntoView({ behavior: "instant" });
+			const viewport = scrollRef.current.closest("[data-radix-scroll-area-viewport]");
+			if (viewport) {
+				viewport.scrollTop = viewport.scrollHeight;
+			} else {
+				scrollRef.current.scrollIntoView({ behavior: "instant", block: "end" });
+			}
 		}
 	}, [messages]);
 
@@ -594,8 +599,10 @@ export function ChatArea({
 
 	return (
 		<div
-			className="flex-1 flex flex-col bg-transparent min-w-0 h-full overflow-hidden"
-			style={{ fontFamily: "var(--font-figtree), Figtree" }}
+			className="flex-1 flex flex-col bg-white min-w-0 min-h-0 overflow-hidden w-full h-full"
+			style={{
+				fontFamily: "'-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Inter', sans-serif",
+			}}
 		>
 			{/* Channel Header */}
 			<div className="h-16 px-6 flex items-center justify-between border-b border-slate-100 bg-white/80 backdrop-blur-md shrink-0 z-10 sticky top-0">
@@ -645,7 +652,7 @@ export function ChatArea({
 			)}
 
 			{/* Messages Area */}
-			<ScrollArea className="flex-1 w-full bg-white">
+			<ScrollArea className="flex-1 min-h-0 w-full bg-white">
 				{/* Inner container must be min-h-[100%] to allow the spacer to push content down */}
 				<div className="flex flex-col min-h-full w-full">
 					{/* Spacer that expands to push content to the bottom when messages are few */}
@@ -947,6 +954,7 @@ export function ChatArea({
 																			<VoicePlayer
 																				src={message.file_url}
 																				duration={message.duration}
+																				isOwnMessage={isOwnMessage}
 																			/>
 																		) : message.file_type?.startsWith("image/") ? (
 																			<a href={message.file_url} target="_blank" rel="noreferrer">
@@ -1072,8 +1080,8 @@ export function ChatArea({
 			</ScrollArea>
 
 			{/* Message Input */}
-			<div className="pt-2 pb-4 md:pb-6 px-4 shrink-0 pb-safe z-10 w-full bg-transparent">
-				<div className="max-w-4xl mx-auto flex flex-col gap-2">
+			<div className="pt-2 pb-4 md:pb-6 px-4 shrink-0 pb-safe z-10 w-full bg-transparent relative">
+				<div className="w-full flex flex-col gap-2">
 					{/* Reply Preview Banner */}
 					{replyTo && (
 						<div className="mb-1 flex items-center gap-2 px-3 py-2 bg-[#f2f2f7] rounded-xl relative">

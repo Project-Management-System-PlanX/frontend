@@ -19,16 +19,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 	return (
 		<MeetingProvider>
 			{/* High-end Apple-inspired layout with floating rounded cards */}
-			<div className="h-screen w-full flex overflow-hidden bg-[#eff1f4] relative p-3.5 font-figtree">
+			<div
+				className="h-screen w-full flex overflow-hidden bg-[#eff1f4] relative p-3.5"
+				style={{
+					fontFamily:
+						"'-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Inter', sans-serif",
+				}}
+			>
 				{/* Ambient depth gradients */}
 				<div className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] rounded-full bg-blue-400/5 blur-[120px] pointer-events-none" />
 				<div className="absolute bottom-[-10%] right-[-5%] w-[40%] h-[40%] rounded-full bg-indigo-500/5 blur-[120px] pointer-events-none" />
 
 				<div className="flex h-full w-full relative z-10 gap-0">
-					{/* Tier 1 Rail Card */}
 					<div className="h-full shrink-0 pr-3.5">
-						<aside className="h-full bg-white/80 backdrop-blur-3xl rounded-[30px] border border-white shadow-xl shadow-slate-200/40 overflow-hidden flex flex-col">
-							<PrimarySidebar defaultCollapsed={hasSecondary} />
+						<aside className="h-full bg-white/60 backdrop-blur-3xl rounded-[30px] border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.06)] overflow-hidden flex flex-col transition-all duration-300">
+							<PrimarySidebar defaultCollapsed={false} />
 						</aside>
 					</div>
 
@@ -52,7 +57,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 								}}
 								className="h-full shrink-0 overflow-hidden"
 							>
-								<aside className="h-full w-[290px] bg-white/70 backdrop-blur-3xl rounded-[30px] border border-white shadow-xl shadow-slate-200/40 overflow-hidden flex flex-col">
+								<aside className="h-full w-[290px] bg-white/60 backdrop-blur-3xl rounded-[30px] border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.06)] overflow-hidden flex flex-col transition-all duration-300">
 									<SynapseSidebar />
 								</aside>
 							</motion.div>
@@ -60,21 +65,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 					</AnimatePresence>
 
 					{/* Tier 3 Main Stage Card */}
-					<main className="flex-1 h-full min-w-0">
-						<div className="w-full h-full bg-white rounded-[30px] border border-white shadow-xl shadow-slate-200/40 overflow-hidden flex flex-col relative">
-							<AnimatePresence mode="wait">
-								<motion.div
-									key={pathname}
-									initial={{ opacity: 0, y: 10 }}
-									animate={{ opacity: 1, y: 0 }}
-									exit={{ opacity: 0, y: -10 }}
-									transition={{ duration: 0.2, ease: "easeOut" }}
-									className="w-full h-full flex flex-col"
-								>
-									{children}
-								</motion.div>
-							</AnimatePresence>
-						</div>
+					<main className="flex-1 flex flex-col min-w-0 min-h-0 relative transition-all duration-300">
+						<AnimatePresence mode="wait">
+							<motion.div
+								key={pathname}
+								initial={{ opacity: 0, y: 10 }}
+								animate={{ opacity: 1, y: 0 }}
+								exit={{ opacity: 0, y: -10 }}
+								transition={{ duration: 0.2, ease: "easeOut" }}
+								className="flex-1 w-full flex flex-col min-h-0 rounded-[30px] bg-white border border-white shadow-[0_8px_30px_rgb(0,0,0,0.08)] overflow-hidden"
+							>
+								{children}
+							</motion.div>
+						</AnimatePresence>
 					</main>
 				</div>
 			</div>

@@ -134,12 +134,14 @@ export default function DMPage({ params }: { params: Promise<{ name: string }> }
 	}
 
 	return (
-		<ChatArea
-			channelName={dmChannelId}
-			detailsOpen={false}
-			onToggleDetails={() => {}}
-			isDM
-			dmDisplayName={displayName}
-		/>
+		<div className="flex-1 flex min-w-0 overflow-hidden min-h-0 w-full h-full">
+			<ChatArea
+				channelName={dmChannelId}
+				detailsOpen={false}
+				onToggleDetails={() => {}}
+				isDM
+				dmDisplayName={displayName}
+			/>
+		</div>
 	);
 }

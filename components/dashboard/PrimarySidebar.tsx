@@ -99,7 +99,7 @@ export function PrimarySidebar({ defaultCollapsed = false }: PrimarySidebarProps
 					className="flex items-center gap-3 transition-transform hover:scale-[1.02] active:scale-[0.98] group outline-none"
 					title={isExpanded ? "Collapse Sidebar" : "Expand Sidebar"}
 				>
-					<div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-blue-500 flex items-center justify-center text-white shadow-lg shadow-indigo-100 shrink-0 transition-all group-hover:shadow-indigo-200">
+					<div className="w-10 h-10 rounded-[12px] bg-gradient-to-b from-[#5AC8FA] to-[#007AFF] flex items-center justify-center text-white shadow-md shadow-blue-500/20 shrink-0 transition-all group-hover:shadow-blue-500/30">
 						<Zap className="w-5.5 h-5.5 fill-white/20" />
 					</div>
 					<AnimatePresence>
@@ -108,7 +108,11 @@ export function PrimarySidebar({ defaultCollapsed = false }: PrimarySidebarProps
 								initial={{ opacity: 0, x: -10 }}
 								animate={{ opacity: 1, x: 0 }}
 								exit={{ opacity: 0, x: -10 }}
-								className="font-bold text-slate-900 tracking-tight text-xl font-figtree whitespace-nowrap"
+								className="font-bold text-gray-900 tracking-tight text-[19px] whitespace-nowrap"
+								style={{
+									fontFamily:
+										"'-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Inter', sans-serif",
+								}}
 							>
 								TeamUp
 							</motion.span>
@@ -196,10 +200,10 @@ function PrimaryNavItem({
 			type="button"
 			className={cn(
 				"relative flex items-center transition-all duration-200 group outline-none w-full rounded-xl cursor-pointer",
-				isExpanded ? "px-3 py-2.5 gap-3" : "h-12 w-12 justify-center",
+				isExpanded ? "px-3 py-2.5 gap-3" : "h-11 w-11 mx-auto justify-center",
 				isActive
-					? "bg-white text-indigo-600 shadow-sm ring-1 ring-slate-200/50"
-					: "text-slate-500 hover:text-slate-900 hover:bg-white/60",
+					? "bg-white text-[#007AFF] shadow-[0_2px_8px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-gray-900/5 font-medium"
+					: "text-gray-500 hover:text-gray-900 hover:bg-gray-900/5",
 			)}
 			onClick={onClick}
 		>
@@ -217,21 +221,18 @@ function PrimaryNavItem({
 						animate={{ opacity: 1, x: 0 }}
 						exit={{ opacity: 0, x: -5 }}
 						className={cn(
-							"text-sm font-semibold font-figtree whitespace-nowrap",
-							isActive ? "text-indigo-600" : "text-slate-600 group-hover:text-slate-900",
+							"text-[13.5px] font-medium whitespace-nowrap",
+							isActive ? "text-gray-900 font-semibold" : "text-gray-600 group-hover:text-gray-900",
 						)}
+						style={{
+							fontFamily:
+								"'-apple-system', 'BlinkMacSystemFont', 'SF Pro Text', 'Inter', sans-serif",
+						}}
 					>
 						{label}
 					</motion.span>
 				)}
 			</AnimatePresence>
-
-			{!isExpanded && isActive && (
-				<motion.div
-					layoutId="activeIndicator"
-					className="absolute left-0 w-1 h-6 bg-indigo-600 rounded-r-full shadow-[0_0_10px_rgba(79,70,229,0.4)]"
-				/>
-			)}
 		</button>
 	);
 
@@ -256,7 +257,10 @@ function PrimaryNavItem({
 				<TooltipContent
 					side="right"
 					sideOffset={12}
-					className="bg-slate-900 border-none text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-lg shadow-xl font-figtree"
+					className="bg-gray-800/90 backdrop-blur-md border-none text-white text-[11px] font-medium tracking-wide px-3 py-1.5 rounded-lg shadow-xl"
+					style={{
+						fontFamily: "'-apple-system', 'BlinkMacSystemFont', 'SF Pro Text', 'Inter', sans-serif",
+					}}
 				>
 					{label}
 				</TooltipContent>

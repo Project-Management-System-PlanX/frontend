@@ -12,7 +12,7 @@ export function ChannelView({ channelName }: ChannelViewProps) {
 	const [detailsOpen, setDetailsOpen] = useState(false);
 
 	return (
-		<div className="flex-1 flex min-w-0 overflow-hidden h-full">
+		<div className="flex-1 flex min-w-0 overflow-hidden min-h-0 w-full h-full">
 			<ChatArea
 				channelName={channelName}
 				detailsOpen={detailsOpen}
