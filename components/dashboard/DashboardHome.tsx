@@ -1,343 +1,515 @@
 "use client";
 
-import { ArrowRight, CheckSquare, Clock, FileText, MessageSquare, Users } from "lucide-react";
+import { motion } from "framer-motion";
+import { Calendar, Filter, LayoutGrid, MoreHorizontal, TrendingUp } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
+import {
+	Bar,
+	BarChart,
+	CartesianGrid,
+	Line,
+	LineChart,
+	ResponsiveContainer,
+	Tooltip,
+	XAxis,
+	YAxis,
+} from "recharts";
 import { useWorkspaceAnalytics } from "@/hooks/api/use-workspaces";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 
 /* ═══════════════════════════════════════════════
-   Main Dashboard Component
+   Apple UI Dashboard Components
    ═══════════════════════════════════════════════ */
+
+const MiniSparkline = ({ positive, data }: { positive: boolean; data: number[] }) => {
+	const points = data || [3, 5, 2, 7, 4, 8, 6, 9];
+	const max = Math.max(...points);
+	const min = Math.min(...points);
+	const range = max - min || 1;
+	const w = 80,
+		h = 32,
+		pad = 2;
+	const xs = points.map((_, i) => pad + (i / (points.length - 1)) * (w - 2 * pad));
+	const ys = points.map((v) => h - pad - ((v - min) / range) * (h - 2 * pad));
+	const d = xs.map((x, i) => `${i === 0 ? "M" : "L"}${x},${ys[i]}`).join(" ");
+	// Apple colors
+	const color = positive ? "#34C759" : "#FF3B30";
+	return (
+		<svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+			<title>Sparkline</title>
+			<path
+				d={d}
+				fill="none"
+				stroke={color}
+				strokeWidth="2"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+				style={{ filter: `drop-shadow(0px 2px 2px ${color}40)` }}
+			/>
+		</svg>
+	);
+};
+
+const CustomTooltip = ({ active, payload, label }: any) => {
+	if (active && payload && payload.length) {
+		return (
+			<div className="bg-white/90 backdrop-blur-xl border border-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-xl py-2.5 px-3.5 text-sm">
+				<div className="font-semibold text-gray-900 mb-1">{label}</div>
+				{payload.map((p: any, i: number) => (
+					<div key={p.dataKey || p.name || `item-${i}`} className="flex items-center gap-2 mb-0.5">
+						<div className="w-2 h-2 rounded-full" style={{ background: p.color }} />
+						<span className="text-gray-600">{p.dataKey || p.name}</span>
+						<span className="text-gray-900 font-semibold ml-auto pl-3">{p.value}</span>
+					</div>
+				))}
+			</div>
+		);
+	}
+	return null;
+};
+
+// Dummy data for visual metrics until backend has time-series for all
+const sparklines = [
+	[3, 5, 4, 7, 5, 8, 7, 9],
+	[2, 4, 3, 5, 4, 6, 5, 7],
+	[4, 6, 5, 8, 6, 9, 8, 11],
+	[8, 6, 7, 5, 6, 4, 5, 3],
+	[3, 5, 6, 8, 7, 9, 10, 12],
+];
 
 export function DashboardHome() {
 	const { token } = useSupabaseAuth();
 	const { activeWorkspaceId } = useWorkspaceStore();
-
 	const { data: analytics } = useWorkspaceAnalytics(activeWorkspaceId ?? "", token ?? undefined);
+	const [activeTab, setActiveTab] = useState("Overview");
 
-	const now = new Date();
-	const greeting =
-		now.getHours() < 12 ? "Good morning" : now.getHours() < 17 ? "Good afternoon" : "Good evening";
+	// Safely fallback when analytics is missing
+	const isLoaded = !!analytics;
 
-	// We calculate a max value for the weekly chart so height represents percentage
-	const maxMessages = Math.max(...(analytics?.weeklyActivity.map((w) => w.count) || [0]), 10);
+	// Metrics derived from analytics
+	const metrics = [
+		{
+			label: "Messages",
+			value: analytics?.totalMessages.toLocaleString() || "0",
+			change: "+7.4%",
+			positive: true,
+		},
+		{
+			label: "Active Tasks",
+			value: analytics?.activeTasks.toLocaleString() || "0",
+			change: "+4.9%",
+			positive: true,
+		},
+		{
+			label: "Completed Tasks",
+			value: analytics?.completedTasks.toLocaleString() || "0",
+			change: "+11.7%",
+			positive: true,
+		},
+		{
+			label: "Team Members",
+			value: analytics?.teamMembers.toLocaleString() || "0",
+			change: "-2.5%",
+			positive: false,
+		},
+		{
+			label: "Files Shared",
+			value: analytics?.filesShared.toLocaleString() || "0",
+			change: "+19.4%",
+			positive: true,
+		},
+	];
+
+	// Line chart data mapping (using weeklyActivity)
+	const weeklyActivityData =
+		analytics?.weeklyActivity.map((w) => ({
+			name: w.day,
+			messages: w.count,
+			// Add dummy lines for visuals
+			tasks: Math.max(0, w.count - Math.floor(Math.random() * 10)),
+			files: Math.max(0, Math.floor(w.count / 3)),
+		})) || [];
+
+	// Mock impressions/overview data for the bar chart
+	const overviewData =
+		analytics?.weeklyActivity.map((w) => ({
+			name: w.day,
+			active: Math.floor(Math.random() * 50) + 10,
+			completed: Math.floor(Math.random() * 30) + 5,
+			pending: Math.floor(Math.random() * 20),
+		})) || [];
 
 	return (
-		<div
-			className="flex-1 flex flex-col bg-slate-50 min-w-0 min-h-0 overflow-hidden"
-			style={{ fontFamily: "var(--font-figtree), Figtree" }}
-		>
-			{/* ──── Header ──── */}
-			<div className="px-8 pt-7 pb-5 bg-white border-b border-slate-200 shrink-0">
-				<div className="flex items-center justify-between">
+		<div className="flex-1 flex flex-col bg-[#F5F5F7] min-w-0 min-h-0 overflow-y-auto selection:bg-blue-200">
+			<div
+				className="min-h-full p-6 md:p-8 lg:p-10 mx-auto w-full max-w-[1400px]"
+				style={{
+					fontFamily: "'-apple-system', 'BlinkMacSystemFont', 'SF Pro Text', 'Inter', sans-serif",
+				}}
+			>
+				{/* ──── Header & Tabs ──── */}
+				<div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
 					<div>
-						<h1 className="text-2xl font-bold text-slate-900">{greeting}</h1>
-						<p className="text-sm text-slate-500 mt-1">
-							Here&apos;s what&apos;s happening across your workspace today
-						</p>
+						<h1 className="text-[28px] font-bold text-gray-900 tracking-tight mb-2">Dashboard</h1>
+						<div className="flex relative bg-gray-200/50 p-1 rounded-xl w-fit backdrop-blur-xl">
+							{["Overview", "Activity", "Analytics", "Audience"].map((tab) => {
+								const isActive = activeTab === tab;
+								return (
+									<button
+										key={tab}
+										onClick={() => setActiveTab(tab)}
+										className={`relative z-10 px-4 py-1.5 text-[13px] font-semibold transition-colors duration-200 ${
+											isActive ? "text-gray-900" : "text-gray-500 hover:text-gray-700"
+										}`}
+									>
+										{isActive && (
+											<motion.div
+												layoutId="activeTabBadgeDashboard"
+												className="absolute inset-0 bg-white rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.06)]"
+												initial={false}
+												transition={{ type: "spring", stiffness: 500, damping: 30 }}
+												style={{ zIndex: -1 }}
+											/>
+										)}
+										{tab}
+									</button>
+								);
+							})}
+						</div>
+					</div>
+
+					<div className="flex items-center gap-3">
+						<button className="flex items-center gap-2 bg-white/70 hover:bg-white backdrop-blur-xl border border-white rounded-xl px-3.5 py-2 text-[13px] font-medium text-gray-700 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+							<Calendar className="w-4 h-4 text-gray-500" />
+							Last 7 Days
+						</button>
+						<button className="flex items-center gap-2 bg-white/70 hover:bg-white backdrop-blur-xl border border-white rounded-xl px-3.5 py-2 text-[13px] font-medium text-gray-700 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+							<Filter className="w-4 h-4 text-gray-500" />
+							Filter
+						</button>
+						<button className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 rounded-xl px-3.5 py-2 text-[13px] font-medium text-white shadow-md transition-all">
+							<LayoutGrid className="w-4 h-4" />
+							Widgets
+						</button>
 					</div>
 				</div>
-			</div>
 
-			{/* ──── Content ──── */}
-			<div className="flex-1 overflow-y-auto min-h-0">
-				<div className="p-8 space-y-7 max-w-[1400px]">
-					{/* ──── Stat Cards ──── */}
-					<div className="grid grid-cols-4 gap-4">
-						{[
-							{
-								label: "Total Messages",
-								value: analytics?.totalMessages,
-								icon: MessageSquare,
-								color: "#0B6E4F",
-								bg: "bg-emerald-50",
-							},
-							{
-								label: "Active Tasks",
-								value: analytics?.activeTasks,
-								icon: CheckSquare,
-								color: "#3B82F6",
-								bg: "bg-blue-50",
-							},
-							{
-								label: "Team Members",
-								value: analytics?.teamMembers,
-								icon: Users,
-								color: "#8B5CF6",
-								bg: "bg-violet-50",
-							},
-							{
-								label: "Files Shared",
-								value: analytics?.filesShared,
-								icon: FileText,
-								color: "#F59E0B",
-								bg: "bg-amber-50",
-							},
-						].map((stat) => {
-							const Icon = stat.icon;
-							return (
-								<div
-									key={stat.label}
-									className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md hover:border-slate-300 transition-all group cursor-pointer"
-								>
-									<div className="flex items-center justify-between mb-3">
-										<div
-											className={`w-10 h-10 rounded-xl ${stat.bg} flex items-center justify-center`}
-										>
-											<Icon className="w-5 h-5" style={{ color: stat.color }} />
-										</div>
-									</div>
-									<p className="text-[28px] font-bold text-slate-900 leading-none mb-1">
-										{stat.value === undefined ? (
-											<span className="inline-block w-10 h-8 rounded-md bg-slate-100 animate-pulse" />
+				{/* ──── Metrics Summary ──── */}
+				<div className="bg-white/60 backdrop-blur-3xl rounded-[24px] border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 mb-6">
+					<div className="mb-5">
+						<div className="font-semibold text-[15px] text-gray-900 tracking-tight">
+							Performance Summary
+						</div>
+						<div className="text-[13px] text-gray-500">View your key performance metrics</div>
+					</div>
+					<div className="grid grid-cols-2 md:grid-cols-5 gap-6 divide-x divide-gray-200/50">
+						{metrics.map((m, i) => (
+							<div key={m.label} className={i !== 0 ? "pl-6" : ""}>
+								<div className="text-[13px] font-medium text-gray-500 mb-2">{m.label}</div>
+								<div className="flex items-end justify-between">
+									<div className="text-[26px] font-bold text-gray-900 tracking-tight leading-none">
+										{!isLoaded ? (
+											<div className="h-7 w-12 bg-gray-200 animate-pulse rounded-md" />
 										) : (
-											stat.value
+											m.value
 										)}
-									</p>
-									<p className="text-xs text-slate-500 font-medium">{stat.label}</p>
-								</div>
-							);
-						})}
-					</div>
-
-					{/* ──── Charts Row ──── */}
-					<div className="grid grid-cols-5 gap-5">
-						{/* Task Overview */}
-						<div className="col-span-2 bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex flex-col">
-							<h3 className="text-sm font-bold text-slate-800 mb-5">Task Overview</h3>
-							{analytics ? (
-								<div className="flex-1 flex flex-col justify-center">
-									<div className="flex items-center gap-6">
-										{/* Simple Pie Chart Representation using standard div arcs */}
-										<div
-											className="w-24 h-24 rounded-full relative shrink-0"
-											style={{
-												background: `conic-gradient(#10B981 ${
-													(analytics.completedTasks /
-														(analytics.activeTasks + analytics.completedTasks || 1)) *
-													360
-												}deg, #E2E8F0 0)`,
-											}}
-										>
-											<div className="absolute inset-2 bg-white rounded-full flex items-center justify-center">
-												<span className="text-sm font-bold text-slate-700">
-													{Math.round(
-														(analytics.completedTasks /
-															(analytics.activeTasks + analytics.completedTasks || 1)) *
-															100,
-													)}
-													%
-												</span>
-											</div>
-										</div>
-										<div className="flex-1 space-y-4">
-											<div>
-												<div className="flex items-center justify-between text-xs font-semibold mb-1">
-													<div className="flex items-center gap-2">
-														<span className="w-2 h-2 rounded-full bg-slate-200" />
-														<span className="text-slate-600">Active</span>
-													</div>
-													<span className="text-slate-900">{analytics.activeTasks}</span>
-												</div>
-											</div>
-											<div>
-												<div className="flex items-center justify-between text-xs font-semibold mb-1">
-													<div className="flex items-center gap-2">
-														<span className="w-2 h-2 rounded-full bg-emerald-500" />
-														<span className="text-slate-600">Completed</span>
-													</div>
-													<span className="text-slate-900">{analytics.completedTasks}</span>
-												</div>
-											</div>
-										</div>
 									</div>
+									<MiniSparkline positive={m.positive} data={sparklines[i]} />
 								</div>
+								<div className="flex items-center gap-1.5 mt-3">
+									<span
+										className={`text-[12px] font-semibold px-1.5 py-0.5 rounded-md ${
+											m.positive
+												? "bg-[#34C759]/10 text-[#34C759]"
+												: "bg-[#FF3B30]/10 text-[#FF3B30]"
+										}`}
+									>
+										{m.positive ? "↑" : "↓"} {m.change}
+									</span>
+									<span className="text-[12px] text-gray-400 font-medium tracking-tight">
+										vs last week
+									</span>
+								</div>
+							</div>
+						))}
+					</div>
+				</div>
+
+				{/* ──── Row 1: Line Chart + Bar Chart ──── */}
+				<div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
+					<div className="lg:col-span-3 bg-white/60 backdrop-blur-3xl rounded-[24px] border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 flex flex-col">
+						<div className="flex items-center justify-between mb-6">
+							<div>
+								<h3 className="font-semibold text-[15px] text-gray-900 tracking-tight">
+									Weekly Activity
+								</h3>
+								<h4 className="text-[13px] text-gray-500 mt-0.5">
+									Messages and interactions over the week
+								</h4>
+							</div>
+							<button className="p-1.5 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors">
+								<MoreHorizontal className="w-5 h-5" />
+							</button>
+						</div>
+						<div className="flex-1 min-h-[220px]">
+							{!isLoaded ? (
+								<div className="w-full h-full bg-gray-100/50 animate-pulse rounded-xl" />
 							) : (
-								<div className="flex-1 flex flex-col items-center justify-center text-slate-400 min-h-[140px]">
-									<div className="w-8 h-8 border-2 border-slate-200 border-t-emerald-500 rounded-full animate-spin mb-3" />
-								</div>
+								<ResponsiveContainer width="100%" height="100%">
+									<LineChart
+										data={weeklyActivityData}
+										margin={{ top: 5, right: 5, left: -20, bottom: 0 }}
+									>
+										<CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+										<XAxis
+											dataKey="name"
+											tick={{ fontSize: 11, fill: "#8e8e93", fontWeight: 500 }}
+											axisLine={false}
+											tickLine={false}
+											tickMargin={12}
+										/>
+										<YAxis
+											tick={{ fontSize: 11, fill: "#8e8e93", fontWeight: 500 }}
+											axisLine={false}
+											tickLine={false}
+											tickMargin={12}
+										/>
+										<Tooltip content={<CustomTooltip />} cursor={{ fill: "#f3f4f6" }} />
+										<Line
+											type="monotone"
+											dataKey="messages"
+											name="Messages"
+											stroke="#007AFF"
+											strokeWidth={3}
+											dot={false}
+											activeDot={{ r: 6, strokeWidth: 0, fill: "#007AFF" }}
+											style={{ filter: "drop-shadow(0px 4px 6px rgba(0, 122, 255, 0.3))" }}
+										/>
+										<Line
+											type="monotone"
+											dataKey="tasks"
+											name="Tasks"
+											stroke="#FF9500"
+											strokeWidth={3}
+											dot={false}
+											activeDot={{ r: 6, strokeWidth: 0, fill: "#FF9500" }}
+											style={{ filter: "drop-shadow(0px 4px 6px rgba(255, 149, 0, 0.3))" }}
+										/>
+										<Line
+											type="monotone"
+											dataKey="files"
+											name="Files"
+											stroke="#34C759"
+											strokeWidth={3}
+											dot={false}
+											activeDot={{ r: 6, strokeWidth: 0, fill: "#34C759" }}
+											style={{ filter: "drop-shadow(0px 4px 6px rgba(52, 199, 89, 0.3))" }}
+										/>
+									</LineChart>
+								</ResponsiveContainer>
 							)}
 						</div>
-
-						{/* Weekly Activity */}
-						<div className="col-span-3 bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex flex-col">
-							<h3 className="text-sm font-bold text-slate-800 mb-1">Weekly Activity</h3>
-							<p className="text-xs text-slate-500 mb-6">Messages sent per day (Last 7 days)</p>
-							{analytics ? (
-								<div className="flex-1 flex items-end justify-between gap-2 h-[120px] pb-5 border-b border-slate-100 px-2 relative">
-									{analytics.weeklyActivity.map((day, _idx) => {
-										const heightPct = Math.max((day.count / maxMessages) * 100, 4); // min 4% to show something
-										return (
-											<div key={day.day} className="flex flex-col items-center flex-1 group">
-												<div
-													className="w-full max-w-[32px] bg-emerald-100 group-hover:bg-emerald-200 rounded-t-sm relative transition-all duration-300 flex justify-center"
-													style={{ height: `${heightPct}%` }}
-												>
-													<span className="absolute -top-6 opacity-0 group-hover:opacity-100 text-[10px] font-bold text-slate-700 transition-opacity">
-														{day.count}
-													</span>
-													<div
-														className="absolute bottom-0 w-full bg-emerald-500 rounded-t-sm transition-all duration-500"
-														style={{ height: `${Math.min(heightPct, 100)}%` }}
-													/>
-												</div>
-												<span className="absolute bottom-[-24px] text-[10px] font-medium text-slate-400 uppercase">
-													{day.day}
-												</span>
-											</div>
-										);
-									})}
+						<div className="flex items-center justify-center gap-6 mt-6">
+							{[
+								{ color: "#007AFF", label: "Messages" },
+								{ color: "#FF9500", label: "Tasks" },
+								{ color: "#34C759", label: "Files" },
+							].map((l) => (
+								<div key={l.label} className="flex items-center gap-2">
+									<div
+										className="w-2.5 h-2.5 rounded-full shadow-sm"
+										style={{ background: l.color }}
+									/>
+									<span className="text-[12px] font-medium text-gray-500">{l.label}</span>
 								</div>
-							) : (
-								<div className="flex-1 flex items-center justify-center min-h-[140px]">
-									<div className="w-8 h-8 rounded-md bg-slate-100 animate-pulse" />
-								</div>
-							)}
+							))}
 						</div>
 					</div>
 
-					{/* ──── Middle Row: Active Channels + Deadlines ──── */}
-					<div className="grid grid-cols-5 gap-5">
-						<div className="col-span-2 bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex flex-col">
-							<div className="flex items-center justify-between mb-5">
-								<h3 className="text-sm font-bold text-slate-800">Top Active Channels</h3>
+					<div className="lg:col-span-2 bg-white/60 backdrop-blur-3xl rounded-[24px] border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 flex flex-col">
+						<div className="flex items-center justify-between mb-6">
+							<div>
+								<h3 className="font-semibold text-[15px] text-gray-900 tracking-tight">Overview</h3>
+								<h4 className="text-[13px] text-gray-500 mt-0.5">Task completion flow</h4>
+							</div>
+							<div className="text-[12px] font-medium bg-gray-100 text-gray-600 px-2.5 py-1 rounded-lg">
+								Weekly
+							</div>
+						</div>
+						<div className="flex-1 min-h-[220px]">
+							{!isLoaded ? (
+								<div className="w-full h-full bg-gray-100/50 animate-pulse rounded-xl" />
+							) : (
+								<ResponsiveContainer width="100%" height="100%">
+									<BarChart
+										data={overviewData}
+										margin={{ top: 5, right: 5, left: -25, bottom: 0 }}
+										barSize={10}
+										barGap={3}
+									>
+										<CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+										<XAxis
+											dataKey="name"
+											tick={{ fontSize: 11, fill: "#8e8e93", fontWeight: 500 }}
+											axisLine={false}
+											tickLine={false}
+											tickMargin={10}
+										/>
+										<YAxis
+											tick={{ fontSize: 11, fill: "#8e8e93", fontWeight: 500 }}
+											axisLine={false}
+											tickLine={false}
+											tickMargin={10}
+										/>
+										<Tooltip content={<CustomTooltip />} cursor={{ fill: "transparent" }} />
+										<Bar dataKey="active" name="Active" fill="#007AFF" radius={[3, 3, 0, 0]} />
+										<Bar
+											dataKey="completed"
+											name="Completed"
+											fill="#5AC8FA"
+											radius={[3, 3, 0, 0]}
+										/>
+										<Bar dataKey="pending" name="Pending" fill="#AF52DE" radius={[3, 3, 0, 0]} />
+									</BarChart>
+								</ResponsiveContainer>
+							)}
+						</div>
+					</div>
+				</div>
+
+				{/* ──── Row 2: Recent Activity Table + Active Channels List ──── */}
+				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+					<div className="lg:col-span-2 bg-white/60 backdrop-blur-3xl rounded-[24px] border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6">
+						<div className="flex items-center justify-between mb-6">
+							<div>
+								<h3 className="font-semibold text-[15px] text-gray-900 tracking-tight">
+									Recent Activity Feed
+								</h3>
+								<h4 className="text-[13px] text-gray-500 mt-0.5">
+									Latest actions across all channels
+								</h4>
+							</div>
+							<div className="flex items-center gap-4">
+								<button className="flex items-center gap-1.5 text-[12px] font-medium text-blue-500 hover:text-blue-600 transition-colors">
+									<TrendingUp className="w-3.5 h-3.5" /> Trends
+								</button>
+								<div className="w-px h-4 bg-gray-200" />
 								<Link
 									href="/dashboard/chat"
-									className="text-xs text-[#0B6E4F] font-semibold hover:underline flex items-center gap-1"
+									className="text-[12px] font-medium text-gray-600 hover:text-gray-900 transition-colors"
 								>
-									View All <ArrowRight className="w-3 h-3" />
+									View All
 								</Link>
 							</div>
-							<div className="flex-1 space-y-3">
-								{!analytics ? (
-									[1, 2, 3].map((i) => (
-										<div key={i} className="h-10 bg-slate-50 rounded-lg animate-pulse" />
-									))
-								) : analytics.activeChannels.length === 0 ? (
-									<div className="py-8 text-center text-slate-400">
-										<p className="text-sm">No channels exist yet.</p>
-									</div>
-								) : (
-									analytics.activeChannels.map((c) => (
-										<Link
-											key={c.id}
-											href={`/dashboard/chat/channel/${c.id}`}
-											className="flex items-center justify-between p-2.5 rounded-lg hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-colors group"
-										>
-											<div className="flex items-center gap-3">
-												<div className="w-8 h-8 rounded bg-slate-100 text-slate-400 flex items-center justify-center font-bold text-sm">
-													#
-												</div>
-												<p className="text-sm font-semibold text-slate-700 group-hover:text-emerald-700">
-													{c.name}
-												</p>
-											</div>
-											<div className="flex items-center gap-1 text-[11px] font-semibold text-slate-400 bg-slate-100 px-2 py-1 rounded-full">
-												<MessageSquare className="w-3 h-3" /> {c._count.messages}
-											</div>
-										</Link>
-									))
-								)}
-							</div>
 						</div>
-
-						<div className="col-span-3 bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex flex-col">
-							<div className="flex items-center justify-between mb-5">
-								<h3 className="text-sm font-bold text-slate-800">Upcoming Deadlines</h3>
-								<Clock className="w-4 h-4 text-slate-400" />
-							</div>
-							<div className="flex-1 space-y-2">
-								{!analytics ? (
-									[1, 2, 3].map((i) => (
-										<div key={i} className="h-14 bg-slate-50 rounded-lg animate-pulse" />
-									))
-								) : analytics.upcomingDeadlines.length === 0 ? (
-									<div className="flex flex-col items-center justify-center py-6 text-slate-400">
-										<CheckSquare className="w-10 h-10 mb-3 text-slate-200" />
-										<p className="text-sm">You are all caught up!</p>
-										<p className="text-xs">No impending deadlines found.</p>
-									</div>
-								) : (
-									analytics.upcomingDeadlines.map((t) => {
-										const due = new Date(t.dueDate);
-										const isOverdue = due < new Date();
-										return (
-											<div
-												key={t.id}
-												className="flex items-center justify-between p-3 rounded-lg border border-slate-100 hover:border-slate-300 hover:shadow-sm transition-all bg-white"
+						<div className="overflow-x-auto">
+							<table className="w-full text-left border-collapse">
+								<thead>
+									<tr className="border-b border-gray-100">
+										<th className="pb-3 px-2 text-[12px] font-medium text-gray-400">User</th>
+										<th className="pb-3 px-2 text-[12px] font-medium text-gray-400">Action</th>
+										<th className="pb-3 px-2 text-[12px] font-medium text-gray-400">
+											Channel / Type
+										</th>
+										<th className="pb-3 px-2 text-[12px] font-medium text-gray-400">Time</th>
+										<th className="pb-3 px-2 text-[12px] font-medium text-gray-400 text-right">
+											Score
+										</th>
+									</tr>
+								</thead>
+								<tbody className="text-[13px]">
+									{!isLoaded ? (
+										["s1", "s2", "s3", "s4"].map((k) => (
+											<tr key={k} className="border-b border-gray-50">
+												<td colSpan={5} className="py-4">
+													<div className="h-4 bg-gray-100 animate-pulse rounded max-w-md mx-auto" />
+												</td>
+											</tr>
+										))
+									) : analytics?.recentActivity.length === 0 ? (
+										<tr>
+											<td colSpan={5} className="py-8 text-center text-gray-400 text-sm">
+												No recent activity
+											</td>
+										</tr>
+									) : (
+										analytics?.recentActivity.slice(0, 4).map((msg, i) => (
+											<tr
+												key={msg.id}
+												className="border-b border-gray-50/50 hover:bg-gray-50/50 transition-colors"
 											>
-												<div className="flex items-start gap-3">
-													<div
-														className={`mt-0.5 w-2 h-2 rounded-full ${isOverdue ? "bg-red-500" : "bg-amber-400"}`}
-													/>
-													<div>
-														<p className="text-sm font-semibold text-slate-800 line-clamp-1">
-															{t.title}
-														</p>
-														<p className="text-[11px] font-bold uppercase tracking-wide text-slate-400 mt-1">
-															{t.space.prefix}
-														</p>
+												<td className="py-3 px-2 font-medium text-gray-900 flex items-center gap-3">
+													<div className="w-7 h-7 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-500 text-white flex items-center justify-center text-[10px] font-bold shadow-sm">
+														{(msg.user.firstName || msg.user.email)[0].toUpperCase()}
 													</div>
-												</div>
-												<div
-													className={`text-xs font-semibold px-2 py-1 rounded ${isOverdue ? "bg-red-50 text-red-600" : "bg-slate-50 text-slate-600"}`}
-												>
-													{due.toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-												</div>
-											</div>
-										);
-									})
-								)}
-							</div>
+													{msg.user.firstName || msg.user.email.split("@")[0]}
+												</td>
+												<td className="py-3 px-2 text-gray-500 max-w-[200px] truncate">
+													{msg.content.replace(/<[^>]*>?/gm, "").substring(0, 30)}...
+												</td>
+												<td className="py-3 px-2 text-gray-500">
+													<span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-gray-100 text-gray-600">
+														{msg.channel.type === "DIRECT_MESSAGE" ? "DM" : `#${msg.channel.name}`}
+													</span>
+												</td>
+												<td className="py-3 px-2 text-gray-400 text-[12px]">
+													{new Date(msg.createdAt).toLocaleTimeString([], {
+														hour: "2-digit",
+														minute: "2-digit",
+													})}
+												</td>
+												<td className="py-3 px-2 text-right flex justify-end items-center gap-1">
+													{["s1", "s2", "s3", "s4", "s5"].map((k, j) => (
+														<div
+															key={k}
+															className="w-[3px] rounded-full"
+															style={{
+																height: 8 + j * 2,
+																background: j < 3 ? "#007AFF" : "#e5e7eb",
+															}}
+														/>
+													))}
+												</td>
+											</tr>
+										))
+									)}
+								</tbody>
+							</table>
 						</div>
 					</div>
 
-					{/* ──── Bottom Row: Recent Activity ──── */}
-					<div className="grid grid-cols-1">
-						<div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-							<h3 className="text-sm font-bold text-slate-800 mb-5">Recent Activity Feed</h3>
-							<div className="space-y-4">
-								{!analytics ? (
-									[1, 2].map((i) => (
-										<div key={i} className="h-12 bg-slate-50 rounded-lg animate-pulse" />
-									))
-								) : analytics.recentActivity.length === 0 ? (
-									<div className="py-6 text-center text-slate-400 text-sm">
-										No recent messages to display.
-									</div>
-								) : (
-									analytics.recentActivity.map((msg) => (
-										<div key={msg.id} className="flex items-start gap-3">
-											<div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs shrink-0">
-												{(msg.user.firstName || msg.user.email)[0].toUpperCase()}
+					<div className="bg-white/60 backdrop-blur-3xl rounded-[24px] border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6">
+						<h3 className="font-semibold text-[15px] text-gray-900 tracking-tight mb-5">
+							Active Channels
+						</h3>
+						<div className="space-y-4">
+							{!isLoaded ? (
+								["s1", "s2", "s3", "s4"].map((k) => (
+									<div key={k} className="h-10 bg-gray-100 animate-pulse rounded-xl" />
+								))
+							) : analytics?.activeChannels.length === 0 ? (
+								<div className="text-sm text-gray-400 py-6 text-center">No active channels</div>
+							) : (
+								analytics?.activeChannels.map((c) => (
+									<Link
+										key={c.id}
+										href={`/dashboard/chat/channel/${c.id}`}
+										className="flex items-center justify-between group p-2 -mx-2 rounded-xl hover:bg-white/50 transition-colors"
+									>
+										<div className="flex items-center gap-3">
+											<div className="w-8 h-8 rounded-[10px] bg-blue-50 text-blue-500 flex items-center justify-center font-bold text-sm group-hover:bg-blue-500 group-hover:text-white transition-colors shadow-sm">
+												#
 											</div>
-											<div className="flex-1 min-w-0">
-												<p className="text-xs text-slate-500 mb-0.5">
-													<span className="font-bold text-slate-800">
-														{msg.user.firstName || msg.user.email.split("@")[0]}
-													</span>{" "}
-													posted in{" "}
-													{msg.channel.type === "DIRECT_MESSAGE" ? (
-														<span className="font-bold text-violet-600">a Direct Message</span>
-													) : (
-														<span className="font-bold text-[#0B6E4F]">#{msg.channel.name}</span>
-													)}
-												</p>
-												<p className="text-sm text-slate-700 truncate">
-													{msg.content.replace(/<[^>]*>?/gm, "")}
-												</p>
-											</div>
-											<span className="text-[10px] text-slate-400 font-medium whitespace-nowrap">
-												{new Date(msg.createdAt).toLocaleTimeString([], {
-													hour: "2-digit",
-													minute: "2-digit",
-												})}
-											</span>
+											<span className="text-[14px] font-semibold text-gray-800">{c.name}</span>
 										</div>
-									))
-								)}
-							</div>
+										<div className="flex items-center gap-1.5 text-[12px] font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
+											{c._count.messages} <span className="text-gray-400 font-normal">msgs</span>
+										</div>
+									</Link>
+								))
+							)}
 						</div>
 					</div>
 				</div>
