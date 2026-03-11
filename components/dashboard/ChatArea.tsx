@@ -594,11 +594,11 @@ export function ChatArea({
 
 	return (
 		<div
-			className="flex-1 flex flex-col bg-white min-w-0 h-full overflow-hidden"
+			className="flex-1 flex flex-col bg-transparent min-w-0 h-full overflow-hidden"
 			style={{ fontFamily: "var(--font-figtree), Figtree" }}
 		>
 			{/* Channel Header */}
-			<div className="h-14 px-4 flex items-center justify-between border-b border-[#e5e5ea] bg-white/90 backdrop-blur-md shrink-0 z-10 sticky top-0">
+			<div className="h-14 px-4 flex items-center justify-between border-b border-[#e5e5ea]/50 bg-transparent shrink-0 z-10 sticky top-0">
 				<div className="flex items-center gap-2">
 					<span className="text-[#8e8e93] text-[15px]">To:</span>
 					<span className="text-[#000] font-medium text-[15px]">{displayName}</span>
@@ -1066,7 +1066,7 @@ export function ChatArea({
 			</ScrollArea>
 
 			{/* Message Input */}
-			<div className="pt-2 pb-6 px-4 bg-white/95 backdrop-blur-md shrink-0 border-t border-[#e5e5ea] pb-safe z-10 w-full">
+			<div className="pt-2 pb-4 md:pb-6 px-4 shrink-0 pb-safe z-10 w-full bg-transparent">
 				<div className="max-w-4xl mx-auto flex flex-col gap-2">
 					{/* Reply Preview Banner */}
 					{replyTo && (
