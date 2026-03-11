@@ -97,7 +97,7 @@ export function useMessages(channelId: string | null) {
 								if (res.data) {
 									const parentUserRes = await supabase
 										.from("users")
-										.select("firstName, lastName, username, email")
+										.select("firstName, lastName, username, email, imageUrl")
 										.eq("supabaseId", res.data.user_id)
 										.single();
 									parentData = {

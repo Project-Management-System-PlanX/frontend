@@ -691,7 +691,10 @@ export function ChatArea({
 											{!isOwnMessage && (
 												<div className="flex flex-col justify-end pb-1 mr-2 shrink-0">
 													<Avatar className="w-8 h-8 select-none">
-														<AvatarImage src={message.users?.imageUrl || undefined} />
+														<AvatarImage
+															src={message.users?.imageUrl || undefined}
+															referrerPolicy="no-referrer"
+														/>
 														<AvatarFallback className="bg-[#e5e7eb] text-[#8e8e93] text-xs font-medium">
 															{getInitials(message)}
 														</AvatarFallback>

@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { type FileMessage, useFilesByWorkspace, useDeleteFile } from "@/hooks/api/use-files";
-import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
-import { useWorkspaceStore } from "@/stores/workspace-store";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
+import { useMemo, useState } from "react";
+import { type FileMessage, useDeleteFile, useFilesByWorkspace } from "@/hooks/api/use-files";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
+import { useWorkspaceStore } from "@/stores/workspace-store";
 
 function formatFileSize(bytes: number): string {
 	if (!bytes) return "0 B";
@@ -59,15 +59,17 @@ export function FilesArea() {
 
 	const { token, user } = useSupabaseAuth();
 	const { activeWorkspaceId } = useWorkspaceStore();
-	const { data: files = [], isLoading, error } = useFilesByWorkspace(activeWorkspaceId || "", token);
+	const {
+		data: files = [],
+		isLoading,
+		error,
+	} = useFilesByWorkspace(activeWorkspaceId || "", token);
 	const deleteFileMutation = useDeleteFile();
 
 	const filteredFiles = useMemo(() => {
 		if (!files) return [];
 		if (!searchQuery.trim()) return files;
-		return files.filter((file) =>
-			file.fileName.toLowerCase().includes(searchQuery.toLowerCase())
-		);
+		return files.filter((file) => file.fileName.toLowerCase().includes(searchQuery.toLowerCase()));
 	}, [files, searchQuery]);
 
 	const toggleSelection = (fileId: string) => {
@@ -94,16 +96,18 @@ export function FilesArea() {
 
 	const handleDeleteSelected = async () => {
 		if (selectedFiles.size === 0) return;
-		
-		const confirmed = window.confirm(`Are you sure you want to delete ${selectedFiles.size} file(s)?`);
+
+		const confirmed = window.confirm(
+			`Are you sure you want to delete ${selectedFiles.size} file(s)?`,
+		);
 		if (!confirmed) return;
 
 		try {
 			// Delete all selected files in parallel
-			const deletePromises = Array.from(selectedFiles).map(fileId => 
-				deleteFileMutation.mutateAsync({ messageId: fileId, token })
+			const deletePromises = Array.from(selectedFiles).map((fileId) =>
+				deleteFileMutation.mutateAsync({ messageId: fileId, token }),
 			);
-			
+
 			await Promise.all(deletePromises);
 			setSelectedFiles(new Set()); // clear selection
 		} catch (error) {
@@ -153,7 +157,7 @@ export function FilesArea() {
 					<span className="text-[#1a1a1a] font-medium">Documents</span>
 				</div>
 				<div className="flex items-center gap-2">
-						<div className="flex items-center gap-[6px] bg-[#efefef] border border-[#e2e2e2] rounded-[8px] px-[4px] py-[3px] text-[12.5px] text-[#999] min-w-[170px] tracking-[-0.01em] transition-colors focus-within:bg-white focus-within:border-[#ccc]">
+					<div className="flex items-center gap-[6px] bg-[#efefef] border border-[#e2e2e2] rounded-[8px] px-[4px] py-[3px] text-[12.5px] text-[#999] min-w-[170px] tracking-[-0.01em] transition-colors focus-within:bg-white focus-within:border-[#ccc]">
 						<div className="flex items-center justify-center pl-[7px]">
 							<svg width="13" height="13" viewBox="0 0 13 13" fill="none">
 								<circle cx="5.5" cy="5.5" r="4" stroke="#bbb" strokeWidth="1.4" />
@@ -179,7 +183,7 @@ export function FilesArea() {
 							⌘F
 						</kbd>
 					</div>
-					</div>
+				</div>
 			</div>
 
 			{/* CONTENT */}
@@ -237,219 +241,254 @@ export function FilesArea() {
 								}`}
 							>
 								<svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-									<rect x="1" y="1" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2" />
-									<rect x="7" y="1" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2" />
-									<rect x="1" y="7" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2" />
-									<rect x="7" y="7" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2" />
+									<rect
+										x="1"
+										y="1"
+										width="4"
+										height="4"
+										rx="1"
+										stroke="currentColor"
+										strokeWidth="1.2"
+									/>
+									<rect
+										x="7"
+										y="1"
+										width="4"
+										height="4"
+										rx="1"
+										stroke="currentColor"
+										strokeWidth="1.2"
+									/>
+									<rect
+										x="1"
+										y="7"
+										width="4"
+										height="4"
+										rx="1"
+										stroke="currentColor"
+										strokeWidth="1.2"
+									/>
+									<rect
+										x="7"
+										y="7"
+										width="4"
+										height="4"
+										rx="1"
+										stroke="currentColor"
+										strokeWidth="1.2"
+									/>
 								</svg>
 								Grid
 							</button>
 						</div>
 					</div>
-
 				</div>
-
-
 
 				{/* CONTENT AREA (LIST/GRID) */}
 				{viewMode === "list" ? (
-				<table className="w-full border-collapse">
-					<thead>
-						<tr>
-							<th className="text-left text-[10.5px] font-semibold text-[#b0b0b0] tracking-[0.04em] uppercase py-[6px] px-[10px] border-b border-[#ebebeb] bg-[#f7f7f7] whitespace-nowrap pl-[12px] w-[38px]">
-								<button
-									onClick={toggleAll}
-									className={`w-[15px] h-[15px] border-[1.5px] rounded-[4px] flex items-center justify-center transition-colors cursor-pointer ${
-										selectedFiles.size > 0 && selectedFiles.size === filteredFiles.length && filteredFiles.length > 0
-											? "bg-[#333] border-[#333]"
-											: selectedFiles.size > 0
-												? "bg-[#333] border-[#333]"
-												: "bg-white border-[#d0d0d0]"
-									}`}
-								>
-									{selectedFiles.size > 0 && selectedFiles.size < filteredFiles.length && (
-										<svg width="9" height="2" viewBox="0 0 9 2">
-											<line
-												x1=".5"
-												y1="1"
-												x2="8.5"
-												y2="1"
-												stroke="white"
-												strokeWidth="1.8"
-												strokeLinecap="round"
-											/>
-										</svg>
-									)}
-									{selectedFiles.size > 0 && selectedFiles.size === filteredFiles.length && filteredFiles.length > 0 && (
-										<svg width="9" height="7" viewBox="0 0 9 7" fill="none">
-											<path
-												d="M1 3.5L3.5 6L8 1"
-												stroke="white"
-												strokeWidth="1.6"
-												strokeLinecap="round"
-												strokeLinejoin="round"
-											/>
-										</svg>
-									)}
-								</button>
-							</th>
-							<th className="text-left text-[10.5px] font-semibold text-[#b0b0b0] tracking-[0.04em] uppercase py-[6px] px-[10px] border-b border-[#ebebeb] bg-[#f7f7f7] whitespace-nowrap">
-								File name <span className="text-[9px] text-[#d5d5d5] ml-[2px]">↕</span>
-							</th>
-							<th className="text-left text-[10.5px] font-semibold text-[#b0b0b0] tracking-[0.04em] uppercase py-[6px] px-[10px] border-b border-[#ebebeb] bg-[#f7f7f7] whitespace-nowrap">
-								Date added <span className="text-[9px] text-[#d5d5d5] ml-[2px]">↕</span>
-							</th>
-							<th className="text-left text-[10.5px] font-semibold text-[#b0b0b0] tracking-[0.04em] uppercase py-[6px] px-[10px] border-b border-[#ebebeb] bg-[#f7f7f7] whitespace-nowrap">
-								Added by <span className="text-[9px] text-[#d5d5d5] ml-[2px]">↕</span>
-							</th>
-							<th className="text-left text-[10.5px] font-semibold text-[#b0b0b0] tracking-[0.04em] uppercase py-[6px] px-[10px] border-b border-[#ebebeb] bg-[#f7f7f7] whitespace-nowrap">
-								Size <span className="text-[9px] text-[#d5d5d5] ml-[2px]">↕</span>
-							</th>
-							<th className="text-left text-[10.5px] font-semibold text-[#b0b0b0] tracking-[0.04em] uppercase py-[6px] px-[10px] border-b border-[#ebebeb] bg-[#f7f7f7] whitespace-nowrap">
-								Last update <span className="text-[9px] text-[#d5d5d5] ml-[2px]">↕</span>
-							</th>
-							<th className="text-left text-[10.5px] font-semibold text-[#b0b0b0] tracking-[0.04em] uppercase py-[6px] px-[10px] border-b border-[#ebebeb] bg-[#f7f7f7] whitespace-nowrap">
-								Actions
-							</th>
-						</tr>
-					</thead>
-					<tbody>
-						{filteredFiles.length === 0 ? (
+					<table className="w-full border-collapse">
+						<thead>
 							<tr>
-								<td colSpan={7} className="text-center py-8 text-[13px] text-[#888]">
-									{searchQuery.trim() ? "No files match your search." : "No files uploaded yet."}
-								</td>
-							</tr>
-						) : (
-							filteredFiles.map((file, i) => {
-								const isSelected = selectedFiles.has(file.id);
-								const displayName = getUserDisplayName(file.user);
-								const initial = getUserInitial(file.user);
-
-								// Determine color styling based on file type roughly matching the screenshot colors
-								const isImg = file.fileType?.includes("image");
-								const isPdf = file.fileType?.includes("pdf");
-								const isDoc = file.fileType?.includes("document") || file.fileType?.includes("word");
-
-								let iconStyle = { bg: "rgba(59,130,246,.1)", stroke: "#3b82f6" }; // blue
-								if (isImg) iconStyle = { bg: "rgba(34,197,94,.1)", stroke: "#22c55e" }; // green
-								else if (isPdf) iconStyle = { bg: "rgba(245,158,11,.1)", stroke: "#f59e0b" }; // orange
-								else if (isDoc) iconStyle = { bg: "rgba(99,102,241,.1)", stroke: "#6366f1" }; // indigo
-
-								return (
-									<tr
-										key={file.id}
-										onClick={() => handleOpenFile(file.fileUrl)}
-										className={`border-b border-[#f2f2f2] cursor-pointer transition-colors group hover:bg-[#f5f5f5] ${
-											isSelected ? "bg-[#eff6ff]" : ""
+								<th className="text-left text-[10.5px] font-semibold text-[#b0b0b0] tracking-[0.04em] uppercase py-[6px] px-[10px] border-b border-[#ebebeb] bg-[#f7f7f7] whitespace-nowrap pl-[12px] w-[38px]">
+									<button
+										onClick={toggleAll}
+										className={`w-[15px] h-[15px] border-[1.5px] rounded-[4px] flex items-center justify-center transition-colors cursor-pointer ${
+											selectedFiles.size > 0 &&
+											selectedFiles.size === filteredFiles.length &&
+											filteredFiles.length > 0
+												? "bg-[#333] border-[#333]"
+												: selectedFiles.size > 0
+													? "bg-[#333] border-[#333]"
+													: "bg-white border-[#d0d0d0]"
 										}`}
 									>
-										<td
-											className="py-[9px] px-[10px] align-middle whitespace-nowrap pl-[12px]"
-											onClick={(e) => {
-												e.stopPropagation();
-												toggleSelection(file.id);
-											}}
-										>
-											<div
-												className={`w-[15px] h-[15px] shrink-0 border-[1.5px] rounded-[4px] flex items-center justify-center transition-colors ${
-													isSelected
-														? "bg-[#2563eb] border-[#2563eb]"
-														: "bg-white border-[#d0d0d0]"
-												}`}
-											>
-												{isSelected && (
-													<svg width="9" height="7" viewBox="0 0 9 7" fill="none">
-														<path
-															d="M1 3.5L3.5 6L8 1"
-															stroke="white"
-															strokeWidth="1.6"
-															strokeLinecap="round"
-															strokeLinejoin="round"
-														/>
-													</svg>
-												)}
-											</div>
-										</td>
-										<td className="py-[9px] px-[10px] align-middle whitespace-nowrap">
-											<div className="flex items-center gap-[9px]">
-												<svg width="16" height="20" viewBox="0 0 16 20" fill="none">
+										{selectedFiles.size > 0 && selectedFiles.size < filteredFiles.length && (
+											<svg width="9" height="2" viewBox="0 0 9 2">
+												<line
+													x1=".5"
+													y1="1"
+													x2="8.5"
+													y2="1"
+													stroke="white"
+													strokeWidth="1.8"
+													strokeLinecap="round"
+												/>
+											</svg>
+										)}
+										{selectedFiles.size > 0 &&
+											selectedFiles.size === filteredFiles.length &&
+											filteredFiles.length > 0 && (
+												<svg width="9" height="7" viewBox="0 0 9 7" fill="none">
 													<path
-														d="M2 2h7.5L14 6.5V18q0 1-1 1H3q-1 0-1-1V2z"
-														fill={iconStyle.bg}
-														stroke={iconStyle.stroke}
-														strokeWidth="1.2"
-													/>
-													<path
-														d="M9.5 2v4.5H14"
-														stroke={iconStyle.stroke}
-														strokeWidth="1.2"
-														fill="none"
+														d="M1 3.5L3.5 6L8 1"
+														stroke="white"
+														strokeWidth="1.6"
+														strokeLinecap="round"
+														strokeLinejoin="round"
 													/>
 												</svg>
-												<span className="text-[12.5px] font-medium text-[#111] tracking-[-0.01em]">
-													{file.fileName}
-												</span>
-											</div>
-										</td>
-										<td className="py-[9px] px-[10px] align-middle whitespace-nowrap text-[12px] text-[#888]">
-											{formatDate(file.createdAt)}
-										</td>
-										<td className="py-[9px] px-[10px] align-middle whitespace-nowrap">
-											<div className="flex items-center text-[12.5px] text-[#555] tracking-[-0.01em]">
-												{file.user.imageUrl ? (
-													<Image
-														src={file.user.imageUrl}
-														alt={displayName}
-														width={22}
-														height={22}
-														className="w-[22px] h-[22px] rounded-full object-cover shrink-0 mr-[7px]"
-													/>
-												) : (
-													<div
-														className="w-[22px] h-[22px] rounded-full inline-flex items-center justify-center text-[8.5px] font-bold text-white shrink-0 mr-[7px]"
-														style={{ background: getRandomGradient(initial) }}
-													>
-														{initial}
-													</div>
-												)}
-												{displayName}
-											</div>
-										</td>
-										<td className="py-[9px] px-[10px] align-middle whitespace-nowrap text-[12px] text-[#888]">
-											{formatFileSize(file.fileSize || 0)}
-										</td>
-										<td className="py-[9px] px-[10px] align-middle whitespace-nowrap text-[12px] text-[#888]">
-											{formatDate(file.updatedAt || file.createdAt)}
-										</td>
-										<td className="py-[9px] px-[10px] align-middle whitespace-nowrap">
-											<div
-												className={`flex items-center gap-[2px] transition-opacity ${
-													isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-												}`}
+											)}
+									</button>
+								</th>
+								<th className="text-left text-[10.5px] font-semibold text-[#b0b0b0] tracking-[0.04em] uppercase py-[6px] px-[10px] border-b border-[#ebebeb] bg-[#f7f7f7] whitespace-nowrap">
+									File name <span className="text-[9px] text-[#d5d5d5] ml-[2px]">↕</span>
+								</th>
+								<th className="text-left text-[10.5px] font-semibold text-[#b0b0b0] tracking-[0.04em] uppercase py-[6px] px-[10px] border-b border-[#ebebeb] bg-[#f7f7f7] whitespace-nowrap">
+									Date added <span className="text-[9px] text-[#d5d5d5] ml-[2px]">↕</span>
+								</th>
+								<th className="text-left text-[10.5px] font-semibold text-[#b0b0b0] tracking-[0.04em] uppercase py-[6px] px-[10px] border-b border-[#ebebeb] bg-[#f7f7f7] whitespace-nowrap">
+									Added by <span className="text-[9px] text-[#d5d5d5] ml-[2px]">↕</span>
+								</th>
+								<th className="text-left text-[10.5px] font-semibold text-[#b0b0b0] tracking-[0.04em] uppercase py-[6px] px-[10px] border-b border-[#ebebeb] bg-[#f7f7f7] whitespace-nowrap">
+									Size <span className="text-[9px] text-[#d5d5d5] ml-[2px]">↕</span>
+								</th>
+								<th className="text-left text-[10.5px] font-semibold text-[#b0b0b0] tracking-[0.04em] uppercase py-[6px] px-[10px] border-b border-[#ebebeb] bg-[#f7f7f7] whitespace-nowrap">
+									Last update <span className="text-[9px] text-[#d5d5d5] ml-[2px]">↕</span>
+								</th>
+								<th className="text-left text-[10.5px] font-semibold text-[#b0b0b0] tracking-[0.04em] uppercase py-[6px] px-[10px] border-b border-[#ebebeb] bg-[#f7f7f7] whitespace-nowrap">
+									Actions
+								</th>
+							</tr>
+						</thead>
+						<tbody>
+							{filteredFiles.length === 0 ? (
+								<tr>
+									<td colSpan={7} className="text-center py-8 text-[13px] text-[#888]">
+										{searchQuery.trim() ? "No files match your search." : "No files uploaded yet."}
+									</td>
+								</tr>
+							) : (
+								filteredFiles.map((file, _i) => {
+									const isSelected = selectedFiles.has(file.id);
+									const displayName = getUserDisplayName(file.user);
+									const initial = getUserInitial(file.user);
+
+									// Determine color styling based on file type roughly matching the screenshot colors
+									const isImg = file.fileType?.includes("image");
+									const isPdf = file.fileType?.includes("pdf");
+									const isDoc =
+										file.fileType?.includes("document") || file.fileType?.includes("word");
+
+									let iconStyle = { bg: "rgba(59,130,246,.1)", stroke: "#3b82f6" }; // blue
+									if (isImg)
+										iconStyle = { bg: "rgba(34,197,94,.1)", stroke: "#22c55e" }; // green
+									else if (isPdf)
+										iconStyle = { bg: "rgba(245,158,11,.1)", stroke: "#f59e0b" }; // orange
+									else if (isDoc) iconStyle = { bg: "rgba(99,102,241,.1)", stroke: "#6366f1" }; // indigo
+
+									return (
+										<tr
+											key={file.id}
+											onClick={() => handleOpenFile(file.fileUrl)}
+											className={`border-b border-[#f2f2f2] cursor-pointer transition-colors group hover:bg-[#f5f5f5] ${
+												isSelected ? "bg-[#eff6ff]" : ""
+											}`}
+										>
+											<td
+												className="py-[9px] px-[10px] align-middle whitespace-nowrap pl-[12px]"
+												onClick={(e) => {
+													e.stopPropagation();
+													toggleSelection(file.id);
+												}}
 											>
-												<button
-													className="w-[26px] h-[26px] rounded-[6px] border-none bg-transparent cursor-pointer flex items-center justify-center text-[#bbb] transition-colors hover:bg-[#ebebeb] hover:text-[#555]"
-													onClick={(e) => handleDownload(e, file.fileUrl, file.fileName)}
+												<div
+													className={`w-[15px] h-[15px] shrink-0 border-[1.5px] rounded-[4px] flex items-center justify-center transition-colors ${
+														isSelected
+															? "bg-[#2563eb] border-[#2563eb]"
+															: "bg-white border-[#d0d0d0]"
+													}`}
 												>
-													<svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+													{isSelected && (
+														<svg width="9" height="7" viewBox="0 0 9 7" fill="none">
+															<path
+																d="M1 3.5L3.5 6L8 1"
+																stroke="white"
+																strokeWidth="1.6"
+																strokeLinecap="round"
+																strokeLinejoin="round"
+															/>
+														</svg>
+													)}
+												</div>
+											</td>
+											<td className="py-[9px] px-[10px] align-middle whitespace-nowrap">
+												<div className="flex items-center gap-[9px]">
+													<svg width="16" height="20" viewBox="0 0 16 20" fill="none">
 														<path
-															d="M3 10h7M6.5 3v6M4 7l2.5 3 2.5-3"
-															stroke="currentColor"
-															strokeWidth="1.3"
-															strokeLinecap="round"
+															d="M2 2h7.5L14 6.5V18q0 1-1 1H3q-1 0-1-1V2z"
+															fill={iconStyle.bg}
+															stroke={iconStyle.stroke}
+															strokeWidth="1.2"
+														/>
+														<path
+															d="M9.5 2v4.5H14"
+															stroke={iconStyle.stroke}
+															strokeWidth="1.2"
+															fill="none"
 														/>
 													</svg>
-												</button>
-
-											</div>
-										</td>
-									</tr>
-								);
-							})
-						)}
-					</tbody>
-				</table>
+													<span className="text-[12.5px] font-medium text-[#111] tracking-[-0.01em]">
+														{file.fileName}
+													</span>
+												</div>
+											</td>
+											<td className="py-[9px] px-[10px] align-middle whitespace-nowrap text-[12px] text-[#888]">
+												{formatDate(file.createdAt)}
+											</td>
+											<td className="py-[9px] px-[10px] align-middle whitespace-nowrap">
+												<div className="flex items-center text-[12.5px] text-[#555] tracking-[-0.01em]">
+													{file.user.imageUrl ? (
+														<Image
+															src={file.user.imageUrl}
+															alt={displayName}
+															width={22}
+															height={22}
+															className="w-[22px] h-[22px] rounded-full object-cover shrink-0 mr-[7px]"
+														/>
+													) : (
+														<div
+															className="w-[22px] h-[22px] rounded-full inline-flex items-center justify-center text-[8.5px] font-bold text-white shrink-0 mr-[7px]"
+															style={{ background: getRandomGradient(initial) }}
+														>
+															{initial}
+														</div>
+													)}
+													{displayName}
+												</div>
+											</td>
+											<td className="py-[9px] px-[10px] align-middle whitespace-nowrap text-[12px] text-[#888]">
+												{formatFileSize(file.fileSize || 0)}
+											</td>
+											<td className="py-[9px] px-[10px] align-middle whitespace-nowrap text-[12px] text-[#888]">
+												{formatDate(file.updatedAt || file.createdAt)}
+											</td>
+											<td className="py-[9px] px-[10px] align-middle whitespace-nowrap">
+												<div
+													className={`flex items-center gap-[2px] transition-opacity ${
+														isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+													}`}
+												>
+													<button
+														className="w-[26px] h-[26px] rounded-[6px] border-none bg-transparent cursor-pointer flex items-center justify-center text-[#bbb] transition-colors hover:bg-[#ebebeb] hover:text-[#555]"
+														onClick={(e) => handleDownload(e, file.fileUrl, file.fileName)}
+													>
+														<svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+															<path
+																d="M3 10h7M6.5 3v6M4 7l2.5 3 2.5-3"
+																stroke="currentColor"
+																strokeWidth="1.3"
+																strokeLinecap="round"
+															/>
+														</svg>
+													</button>
+												</div>
+											</td>
+										</tr>
+									);
+								})
+							)}
+						</tbody>
+					</table>
 				) : (
 					<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-[12px]">
 						{filteredFiles.length === 0 ? (
@@ -457,13 +496,14 @@ export function FilesArea() {
 								{searchQuery.trim() ? "No files match your search." : "No files uploaded yet."}
 							</div>
 						) : (
-							filteredFiles.map((file, i) => {
+							filteredFiles.map((file, _i) => {
 								const isSelected = selectedFiles.has(file.id);
 								const displayName = getUserDisplayName(file.user);
-								
+
 								const isImg = file.fileType?.includes("image");
 								const isPdf = file.fileType?.includes("pdf");
-								const isDoc = file.fileType?.includes("document") || file.fileType?.includes("word");
+								const isDoc =
+									file.fileType?.includes("document") || file.fileType?.includes("word");
 
 								let iconStyle = { bg: "rgba(59,130,246,.1)", stroke: "#3b82f6" };
 								if (isImg) iconStyle = { bg: "rgba(34,197,94,.1)", stroke: "#22c55e" };
@@ -494,19 +534,32 @@ export function FilesArea() {
 											>
 												{isSelected && (
 													<svg width="9" height="7" viewBox="0 0 9 7" fill="none">
-														<path d="M1 3.5L3.5 6L8 1" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+														<path
+															d="M1 3.5L3.5 6L8 1"
+															stroke="white"
+															strokeWidth="1.6"
+															strokeLinecap="round"
+															strokeLinejoin="round"
+														/>
 													</svg>
 												)}
 											</div>
 										</div>
-										
-										<div className={`absolute top-[10px] right-[10px] opacity-0 group-hover:opacity-100 transition-opacity z-10 ${isSelected ? "opacity-100" : ""}`}>
+
+										<div
+											className={`absolute top-[10px] right-[10px] opacity-0 group-hover:opacity-100 transition-opacity z-10 ${isSelected ? "opacity-100" : ""}`}
+										>
 											<button
 												className="w-[26px] h-[26px] rounded-[6px] border-none bg-white/80 backdrop-blur-sm cursor-pointer flex items-center justify-center text-[#555] transition-colors hover:bg-white shadow-sm"
 												onClick={(e) => handleDownload(e, file.fileUrl, file.fileName)}
 											>
 												<svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-													<path d="M3 10h7M6.5 3v6M4 7l2.5 3 2.5-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+													<path
+														d="M3 10h7M6.5 3v6M4 7l2.5 3 2.5-3"
+														stroke="currentColor"
+														strokeWidth="1.3"
+														strokeLinecap="round"
+													/>
 												</svg>
 											</button>
 										</div>
@@ -562,7 +615,15 @@ export function FilesArea() {
 					</button>
 					<button className="flex items-center gap-[5px] px-[9px] py-[5px] rounded-[7px] border-none text-[12px] font-medium text-white cursor-pointer bg-white/10 tracking-[-0.01em] transition-colors hover:bg-white/10 hover:text-white">
 						<svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-							<rect x="1.5" y="3.5" width="7.5" height="7.5" rx="1.3" stroke="currentColor" strokeWidth="1.3" />
+							<rect
+								x="1.5"
+								y="3.5"
+								width="7.5"
+								height="7.5"
+								rx="1.3"
+								stroke="currentColor"
+								strokeWidth="1.3"
+							/>
 							<path
 								d="M4 1.5H11.5V9"
 								stroke="currentColor"
@@ -586,7 +647,7 @@ export function FilesArea() {
 						</svg>
 						Archive
 					</button>
-					<button 
+					<button
 						onClick={handleDeleteSelected}
 						disabled={deleteFileMutation.isPending}
 						className="flex items-center gap-[5px] px-[9px] py-[5px] rounded-[7px] border-none text-[12px] font-medium text-[#f87171] cursor-pointer bg-transparent tracking-[-0.01em] transition-colors hover:bg-[#f87171]/10 hover:text-[#fca5a5] disabled:opacity-50 disabled:cursor-not-allowed"
@@ -603,8 +664,24 @@ export function FilesArea() {
 								/>
 								<line x1="1" y1="4.5" x2="12" y2="4.5" stroke="currentColor" strokeWidth="1.2" />
 								<path d="M5 1.5H8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-								<line x1="5.5" y1="6.5" x2="5.5" y2="9.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-								<line x1="7.5" y1="6.5" x2="7.5" y2="9.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+								<line
+									x1="5.5"
+									y1="6.5"
+									x2="5.5"
+									y2="9.5"
+									stroke="currentColor"
+									strokeWidth="1.2"
+									strokeLinecap="round"
+								/>
+								<line
+									x1="7.5"
+									y1="6.5"
+									x2="7.5"
+									y2="9.5"
+									stroke="currentColor"
+									strokeWidth="1.2"
+									strokeLinecap="round"
+								/>
 							</svg>
 						)}
 						{deleteFileMutation.isPending ? "Deleting..." : "Delete"}

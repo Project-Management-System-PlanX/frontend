@@ -10,14 +10,15 @@ import {
 	PanelLeftClose,
 	PanelLeftOpen,
 	Settings,
-	User,
 	UserPlus,
 	Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { SettingsModal } from "@/components/modals/SettingsModal";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { InviteMembersDialog } from "@/components/workspaces/InviteMembersDialog";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
@@ -47,6 +48,17 @@ export function PrimarySidebar({ defaultCollapsed = false }: PrimarySidebarProps
 		}
 	}, [defaultCollapsed, hasMounted]);
 
+	// Auto-collapse when navigating into a specific chat or workspace channel
+	useEffect(() => {
+		if (
+			pathname.includes("/channel/") ||
+			pathname.includes("/dm/") ||
+			pathname.includes("/space/")
+		) {
+			setIsExpanded(false);
+		}
+	}, [pathname]);
+
 	const navItems = [
 		{ icon: LayoutGrid, label: "Dashboard", href: "/dashboard" },
 		{
@@ -73,110 +85,119 @@ export function PrimarySidebar({ defaultCollapsed = false }: PrimarySidebarProps
 		{ icon: UserPlus, label: "Invite Member", onClick: () => setInviteOpen(true) },
 		{ icon: Settings, label: "Settings", onClick: () => setSettingsOpen(true) },
 		{
-			icon: User,
 			label: "Account",
 			href: "/dashboard/account",
 			active: pathname === "/dashboard/account",
+			isAccount: true,
 		},
 	];
 
 	return (
-		<motion.div
-			animate={{ width: isExpanded ? 240 : 76 }}
-			transition={{ type: "spring", stiffness: 260, damping: 32 }}
-			className="h-full flex flex-col shrink-0 z-50 overflow-hidden"
-		>
-			{/* Header: Logo + Toggle */}
-			<div
-				className={cn(
-					"py-6 flex items-center transition-all duration-300",
-					isExpanded ? "px-6 justify-between mb-4" : "px-0 justify-center mb-6",
-				)}
+		<>
+			<motion.div
+				animate={{ width: isExpanded ? 240 : 76 }}
+				transition={{ type: "spring", stiffness: 260, damping: 32 }}
+				className="h-full flex flex-col shrink-0 z-50 overflow-hidden"
 			>
-				<button
-					type="button"
-					onClick={() => setIsExpanded(!isExpanded)}
-					className="flex items-center gap-3 transition-transform hover:scale-[1.02] active:scale-[0.98] group outline-none"
-					title={isExpanded ? "Collapse Sidebar" : "Expand Sidebar"}
+				{/* Header: Logo + Toggle */}
+				<div
+					className={cn(
+						"py-6 flex items-center transition-all duration-300",
+						isExpanded ? "px-6 justify-between mb-4" : "px-0 justify-center mb-6",
+					)}
 				>
-					<div className="w-10 h-10 rounded-[12px] bg-gradient-to-b from-[#5AC8FA] to-[#007AFF] flex items-center justify-center text-white shadow-md shadow-blue-500/20 shrink-0 transition-all group-hover:shadow-blue-500/30">
-						<Zap className="w-5.5 h-5.5 fill-white/20" />
-					</div>
-					<AnimatePresence>
-						{isExpanded && (
-							<motion.span
-								initial={{ opacity: 0, x: -10 }}
-								animate={{ opacity: 1, x: 0 }}
-								exit={{ opacity: 0, x: -10 }}
-								className="font-bold text-gray-900 tracking-tight text-[19px] whitespace-nowrap"
-								style={{
-									fontFamily:
-										"'-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Inter', sans-serif",
-								}}
-							>
-								TeamUp
-							</motion.span>
-						)}
-					</AnimatePresence>
-				</button>
-				{isExpanded && (
 					<button
 						type="button"
-						onClick={() => setIsExpanded(false)}
-						className="p-1.5 rounded-lg hover:bg-slate-200/60 text-slate-400 hover:text-slate-600 transition-colors shrink-0"
+						onClick={() => setIsExpanded(!isExpanded)}
+						className="flex items-center gap-3 transition-transform hover:scale-[1.02] active:scale-[0.98] group outline-none"
+						title={isExpanded ? "Collapse Sidebar" : "Expand Sidebar"}
 					>
-						<PanelLeftClose className="w-4.5 h-4.5" />
+						<div className="w-10 h-10 rounded-[12px] bg-gradient-to-b from-[#5AC8FA] to-[#007AFF] flex items-center justify-center text-white shadow-md shadow-blue-500/20 shrink-0 transition-all group-hover:shadow-blue-500/30">
+							<Zap className="w-5.5 h-5.5 fill-white/20" />
+						</div>
+						<AnimatePresence>
+							{isExpanded && (
+								<motion.span
+									initial={{ opacity: 0, x: -10 }}
+									animate={{ opacity: 1, x: 0 }}
+									exit={{ opacity: 0, x: -10 }}
+									className="font-bold text-gray-900 tracking-tight text-[19px] whitespace-nowrap"
+									style={{
+										fontFamily:
+											"'-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Inter', sans-serif",
+									}}
+								>
+									TeamUp
+								</motion.span>
+							)}
+						</AnimatePresence>
 					</button>
+					{isExpanded && (
+						<button
+							type="button"
+							onClick={() => setIsExpanded(false)}
+							className="p-1.5 rounded-lg hover:bg-slate-200/60 text-slate-400 hover:text-slate-600 transition-colors shrink-0"
+						>
+							<PanelLeftClose className="w-4.5 h-4.5" />
+						</button>
+					)}
+				</div>
+
+				{/* Navigation */}
+				<div className={cn("flex-1 flex flex-col gap-1 px-3")}>
+					{navItems.map((item) => (
+						<PrimaryNavItem
+							key={item.label}
+							{...item}
+							isActive={item.active ?? pathname === item.href}
+							isExpanded={isExpanded}
+						/>
+					))}
+				</div>
+
+				{/* Bottom Actions */}
+				<div className={cn("flex flex-col gap-1 px-3 pt-4 border-t border-slate-200/60 mb-6")}>
+					{bottomItems.map((item) => (
+						<PrimaryNavItem
+							key={item.label}
+							{...item}
+							isActive={item.active}
+							isExpanded={isExpanded}
+						/>
+					))}
+
+					{!isExpanded && (
+						<button
+							type="button"
+							onClick={() => setIsExpanded(true)}
+							className="mt-2 w-12 h-12 flex items-center justify-center rounded-xl hover:bg-slate-200/60 text-slate-400 transition-all mx-auto"
+							title="Expand Sidebar"
+						>
+							<PanelLeftOpen className="w-5 h-5" />
+						</button>
+					)}
+				</div>
+			</motion.div>
+
+			{/* Dialogs — portaled to body so they escape overflow-hidden */}
+			{typeof document !== "undefined" &&
+				activeWorkspaceId &&
+				createPortal(
+					<InviteMembersDialog
+						isOpen={inviteOpen}
+						onClose={() => setInviteOpen(false)}
+						workspaceId={activeWorkspaceId}
+						workspaceName={activeWorkspaceName || "Workspace"}
+						userId={user?.id || ""}
+					/>,
+					document.body,
 				)}
-			</div>
-
-			{/* Navigation */}
-			<div className={cn("flex-1 flex flex-col gap-1 px-3")}>
-				{navItems.map((item) => (
-					<PrimaryNavItem
-						key={item.label}
-						{...item}
-						isActive={item.active ?? pathname === item.href}
-						isExpanded={isExpanded}
-					/>
-				))}
-			</div>
-
-			{/* Bottom Actions */}
-			<div className={cn("flex flex-col gap-1 px-3 pt-4 border-t border-slate-200/60 mb-6")}>
-				{bottomItems.map((item) => (
-					<PrimaryNavItem
-						key={item.label}
-						{...item}
-						isActive={item.active}
-						isExpanded={isExpanded}
-					/>
-				))}
-
-				{!isExpanded && (
-					<button
-						type="button"
-						onClick={() => setIsExpanded(true)}
-						className="mt-2 w-12 h-12 flex items-center justify-center rounded-xl hover:bg-slate-200/60 text-slate-400 transition-all mx-auto"
-						title="Expand Sidebar"
-					>
-						<PanelLeftOpen className="w-5 h-5" />
-					</button>
+			{typeof document !== "undefined" &&
+				createPortal(
+					<SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />,
+					document.body,
 				)}
-			</div>
-
-			{/* Dialogs */}
-			{activeWorkspaceId && (
-				<InviteMembersDialog
-					isOpen={inviteOpen}
-					onClose={() => setInviteOpen(false)}
-					workspaceId={activeWorkspaceId}
-					workspaceName={activeWorkspaceName || "Workspace"}
-					userId={user?.id ?? ""}
-				/>
-			)}
-			<SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
-		</motion.div>
+		</>
 	);
 }
 
@@ -187,14 +208,20 @@ function PrimaryNavItem({
 	onClick,
 	isActive,
 	isExpanded,
+	isAccount,
 }: {
-	icon: LucideIcon;
+	icon?: LucideIcon;
 	label: string;
 	href?: string;
 	onClick?: () => void;
 	isActive?: boolean;
 	isExpanded: boolean;
+	isAccount?: boolean;
 }) {
+	const { user } = useSupabaseAuth();
+	const initials = user?.email?.substring(0, 2).toUpperCase() || "?";
+	const imageUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.picture;
+
 	const content = (
 		<button
 			type="button"
@@ -202,17 +229,33 @@ function PrimaryNavItem({
 				"relative flex items-center transition-all duration-200 group outline-none w-full rounded-xl cursor-pointer",
 				isExpanded ? "px-3 py-2.5 gap-3" : "h-11 w-11 mx-auto justify-center",
 				isActive
-					? "bg-white text-[#007AFF] shadow-[0_2px_8px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-gray-900/5 font-medium"
+					? "bg-gray-900/10 text-gray-900 font-semibold"
 					: "text-gray-500 hover:text-gray-900 hover:bg-gray-900/5",
 			)}
 			onClick={onClick}
 		>
-			<Icon
-				className={cn(
-					isExpanded ? "w-5 h-5" : "w-[22px] h-[22px]",
-					isActive ? "stroke-[2.5]" : "stroke-[2]",
-				)}
-			/>
+			{isAccount ? (
+				<Avatar
+					className={cn(
+						"transition-all",
+						isExpanded ? "w-5 h-5 shadow-sm" : "w-[26px] h-[26px] shadow-sm",
+					)}
+				>
+					<AvatarImage src={imageUrl} alt={label} referrerPolicy="no-referrer" />
+					<AvatarFallback className="text-[8px] bg-gradient-to-tr from-blue-500 to-indigo-500 text-white font-bold">
+						{initials}
+					</AvatarFallback>
+				</Avatar>
+			) : (
+				Icon && (
+					<Icon
+						className={cn(
+							isExpanded ? "w-5 h-5" : "w-[22px] h-[22px]",
+							isActive ? "stroke-[2.5]" : "stroke-[1.5]",
+						)}
+					/>
+				)
+			)}
 
 			<AnimatePresence mode="wait">
 				{isExpanded && (

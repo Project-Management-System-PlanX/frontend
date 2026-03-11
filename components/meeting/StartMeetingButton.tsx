@@ -90,7 +90,11 @@ export function StartMeetingButton({ channelId, channelName }: StartMeetingButto
 						onClick={() => handleStartMeeting("AUDIO")}
 						className="w-8 h-8 rounded-full hover:bg-[#e5e5ea] text-[#007aff] bg-transparent focus:outline-none"
 					>
-						{isStarting ? <Loader2 className="w-[18px] h-[18px] animate-spin" /> : <Phone className="w-[18px] h-[18px]" strokeWidth={2} />}
+						{isStarting ? (
+							<Loader2 className="w-[18px] h-[18px] animate-spin" />
+						) : (
+							<Phone className="w-[18px] h-[18px]" strokeWidth={2} />
+						)}
 					</Button>
 				</TooltipTrigger>
 				<TooltipContent>Audio Call</TooltipContent>
@@ -106,7 +110,11 @@ export function StartMeetingButton({ channelId, channelName }: StartMeetingButto
 						onClick={() => handleStartMeeting("VIDEO")}
 						className="w-8 h-8 rounded-full hover:bg-[#e5e5ea] text-[#007aff] bg-transparent focus:outline-none"
 					>
-						{isStarting ? <Loader2 className="w-[20px] h-[20px] animate-spin" /> : <Video className="w-[20px] h-[20px]" strokeWidth={2} />}
+						{isStarting ? (
+							<Loader2 className="w-[20px] h-[20px] animate-spin" />
+						) : (
+							<Video className="w-[20px] h-[20px]" strokeWidth={2} />
+						)}
 					</Button>
 				</TooltipTrigger>
 				<TooltipContent>Video Call</TooltipContent>

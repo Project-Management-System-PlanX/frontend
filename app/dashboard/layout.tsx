@@ -13,8 +13,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 	// Tiered visibility logic
 	const isChat = pathname.startsWith("/dashboard/chat");
 	const isTask = pathname.startsWith("/dashboard/task");
-	const isDocuments = pathname.startsWith("/dashboard/files");
-	const hasSecondary = isChat || isTask || isDocuments;
+
+	// Check if the user is deep inside a specific chat or task space
+	const isDeepLink =
+		pathname.includes("/channel/") || pathname.includes("/dm/") || pathname.includes("/space/");
+
+	// Only show the secondary sidebar if they are on the root Chat or Task routing pages
+	const hasSecondary = (isChat || isTask) && !isDeepLink;
 
 	return (
 		<MeetingProvider>

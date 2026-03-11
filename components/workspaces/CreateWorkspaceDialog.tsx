@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, Building2, Check, Loader2, X } from "lucide-react";
+import { ArrowRight, Check, Loader2, Sparkles, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { workspaceService } from "@/lib/api/services";
@@ -81,21 +81,24 @@ export function CreateWorkspaceDialog({
 				animate={{ opacity: 1 }}
 				exit={{ opacity: 0 }}
 				onClick={() => handleClose()}
-				className="absolute inset-0 bg-white/60 backdrop-blur-md"
+				className="absolute inset-0 bg-black/20 backdrop-blur-sm"
 			/>
 
 			{/* Modal */}
 			<motion.div
-				initial={{ opacity: 0, scale: 0.95, y: 20 }}
+				initial={{ opacity: 0, scale: 0.96, y: 10 }}
 				animate={{ opacity: 1, scale: 1, y: 0 }}
-				exit={{ opacity: 0, scale: 0.95, y: 20 }}
-				transition={{ duration: 0.35, ease: "easeOut" }}
-				className="relative w-full max-w-lg bg-white rounded-2xl shadow-xl shadow-black/5 border border-[#D1F2EB] overflow-hidden"
+				exit={{ opacity: 0, scale: 0.96, y: 10 }}
+				transition={{ type: "spring", stiffness: 400, damping: 30 }}
+				className="relative w-full max-w-[440px] bg-white/95 backdrop-blur-3xl rounded-[24px] shadow-[0_24px_80px_rgba(0,0,0,0.12)] border border-white/60 overflow-hidden"
+				style={{
+					fontFamily: "'-apple-system', 'BlinkMacSystemFont', 'SF Pro Text', 'Inter', sans-serif",
+				}}
 			>
 				<button
 					type="button"
 					onClick={() => handleClose()}
-					className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors z-10"
+					className="absolute top-5 right-5 p-2 text-gray-300 hover:text-gray-500 hover:bg-gray-100 rounded-full transition-all z-10"
 				>
 					<X className="w-4 h-4" />
 				</button>
@@ -108,17 +111,20 @@ export function CreateWorkspaceDialog({
 								initial={{ opacity: 0, x: 20 }}
 								animate={{ opacity: 1, x: 0 }}
 								exit={{ opacity: 0, x: -20 }}
-								className="space-y-8"
+								transition={{ duration: 0.2 }}
+								className="space-y-7"
 							>
 								<div className="text-center space-y-4">
-									<div className="w-16 h-16 mx-auto bg-[#D1F2EB] rounded-2xl flex items-center justify-center transform rotate-3">
-										<Building2 className="w-8 h-8 text-[#0B6E4F]" />
+									<div className="w-16 h-16 mx-auto bg-gradient-to-br from-[#007AFF] to-[#5856D6] rounded-[20px] flex items-center justify-center shadow-lg shadow-blue-500/20">
+										<Sparkles className="w-8 h-8 text-white" />
 									</div>
 									<div>
-										<h2 className="text-2xl font-bold text-[#013220] tracking-tight">
+										<h2 className="text-[22px] font-bold text-gray-900 tracking-tight">
 											Create your workspace
 										</h2>
-										<p className="text-gray-500 mt-2">Give your team a home</p>
+										<p className="text-[14px] text-gray-500 mt-1.5">
+											Give your team a home to collaborate
+										</p>
 									</div>
 								</div>
 
@@ -127,7 +133,7 @@ export function CreateWorkspaceDialog({
 										<motion.div
 											initial={{ opacity: 0, y: -10 }}
 											animate={{ opacity: 1, y: 0 }}
-											className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm text-center"
+											className="p-3.5 bg-red-50 border border-red-100 rounded-xl text-[13px] text-red-600 text-center font-medium"
 										>
 											{error}
 										</motion.div>
@@ -136,7 +142,7 @@ export function CreateWorkspaceDialog({
 									<div className="space-y-2">
 										<label
 											htmlFor="workspace-name"
-											className="text-sm font-semibold text-[#013220]"
+											className="text-[13px] font-semibold text-gray-700"
 										>
 											Workspace name
 										</label>
@@ -146,14 +152,17 @@ export function CreateWorkspaceDialog({
 											value={name}
 											onChange={(e) => setName(e.target.value)}
 											placeholder="Acme Inc."
-											className="w-full px-4 py-3.5 rounded-xl border border-gray-200 focus:border-[#50C878] focus:ring-4 focus:ring-[#50C878]/10 outline-none transition-all text-[#013220] placeholder:text-gray-300 font-medium"
+											className="w-full px-4 py-3.5 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-[#007AFF] focus:ring-4 focus:ring-[#007AFF]/10 outline-none transition-all text-[15px] text-gray-900 placeholder:text-gray-300 font-medium"
 											onKeyDown={(e) => {
 												if (e.key === "Enter" && name.trim()) handleCreate();
 											}}
 										/>
 										{name && (
-											<p className="text-xs text-gray-400">
-												Slug: <span className="font-mono text-gray-500">{slug}</span>
+											<p className="text-[12px] text-gray-400">
+												URL:{" "}
+												<span className="font-mono text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+													{slug}.teamup.app
+												</span>
 											</p>
 										)}
 									</div>
@@ -162,9 +171,16 @@ export function CreateWorkspaceDialog({
 										type="button"
 										onClick={handleCreate}
 										disabled={!name.trim() || isLoading}
-										className="w-full flex items-center justify-center gap-2 bg-[#0B6E4F] text-white px-6 py-4 rounded-xl font-semibold hover:bg-[#013220] hover:shadow-lg hover:shadow-[#0B6E4F]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-4"
+										className="w-full flex items-center justify-center gap-2.5 bg-gray-900 text-white px-6 py-3.5 rounded-xl text-[14px] font-semibold hover:bg-gray-800 shadow-md hover:shadow-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed mt-2"
 									>
-										{isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Create Workspace"}
+										{isLoading ? (
+											<Loader2 className="w-5 h-5 animate-spin" />
+										) : (
+											<>
+												Create Workspace
+												<ArrowRight className="w-4 h-4" />
+											</>
+										)}
 									</button>
 								</div>
 							</motion.div>
@@ -173,28 +189,32 @@ export function CreateWorkspaceDialog({
 						{step === "complete" && (
 							<motion.div
 								key="step-complete"
-								initial={{ opacity: 0, scale: 0.8 }}
+								initial={{ opacity: 0, scale: 0.9 }}
 								animate={{ opacity: 1, scale: 1 }}
-								className="text-center space-y-8 py-4"
+								transition={{ type: "spring", stiffness: 300, damping: 25 }}
+								className="text-center space-y-7 py-4"
 							>
 								<motion.div
-									className="w-24 h-24 mx-auto bg-[#0B6E4F] rounded-full flex items-center justify-center shadow-xl shadow-[#0B6E4F]/30"
+									className="w-20 h-20 mx-auto bg-gradient-to-br from-[#34C759] to-[#30D158] rounded-full flex items-center justify-center shadow-xl shadow-green-500/20"
 									initial={{ scale: 0 }}
 									animate={{ scale: 1 }}
 									transition={{ type: "spring", delay: 0.1 }}
 								>
-									<Check className="w-12 h-12 text-white" />
+									<Check className="w-10 h-10 text-white" strokeWidth={3} />
 								</motion.div>
 								<div className="space-y-2">
-									<h2 className="text-2xl font-bold text-[#013220]">You're all set!</h2>
-									<p className="text-gray-500">
-										<span className="font-semibold text-[#0B6E4F]">{name}</span> has been created.
+									<h2 className="text-[22px] font-bold text-gray-900 tracking-tight">
+										You&apos;re all set!
+									</h2>
+									<p className="text-[14px] text-gray-500">
+										<span className="font-semibold text-[#007AFF]">{name}</span> has been created
+										successfully.
 									</p>
 								</div>
 								<button
 									type="button"
 									onClick={() => handleClose(true)}
-									className="w-full flex items-center justify-center gap-2 bg-[#0B6E4F] text-white px-6 py-4 rounded-xl font-semibold hover:bg-[#013220] hover:shadow-lg hover:shadow-[#0B6E4F]/20 transition-all"
+									className="w-full flex items-center justify-center gap-2.5 bg-gray-900 text-white px-6 py-3.5 rounded-xl text-[14px] font-semibold hover:bg-gray-800 shadow-md transition-all"
 								>
 									Go to Workspace <ArrowRight className="w-4 h-4" />
 								</button>

@@ -186,13 +186,16 @@ export function SynapseSidebar() {
 												className={cn(
 													"flex items-center gap-3 px-3 py-2 rounded-xl transition-all group",
 													isActive
-														? "bg-white text-[#007AFF] shadow-[0_2px_8px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-gray-900/5 font-semibold"
-														: "text-gray-600 hover:bg-white/60",
+														? "bg-gray-900/10 text-gray-900 font-semibold"
+														: "text-gray-600 hover:bg-black/5",
 												)}
 											>
 												<div className="relative">
 													<Avatar className="w-8 h-8 rounded-lg shadow-sm">
-														<AvatarImage src={member.profile?.imageUrl || undefined} />
+														<AvatarImage
+															src={member.profile?.imageUrl || undefined}
+															referrerPolicy="no-referrer"
+														/>
 														<AvatarFallback className="bg-blue-50 text-[#007AFF] text-[10px] font-bold">
 															{displayName.substring(0, 2).toUpperCase()}
 														</AvatarFallback>
@@ -222,8 +225,8 @@ export function SynapseSidebar() {
 										className={cn(
 											"flex items-center gap-3 px-3 py-2 rounded-xl transition-all",
 											pathname === `/dashboard/task/space/${space.id}`
-												? "bg-white text-[#007AFF] shadow-[0_2px_8px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-gray-900/5 font-semibold"
-												: "text-gray-600 hover:bg-white/60",
+												? "bg-gray-900/10 text-gray-900 font-semibold"
+												: "text-gray-600 hover:bg-black/5",
 										)}
 									>
 										<div className="w-8 h-8 rounded-lg bg-slate-200 flex items-center justify-center text-slate-500 font-bold text-xs">
@@ -291,16 +294,14 @@ function ChannelItem({ channel, active, starred, unread, onToggleStar }: Channel
 			<div
 				className={cn(
 					"group flex items-center gap-3 px-3 py-2 rounded-xl transition-all",
-					active
-						? "bg-white text-[#007AFF] shadow-[0_2px_8px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-gray-900/5 font-semibold"
-						: "text-gray-600 hover:bg-white/60",
+					active ? "bg-gray-900/10 text-gray-900 font-semibold" : "text-gray-600 hover:bg-black/5",
 				)}
 			>
 				<div
 					className={cn(
 						"w-7 h-7 rounded-lg flex items-center justify-center transition-colors shadow-sm",
 						active
-							? "bg-[#007AFF]/10 text-[#007AFF]"
+							? "text-gray-900"
 							: "bg-gray-100 text-gray-400 group-hover:bg-gray-200 group-hover:text-gray-500",
 					)}
 				>

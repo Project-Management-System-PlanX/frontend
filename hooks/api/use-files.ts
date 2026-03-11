@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/config";
 
@@ -54,7 +54,7 @@ export const useDeleteFile = () => {
 		mutationFn: async ({ messageId, token }: { messageId: string; token?: string }) => {
 			return apiClient.delete(API_ENDPOINTS.MESSAGE_DELETE(messageId), { token });
 		},
-		onSuccess: (_, variables) => {
+		onSuccess: (_, _variables) => {
 			// Invalidate file lists so it refetches immediately
 			queryClient.invalidateQueries({ queryKey: fileKeys.all });
 		},
