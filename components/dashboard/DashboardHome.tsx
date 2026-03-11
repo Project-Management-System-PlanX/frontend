@@ -142,7 +142,7 @@ export function DashboardHome() {
 		})) || [];
 
 	return (
-		<div className="flex-1 flex flex-col bg-[#F5F5F7] min-w-0 min-h-0 overflow-y-auto selection:bg-blue-200">
+		<div className="flex-1 flex flex-col bg-transparent min-w-0 min-h-0 overflow-y-auto selection:bg-blue-200">
 			<div
 				className="min-h-full p-6 md:p-8 lg:p-10 mx-auto w-full max-w-[1400px]"
 				style={{

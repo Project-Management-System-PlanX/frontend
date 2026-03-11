@@ -9,10 +9,10 @@ export default function ChatPage() {
 			<div className="flex flex-col items-center text-center max-w-md px-8">
 				{/* Animated Logo */}
 				<div className="relative mb-8">
-					<div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-100 to-teal-50 flex items-center justify-center">
-						<MessageSquare className="w-10 h-10 text-emerald-600" />
+					<div className="w-20 h-20 rounded-[24px] bg-gradient-to-br from-indigo-500 to-blue-500 flex items-center justify-center shadow-lg shadow-indigo-100">
+						<MessageSquare className="w-10 h-10 text-white" />
 					</div>
-					<div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-white animate-pulse" />
+					<div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-4 border-white animate-pulse" />
 				</div>
 
 				<h2
