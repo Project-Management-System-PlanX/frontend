@@ -241,7 +241,7 @@ export function SynapseSidebar() {
 
 	if (isCollapsed) {
 		return (
-			<aside className="w-[60px] bg-[#f2f2f4]/80 backdrop-blur-2xl flex flex-col items-center shrink-0 h-full select-none pt-5 pb-5 transition-all duration-300 border-r border-white/20">
+			<aside className="w-[60px] bg-white/60 hover:bg-white/70 backdrop-blur-3xl flex flex-col items-center shrink-0 h-full select-none pt-5 pb-5 transition-all duration-300 border border-white/60 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
 				<div
 					role="button"
 					tabIndex={0}
@@ -263,7 +263,7 @@ export function SynapseSidebar() {
 	return (
 		<>
 			<aside
-				className="w-[220px] bg-[#f2f2f4]/80 backdrop-blur-2xl flex flex-col shrink-0 h-full select-none transition-all duration-300 border-r border-white/20"
+				className="w-[240px] bg-white/60 hover:bg-white/70 backdrop-blur-3xl flex flex-col shrink-0 h-full select-none transition-all duration-300 border border-white/60 rounded-[20px] shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
 				style={{
 					fontFamily: "var(--font-figtree), Figtree, -apple-system, sans-serif",
 				}}
