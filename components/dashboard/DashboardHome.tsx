@@ -153,7 +153,7 @@ export function DashboardHome() {
 				<div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
 					<div>
 						<h1 className="text-[28px] font-bold text-gray-900 tracking-tight mb-2">Dashboard</h1>
-						<div className="flex relative bg-gray-200/50 p-1 rounded-xl w-fit backdrop-blur-xl">
+						<div className="flex relative bg-gradient-to-b from-gray-100/80 to-gray-200/60 p-1.5 rounded-[14px] w-fit backdrop-blur-2xl border border-white/20 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]">
 							{["Overview", "Activity", "Analytics", "Audience"].map((tab) => {
 								const isActive = activeTab === tab;
 								return (
@@ -167,7 +167,7 @@ export function DashboardHome() {
 										{isActive && (
 											<motion.div
 												layoutId="activeTabBadgeDashboard"
-												className="absolute inset-0 bg-white rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.06)]"
+												className="absolute inset-0 bg-white rounded-[10px] shadow-[0_3px_8px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.04)] border border-gray-200/50"
 												initial={false}
 												transition={{ type: "spring", stiffness: 500, damping: 30 }}
 												style={{ zIndex: -1 }}
