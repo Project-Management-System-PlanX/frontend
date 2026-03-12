@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSpaces } from "@/hooks/api/use-spaces";
+import { useUnread } from "@/hooks/chat/use-unread";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useWorkspaceChannels } from "@/hooks/use-workspace-channels";
 import { useWorkspaceMembers } from "@/hooks/use-workspace-members";
@@ -14,6 +15,7 @@ import { fetchClient } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/config";
 import { cn } from "@/lib/utils";
 import { useChannelStore } from "@/stores/channel-store";
+import { useUnreadStore } from "@/stores/unread-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { CreateSpaceDialog } from "../modals/CreateSpaceDialog";
 import { CreateChannelDialog } from "./CreateChannelDialog";
@@ -25,11 +27,38 @@ import { CreateChannelDialog } from "./CreateChannelDialog";
 
 export function SynapseSidebar() {
 	const pathname = usePathname();
-	const { token } = useSupabaseAuth();
+	const { token, user } = useSupabaseAuth();
 	const { activeWorkspaceName, activeWorkspaceId } = useWorkspaceStore();
 	const { channels, isLoaded: channelsLoaded } = useWorkspaceChannels();
 	const { members, currentUserProfile } = useWorkspaceMembers();
 	const { updateChannel } = useChannelStore();
+	const { counts: unreadCounts } = useUnreadStore();
+
+	// Unread tracking
+	const activeChannelId = useMemo(() => {
+		const chMatch = pathname.match(/\/dashboard\/chat\/channel\/([^/]+)$/);
+		if (chMatch) return chMatch[1];
+		// For DMs, find the channel ID from the slug
+		const dmMatch = pathname.match(/\/dashboard\/chat\/dm\/([^/]+)$/);
+		if (dmMatch) {
+			const member = members.find((m) => m.slug === dmMatch[1]);
+			if (member && user?.id) {
+				const expectedDmName = `dm-${[user.id, member.userId].sort().join("-")}`;
+				const dmChannel = channels.find(
+					(c) => c.type === "DIRECT_MESSAGE" && c.name === expectedDmName,
+				);
+				return dmChannel?.id || null;
+			}
+		}
+		return null;
+	}, [pathname, members, channels]);
+
+	const { markChannelAsRead } = useUnread(
+		activeWorkspaceId,
+		user?.id || null,
+		token || null,
+		activeChannelId,
+	);
 
 	// ── Backend data hooks ──
 	const { data: spaces } = useSpaces(activeWorkspaceId as string, token || undefined);
@@ -81,11 +110,6 @@ export function SynapseSidebar() {
 		[currentUserProfile],
 	);
 
-	const activeChannelId = useMemo(() => {
-		const match = pathname.match(/^\/dashboard\/chat\/channel\/([^/]+)$/);
-		return match?.[1] ?? null;
-	}, [pathname]);
-
 	const handleToggleChannelStar = async (channelId: string, isStarred: boolean) => {
 		if (!token) return;
 		updateChannel(channelId, { isStarred });
@@ -100,13 +124,18 @@ export function SynapseSidebar() {
 		}
 	};
 
+	// Mark channel as read when opened
 	useEffect(() => {
 		if (!activeChannelId) return;
 		const activeChannel = channels.find((channel) => channel.id === activeChannelId);
 		if (activeChannel?.unread) {
 			updateChannel(activeChannelId, { unread: false });
 		}
-	}, [activeChannelId, channels, updateChannel]);
+		// Also mark as read via backend
+		if (unreadCounts[activeChannelId] > 0) {
+			markChannelAsRead(activeChannelId);
+		}
+	}, [activeChannelId, channels, updateChannel, unreadCounts, markChannelAsRead]);
 
 	const isChat = pathname.startsWith("/dashboard/chat");
 	const isTask = pathname.startsWith("/dashboard/task");
@@ -168,6 +197,7 @@ export function SynapseSidebar() {
 											active={pathname === `/dashboard/chat/channel/${channel.id}`}
 											starred={!!channel.isStarred}
 											unread={!!channel.unread}
+											unreadCount={unreadCounts[channel.id] || 0}
 											onToggleStar={() => handleToggleChannelStar(channel.id, !channel.isStarred)}
 										/>
 									))
@@ -182,6 +212,15 @@ export function SynapseSidebar() {
 								{members.map((member) => {
 									const displayName = getMemberDisplayName(member);
 									const isActive = pathname === `/dashboard/chat/dm/${member.slug}`;
+									// Find the DM channel for this member to get unread count (deterministic name)
+									const expectedDmName = user?.id
+										? `dm-${[user.id, member.userId].sort().join("-")}`
+										: "";
+									const dmChannel = channels.find(
+										(c) => c.type === "DIRECT_MESSAGE" && c.name === expectedDmName,
+									);
+									const dmUnreadCount = dmChannel ? unreadCounts[dmChannel.id] || 0 : 0;
+									const hasDmUnread = dmUnreadCount > 0;
 									return (
 										<Link key={member.id} href={`/dashboard/chat/dm/${member.slug}`}>
 											<div
@@ -189,7 +228,9 @@ export function SynapseSidebar() {
 													"flex items-center gap-3 px-3 py-2 rounded-xl transition-all group",
 													isActive
 														? "bg-gray-900/10 text-gray-900 font-semibold"
-														: "text-gray-600 hover:bg-black/5",
+														: hasDmUnread
+															? "text-gray-900 font-semibold hover:bg-black/5"
+															: "text-gray-600 hover:bg-black/5",
 												)}
 											>
 												<div className="relative">
@@ -207,6 +248,18 @@ export function SynapseSidebar() {
 													)}
 												</div>
 												<span className="truncate flex-1">{displayName}</span>
+												{hasDmUnread && !isActive && (
+													<span
+														className="min-w-[20px] h-5 flex items-center justify-center text-[10px] font-bold text-white bg-[#007AFF] rounded-full px-1.5 shadow-sm shadow-blue-500/30"
+														style={{
+															fontFamily:
+																"'-apple-system', 'BlinkMacSystemFont', 'SF Pro Text', sans-serif",
+															fontVariantNumeric: "tabular-nums",
+														}}
+													>
+														{dmUnreadCount > 99 ? "99+" : dmUnreadCount}
+													</span>
+												)}
 											</div>
 										</Link>
 									);
@@ -255,7 +308,7 @@ export function SynapseSidebar() {
 			<CreateChannelDialog
 				open={createChannelOpen}
 				onOpenChange={setCreateChannelOpen}
-				onChannelCreated={() => {}} // Integration logic kept in store
+				onChannelCreated={() => { }} // Integration logic kept in store
 				workspaceName={activeWorkspaceName || "Workspace"}
 			/>
 
@@ -298,16 +351,30 @@ interface ChannelItemProps {
 	active: boolean;
 	starred: boolean;
 	unread: boolean;
+	unreadCount: number;
 	onToggleStar: () => void;
 }
 
-function ChannelItem({ channel, active, starred, unread, onToggleStar }: ChannelItemProps) {
+function ChannelItem({
+	channel,
+	active,
+	starred,
+	unread,
+	unreadCount,
+	onToggleStar,
+}: ChannelItemProps) {
+	const hasUnread = unreadCount > 0 || unread;
+
 	return (
 		<Link href={`/dashboard/chat/channel/${channel.id}`}>
 			<div
 				className={cn(
 					"group flex items-center gap-3 px-3 py-2 rounded-xl transition-all",
-					active ? "bg-gray-900/10 text-gray-900 font-semibold" : "text-gray-600 hover:bg-black/5",
+					active
+						? "bg-gray-900/10 text-gray-900 font-semibold"
+						: hasUnread
+							? "text-gray-900 font-semibold hover:bg-black/5"
+							: "text-gray-600 hover:bg-black/5",
 				)}
 			>
 				<div
@@ -321,7 +388,20 @@ function ChannelItem({ channel, active, starred, unread, onToggleStar }: Channel
 					<Hash className="w-4 h-4" />
 				</div>
 				<span className="truncate flex-1">{channel.name}</span>
-				{unread && !active && <div className="w-2 h-2 rounded-full bg-[#007AFF]" />}
+				{hasUnread && !active && unreadCount > 0 && (
+					<span
+						className="min-w-[20px] h-5 flex items-center justify-center text-[10px] font-bold text-white bg-[#007AFF] rounded-full px-1.5 shadow-sm shadow-blue-500/30"
+						style={{
+							fontFamily: "'-apple-system', 'BlinkMacSystemFont', 'SF Pro Text', sans-serif",
+							fontVariantNumeric: "tabular-nums",
+						}}
+					>
+						{unreadCount > 99 ? "99+" : unreadCount}
+					</span>
+				)}
+				{hasUnread && !active && unreadCount === 0 && (
+					<div className="w-2 h-2 rounded-full bg-[#007AFF]" />
+				)}
 				<button
 					type="button"
 					onClick={(e) => {

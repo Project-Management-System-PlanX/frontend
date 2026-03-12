@@ -10,10 +10,7 @@ import { useMeetingStore } from "@/stores/meeting-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 
 const VideoRoom = dynamic(
-	() =>
-		import("@/components/meeting/VideoRoom").then(
-			(mod) => mod.VideoRoom,
-		),
+	() => import("@/components/meeting/VideoRoom").then((mod) => mod.VideoRoom),
 	{
 		ssr: false,
 	},

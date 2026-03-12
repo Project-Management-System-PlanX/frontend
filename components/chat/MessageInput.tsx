@@ -28,15 +28,9 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useWorkspaceMembers } from "@/hooks/use-workspace-members";
 
-const EmojiPicker = dynamic(
-	() =>
-		import("./EmojiPicker").then(
-			(mod) => mod.EmojiPicker,
-		),
-	{
-		ssr: false,
-	},
-);
+const EmojiPicker = dynamic(() => import("./EmojiPicker").then((mod) => mod.EmojiPicker), {
+	ssr: false,
+});
 
 const MentionNode = TiptapNode.create({
 	name: "mention",

@@ -70,6 +70,11 @@ export const API_ENDPOINTS = {
 	MESSAGE_UPDATE: (messageId: string) => `/messages/${messageId}`,
 	MESSAGE_PIN: (messageId: string) => `/messages/${messageId}/pin`,
 
+	// Read State / Unread
+	MARK_READ: "/messages/read",
+	UNREAD_COUNTS: (workspaceId: string) => `/messages/unread-counts/${workspaceId}`,
+	READ_STATE: (channelId: string) => `/messages/read-state/${channelId}`,
+
 	// Meetings (proxied to meeting-service via Next.js rewrites)
 	MEETINGS_CREATE: "/meetings/create",
 	MEETINGS_JOIN: (meetingId: string) => `/meetings/${meetingId}/join`,

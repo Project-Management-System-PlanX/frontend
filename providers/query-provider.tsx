@@ -40,9 +40,7 @@ export function QueryProvider({ children }: QueryProviderProps) {
 
 	return (
 		<QueryClientProvider client={queryClient}>
-			<ReactQueryStreamedHydration>
-				{children}
-			</ReactQueryStreamedHydration>
+			<ReactQueryStreamedHydration>{children}</ReactQueryStreamedHydration>
 			{/* process.env.NODE_ENV === "development" && (
 				<ReactQueryDevtools buttonPosition="bottom-left" />
 			) */}

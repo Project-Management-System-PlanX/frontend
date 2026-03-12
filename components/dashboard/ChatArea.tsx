@@ -69,15 +69,14 @@ const StartMeetingButton = dynamic(
 );
 
 const EmojiPicker = dynamic(
-	() =>
-		import("@/components/chat/EmojiPicker").then(
-			(mod) => mod.EmojiPicker,
-		),
+	() => import("@/components/chat/EmojiPicker").then((mod) => mod.EmojiPicker),
 	{
 		ssr: false,
 	},
 );
 
+import { ChatSummary } from "@/components/chat/ChatSummary";
+import { UnreadSeparator } from "@/components/chat/UnreadSeparator";
 import { VoicePlayer } from "@/components/chat/VoicePlayer";
 import { VoiceRecorder } from "@/components/chat/VoiceRecorder";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -90,6 +89,7 @@ import { fetchClient } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/config";
 import { createClient } from "@/lib/supabase/client";
 import { useChannelStore } from "@/stores/channel-store";
+import { useUnreadStore } from "@/stores/unread-store";
 
 interface ChatAreaProps {
 	channelName: string;
@@ -163,6 +163,42 @@ export function ChatArea({
 		() => messages.filter((m) => !m.deleted_at && !m.deletedAt && (m.isPinned || m.is_pinned)),
 		[messages],
 	);
+
+	// Unread separator logic
+	const { lastReadMessageIds, counts: unreadCounts } = useUnreadStore();
+	const lastReadMsgId = lastReadMessageIds[channelName] || null;
+	const channelUnreadCount = unreadCounts[channelName] || 0;
+	const unreadSeparatorRef = useRef<HTMLDivElement>(null);
+	const hasScrolledToUnread = useRef(false);
+
+	// Compute exact unreads locally so the AI summary stays aware even after the optimistic store reset
+	const computedUnreadCount = useMemo(() => {
+		if (!lastReadMsgId || messages.length === 0) return 0;
+		const lastReadIdx = messages.findIndex((m) => m.id === lastReadMsgId);
+		if (lastReadIdx === -1) return 0;
+
+		let count = 0;
+		for (let i = lastReadIdx + 1; i < messages.length; i++) {
+			const m = messages[i];
+			const isOwn = m.user_id === user?.id || m.userId === user?.id;
+			if (!isOwn) count++;
+		}
+		return count;
+	}, [messages, lastReadMsgId, user?.id]);
+
+	const effectiveUnreadCount = Math.max(channelUnreadCount, computedUnreadCount);
+
+	// Scroll to unread separator on first load
+	useEffect(() => {
+		if (hasScrolledToUnread.current || !lastReadMsgId || messages.length === 0) return;
+		const timer = setTimeout(() => {
+			if (unreadSeparatorRef.current) {
+				unreadSeparatorRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+				hasScrolledToUnread.current = true;
+			}
+		}, 200);
+		return () => clearTimeout(timer);
+	}, [lastReadMsgId, messages.length]);
 
 	const updateMentionState = useCallback((editorInstance: NonNullable<typeof editor>) => {
 		const { from } = editorInstance.state.selection;
@@ -658,6 +694,9 @@ export function ChatArea({
 				</div>
 			)}
 
+			{/* Summarization Panel */}
+			<ChatSummary unreadCount={effectiveUnreadCount} channelName={displayName} />
+
 			{/* Messages Area */}
 			<ScrollArea className="flex-1 min-h-0 w-full bg-white">
 				{/* Inner container must be min-h-[100%] to allow the spacer to push content down */}
@@ -682,175 +721,185 @@ export function ChatArea({
 								</p>
 							</div>
 						) : (
-							messages.map((message) => {
+							messages.map((message, msgIndex) => {
 								const isDeleted = !!(message.deletedAt || message.deleted_at);
 								const isOwnMessage = message.user_id === user?.id || message.userId === user?.id;
 								const createdTime = new Date(message.created_at || message.createdAt || Date.now());
 								const diffInMinutes = (Date.now() - createdTime.getTime()) / (1000 * 60);
 								const canEdit =
 									isOwnMessage && !isDeleted && diffInMinutes <= 15 && !message.file_url;
+
+								// Show unread separator before this message if the previous message was the last read
+								const prevMessage = msgIndex > 0 ? messages[msgIndex - 1] : null;
+								const showUnreadSep =
+									lastReadMsgId && prevMessage?.id === lastReadMsgId && !isOwnMessage;
+
 								return (
-									<div key={message.id} id={`msg-${message.id}`} className="mb-4">
-										<div
-											className={`flex w-full group ${isOwnMessage ? "justify-end" : "justify-start"}`}
-										>
-											{/* Avatar for others */}
-											{!isOwnMessage && (
-												<div className="flex flex-col justify-end pb-1 mr-2 shrink-0">
-													<Avatar className="w-8 h-8 select-none">
-														<AvatarImage
-															src={message.users?.imageUrl || undefined}
-															referrerPolicy="no-referrer"
-														/>
-														<AvatarFallback className="bg-[#e5e7eb] text-[#8e8e93] text-xs font-medium">
-															{getInitials(message)}
-														</AvatarFallback>
-													</Avatar>
-												</div>
-											)}
-
+									<div key={message.id}>
+										{showUnreadSep && (
+											<div ref={unreadSeparatorRef}>
+												<UnreadSeparator />
+											</div>
+										)}
+										<div id={`msg-${message.id}`} className="mb-4">
 											<div
-												className={`flex flex-col max-w-[75%] ${isOwnMessage ? "items-end" : "items-start"}`}
+												className={`flex w-full group ${isOwnMessage ? "justify-end" : "justify-start"}`}
 											>
-												{/* Name above bubble for others */}
+												{/* Avatar for others */}
 												{!isOwnMessage && (
-													<span className="text-[11px] text-[#8e8e93] px-2 mb-[2px] font-medium tracking-wide">
-														{getDisplayName(message)}
-													</span>
-												)}
-
-												{/* Pinned Indicator on top if pinned */}
-												{(message.isPinned || message.is_pinned) && (
-													<div
-														className={`flex items-center gap-1 mb-1 px-1 ${isOwnMessage ? "text-amber-500" : "text-amber-500"}`}
-													>
-														<Pin className="w-3 h-3 fill-current" />
-														<span className="text-[10px] uppercase font-bold tracking-wider">
-															Pinned
-														</span>
+													<div className="flex flex-col justify-end pb-1 mr-2 shrink-0">
+														<Avatar className="w-8 h-8 select-none">
+															<AvatarImage
+																src={message.users?.imageUrl || undefined}
+																referrerPolicy="no-referrer"
+															/>
+															<AvatarFallback className="bg-[#e5e7eb] text-[#8e8e93] text-xs font-medium">
+																{getInitials(message)}
+															</AvatarFallback>
+														</Avatar>
 													</div>
 												)}
 
 												<div
-													className={`flex items-end gap-2 relative ${isOwnMessage ? "justify-end" : "justify-start"}`}
+													className={`flex flex-col max-w-[75%] ${isOwnMessage ? "items-end" : "items-start"}`}
 												>
-													{/* Left Side Actions (if isOwnMessage) */}
-													{isOwnMessage && !isDeleted && (
-														<div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0 mb-[2px]">
-															<button
-																type="button"
-																onClick={() => setDeleteConfirmId(message.id)}
-																className="p-1.5 rounded-full hover:bg-[#f2f2f7]/80 text-[#8e8e93] hover:text-[#ff3b30] transition-colors focus:outline-none"
-																title="Delete message"
-															>
-																<Trash2 className="w-[15px] h-[15px]" strokeWidth={2} />
-															</button>
-															{canEdit && (
-																<button
-																	type="button"
-																	onClick={() => {
-																		setEditingMessageId(message.id);
-																		editor?.commands.setContent(message.content || "");
-																		editor?.commands.focus();
-																	}}
-																	className="p-1.5 rounded-full hover:bg-[#f2f2f7]/80 text-[#8e8e93] hover:text-[#007aff] transition-colors focus:outline-none"
-																	title="Edit message"
-																>
-																	<Edit2 className="w-[15px] h-[15px]" strokeWidth={2} />
-																</button>
-															)}
-															{togglePinMessage && (
-																<button
-																	type="button"
-																	onClick={() =>
-																		togglePinMessage(
-																			message.id,
-																			!(message.isPinned || message.is_pinned),
-																		)
-																	}
-																	className={`p-1.5 rounded-full hover:bg-[#f2f2f7]/80 transition-colors focus:outline-none ${message.isPinned || message.is_pinned ? "text-[#ff9f0a]" : "text-[#8e8e93] hover:text-[#ff9f0a]"}`}
-																	title={
-																		message.isPinned || message.is_pinned
-																			? "Unpin message"
-																			: "Pin message"
-																	}
-																>
-																	<Pin className="w-[15px] h-[15px]" strokeWidth={2} />
-																</button>
-															)}
-															<button
-																type="button"
-																onClick={() => setReplyTo(message)}
-																className="p-1.5 rounded-full hover:bg-[#f2f2f7]/80 text-[#8e8e93] hover:text-[#007aff] transition-colors focus:outline-none"
-																title="Reply"
-															>
-																<Reply className="w-[15px] h-[15px]" strokeWidth={2} />
-															</button>
+													{/* Name above bubble for others */}
+													{!isOwnMessage && (
+														<span className="text-[11px] text-[#8e8e93] px-2 mb-[2px] font-medium tracking-wide">
+															{getDisplayName(message)}
+														</span>
+													)}
+
+													{/* Pinned Indicator on top if pinned */}
+													{(message.isPinned || message.is_pinned) && (
+														<div
+															className={`flex items-center gap-1 mb-1 px-1 ${isOwnMessage ? "text-amber-500" : "text-amber-500"}`}
+														>
+															<Pin className="w-3 h-3 fill-current" />
+															<span className="text-[10px] uppercase font-bold tracking-wider">
+																Pinned
+															</span>
 														</div>
 													)}
 
 													<div
-														className={`relative px-[16px] py-[8px] text-[15px] break-words leading-[1.4] transition-opacity hover:opacity-[0.95] max-w-full ${
-															isDeleted
+														className={`flex items-end gap-2 relative ${isOwnMessage ? "justify-end" : "justify-start"}`}
+													>
+														{/* Left Side Actions (if isOwnMessage) */}
+														{isOwnMessage && !isDeleted && (
+															<div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0 mb-[2px]">
+																<button
+																	type="button"
+																	onClick={() => setDeleteConfirmId(message.id)}
+																	className="p-1.5 rounded-full hover:bg-[#f2f2f7]/80 text-[#8e8e93] hover:text-[#ff3b30] transition-colors focus:outline-none"
+																	title="Delete message"
+																>
+																	<Trash2 className="w-[15px] h-[15px]" strokeWidth={2} />
+																</button>
+																{canEdit && (
+																	<button
+																		type="button"
+																		onClick={() => {
+																			setEditingMessageId(message.id);
+																			editor?.commands.setContent(message.content || "");
+																			editor?.commands.focus();
+																		}}
+																		className="p-1.5 rounded-full hover:bg-[#f2f2f7]/80 text-[#8e8e93] hover:text-[#007aff] transition-colors focus:outline-none"
+																		title="Edit message"
+																	>
+																		<Edit2 className="w-[15px] h-[15px]" strokeWidth={2} />
+																	</button>
+																)}
+																{togglePinMessage && (
+																	<button
+																		type="button"
+																		onClick={() =>
+																			togglePinMessage(
+																				message.id,
+																				!(message.isPinned || message.is_pinned),
+																			)
+																		}
+																		className={`p-1.5 rounded-full hover:bg-[#f2f2f7]/80 transition-colors focus:outline-none ${message.isPinned || message.is_pinned ? "text-[#ff9f0a]" : "text-[#8e8e93] hover:text-[#ff9f0a]"}`}
+																		title={
+																			message.isPinned || message.is_pinned
+																				? "Unpin message"
+																				: "Pin message"
+																		}
+																	>
+																		<Pin className="w-[15px] h-[15px]" strokeWidth={2} />
+																	</button>
+																)}
+																<button
+																	type="button"
+																	onClick={() => setReplyTo(message)}
+																	className="p-1.5 rounded-full hover:bg-[#f2f2f7]/80 text-[#8e8e93] hover:text-[#007aff] transition-colors focus:outline-none"
+																	title="Reply"
+																>
+																	<Reply className="w-[15px] h-[15px]" strokeWidth={2} />
+																</button>
+															</div>
+														)}
+
+														<div
+															className={`relative px-[16px] py-[8px] text-[15px] break-words leading-[1.4] transition-opacity hover:opacity-[0.95] max-w-full ${isDeleted
 																? "bg-transparent text-[#8e8e93] italic border border-[#e5e5ea] rounded-2xl"
 																: isOwnMessage
 																	? "bg-[#007aff] text-white rounded-[18px] rounded-br-[4px]"
 																	: "bg-[#e5e5ea] text-black rounded-[18px] rounded-bl-[4px]"
-														}`}
-														title={formatMessageTime(
-															message.created_at || message.createdAt || new Date().toISOString(),
-														)}
-													>
-														{isDeleted ? (
-															<p className="text-[#8e8e93] italic text-[14px] m-0">
-																This message was deleted
-															</p>
-														) : (
-															<>
-																{/* Quoted parent message */}
-																{message.parent && (
-																	<div
-																		className={`mt-1 mb-2 flex items-start gap-2 pl-2 border-l-[3px] rounded-r py-1 pr-2 max-w-sm cursor-pointer transition-colors ${
-																			isOwnMessage
+																}`}
+															title={formatMessageTime(
+																message.created_at || message.createdAt || new Date().toISOString(),
+															)}
+														>
+															{isDeleted ? (
+																<p className="text-[#8e8e93] italic text-[14px] m-0">
+																	This message was deleted
+																</p>
+															) : (
+																<>
+																	{/* Quoted parent message */}
+																	{message.parent && (
+																		<div
+																			className={`mt-1 mb-2 flex items-start gap-2 pl-2 border-l-[3px] rounded-r py-1 pr-2 max-w-sm cursor-pointer transition-colors ${isOwnMessage
 																				? "border-white/40 bg-white/10 hover:bg-white/20"
 																				: "border-black/20 bg-black/5 hover:bg-black/10"
-																		}`}
-																		onClick={(e) => {
-																			e.stopPropagation();
-																			const parentEl = document.getElementById(
-																				`msg-${message.parent?.id}`,
-																			);
-																			if (parentEl) {
-																				parentEl.scrollIntoView({
-																					behavior: "smooth",
-																					block: "center",
-																				});
-																				parentEl.classList.add(
-																					"ring-2",
-																					"ring-[#007aff]",
-																					"ring-offset-2",
+																				}`}
+																			onClick={(e) => {
+																				e.stopPropagation();
+																				const parentEl = document.getElementById(
+																					`msg-${message.parent?.id}`,
 																				);
-																				setTimeout(
-																					() =>
-																						parentEl.classList.remove(
-																							"ring-2",
-																							"ring-[#007aff]",
-																							"ring-offset-2",
-																						),
-																					2000,
-																				);
-																			}
-																		}}
-																		onKeyDown={() => {}}
-																		role="button"
-																		tabIndex={0}
-																	>
-																		<div className="min-w-0 flex-1">
-																			<p
-																				className={`text-[11px] font-semibold mb-0.5 ${isOwnMessage ? "text-white/90" : "text-black/60"}`}
-																			>
-																				{message.parent.user
-																					? [
+																				if (parentEl) {
+																					parentEl.scrollIntoView({
+																						behavior: "smooth",
+																						block: "center",
+																					});
+																					parentEl.classList.add(
+																						"ring-2",
+																						"ring-[#007aff]",
+																						"ring-offset-2",
+																					);
+																					setTimeout(
+																						() =>
+																							parentEl.classList.remove(
+																								"ring-2",
+																								"ring-[#007aff]",
+																								"ring-offset-2",
+																							),
+																						2000,
+																					);
+																				}
+																			}}
+																			onKeyDown={() => { }}
+																			role="button"
+																			tabIndex={0}
+																		>
+																			<div className="min-w-0 flex-1">
+																				<p
+																					className={`text-[11px] font-semibold mb-0.5 ${isOwnMessage ? "text-white/90" : "text-black/60"}`}
+																				>
+																					{message.parent.user
+																						? [
 																							message.parent.user.firstName,
 																							message.parent.user.lastName,
 																						]
@@ -858,67 +907,67 @@ export function ChatArea({
 																							.join(" ") ||
 																						message.parent.user.username ||
 																						message.parent.user.email?.split("@")[0]
-																					: "Unknown"}
-																			</p>
-																			{message.parent.content ? (
-																				<p
-																					className={`text-[12px] line-clamp-2 ${isOwnMessage ? "text-white/80" : "text-black/60"}`}
-																				>
-																					{message.parent.content
-																						.replace(/<[^>]*>/g, "")
-																						.slice(0, 150)}
+																						: "Unknown"}
 																				</p>
-																			) : message.parent.fileName || message.parent.file_name ? (
-																				<p
-																					className={`text-[12px] flex items-center gap-1 ${isOwnMessage ? "text-white/80" : "text-black/60"}`}
-																				>
-																					<FileIcon className="w-3 h-3" />
-																					{message.parent.fileName || message.parent.file_name}
-																				</p>
-																			) : null}
+																				{message.parent.content ? (
+																					<p
+																						className={`text-[12px] line-clamp-2 ${isOwnMessage ? "text-white/80" : "text-black/60"}`}
+																					>
+																						{message.parent.content
+																							.replace(/<[^>]*>/g, "")
+																							.slice(0, 150)}
+																					</p>
+																				) : message.parent.fileName || message.parent.file_name ? (
+																					<p
+																						className={`text-[12px] flex items-center gap-1 ${isOwnMessage ? "text-white/80" : "text-black/60"}`}
+																					>
+																						<FileIcon className="w-3 h-3" />
+																						{message.parent.fileName || message.parent.file_name}
+																					</p>
+																				) : null}
+																			</div>
 																		</div>
-																	</div>
-																)}
+																	)}
 
-																{message.content &&
-																	(isHtmlContent(message.content) ? (
-																		<div
-																			className={`mt-1 leading-relaxed text-[15px] prose prose-sm max-w-none [&_p]:my-0 [&_ul]:my-1 [&_ol]:my-1 ${
-																				isOwnMessage
+																	{message.content &&
+																		(isHtmlContent(message.content) ? (
+																			<div
+																				className={`mt-1 leading-relaxed text-[15px] prose prose-sm max-w-none [&_p]:my-0 [&_ul]:my-1 [&_ol]:my-1 ${isOwnMessage
 																					? "[&_a]:text-white [&_a]:underline text-white"
 																					: "[&_a]:text-[#007aff] text-black"
-																			}`}
-																			onClick={(e) => {
-																				e.stopPropagation();
-																				const target = e.target as HTMLElement;
-																				const mentionId = target.getAttribute("data-mention");
-																				if (mentionId) {
-																					const mentionedMember = members.find(
-																						(m) => m.userId === mentionId,
-																					);
-																					if (mentionedMember?.slug) {
-																						router.push(
-																							`/dashboard/chat/dm/${encodeURIComponent(mentionedMember.slug)}`,
-																						);
-																					}
-																				}
-																			}}
-																			onKeyDown={(e) => e.stopPropagation()}
-																			onPointerDown={(e) => {
-																				// only stop propagation if we are clicking an interactive element like a link
-																				if (
-																					(e.target as HTMLElement).tagName.toLowerCase() === "a" ||
-																					(e.target as HTMLElement).closest("a")
-																				) {
+																					}`}
+																				onClick={(e) => {
 																					e.stopPropagation();
-																				}
-																			}}
-																			suppressHydrationWarning
-																			// biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized with DOMPurify
-																			dangerouslySetInnerHTML={{
-																				__html:
-																					typeof DOMPurify.sanitize === "function"
-																						? DOMPurify.sanitize(message.content, {
+																					const target = e.target as HTMLElement;
+																					const mentionId = target.getAttribute("data-mention");
+																					if (mentionId) {
+																						const mentionedMember = members.find(
+																							(m) => m.userId === mentionId,
+																						);
+																						if (mentionedMember?.slug) {
+																							router.push(
+																								`/dashboard/chat/dm/${encodeURIComponent(mentionedMember.slug)}`,
+																							);
+																						}
+																					}
+																				}}
+																				onKeyDown={(e) => e.stopPropagation()}
+																				onPointerDown={(e) => {
+																					// only stop propagation if we are clicking an interactive element like a link
+																					if (
+																						(e.target as HTMLElement).tagName.toLowerCase() ===
+																						"a" ||
+																						(e.target as HTMLElement).closest("a")
+																					) {
+																						e.stopPropagation();
+																					}
+																				}}
+																				suppressHydrationWarning
+																				// biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized with DOMPurify
+																				dangerouslySetInnerHTML={{
+																					__html:
+																						typeof DOMPurify.sanitize === "function"
+																							? DOMPurify.sanitize(message.content, {
 																								ALLOWED_TAGS: [
 																									"p",
 																									"br",
@@ -941,143 +990,143 @@ export function ChatArea({
 																									"data-mention",
 																								],
 																							})
-																						: "",
-																			}}
-																		/>
-																	) : (
-																		<p
-																			className={`mt-1 leading-relaxed text-[15px] m-0 ${isOwnMessage ? "text-white" : "text-black"}`}
-																		>
-																			{message.content}
-																		</p>
-																	))}
-
-																{/* Attachments */}
-																{message.file_url && (
-																	<div
-																		className="mt-2"
-																		onClick={(e) => e.stopPropagation()}
-																		onKeyDown={(e) => e.stopPropagation()}
-																		onPointerDown={(e) => e.stopPropagation()}
-																	>
-																		{message.file_type?.startsWith("audio/") ? (
-																			<VoicePlayer
-																				src={message.file_url}
-																				duration={message.duration}
-																				isOwnMessage={isOwnMessage}
+																							: "",
+																				}}
 																			/>
-																		) : message.file_type?.startsWith("image/") ? (
-																			<a href={message.file_url} target="_blank" rel="noreferrer">
-																				<img
-																					src={message.file_url}
-																					alt={message.file_name || "Attachment"}
-																					className="max-w-[260px] max-h-[260px] rounded-lg border border-black/10 object-contain hover:opacity-90 transition-opacity"
-																				/>
-																			</a>
 																		) : (
-																			<a
-																				href={message.file_url}
-																				target="_blank"
-																				rel="noreferrer"
-																				className={`flex items-center gap-3 p-3 rounded-lg border max-w-sm transition-colors ${
-																					isOwnMessage
+																			<p
+																				className={`mt-1 leading-relaxed text-[15px] m-0 ${isOwnMessage ? "text-white" : "text-black"}`}
+																			>
+																				{message.content}
+																			</p>
+																		))}
+
+																	{/* Attachments */}
+																	{message.file_url && (
+																		<div
+																			className="mt-2"
+																			onClick={(e) => e.stopPropagation()}
+																			onKeyDown={(e) => e.stopPropagation()}
+																			onPointerDown={(e) => e.stopPropagation()}
+																		>
+																			{message.file_type?.startsWith("audio/") ? (
+																				<VoicePlayer
+																					src={message.file_url}
+																					duration={message.duration}
+																					isOwnMessage={isOwnMessage}
+																				/>
+																			) : message.file_type?.startsWith("image/") ? (
+																				<a href={message.file_url} target="_blank" rel="noreferrer">
+																					<img
+																						src={message.file_url}
+																						alt={message.file_name || "Attachment"}
+																						className="max-w-[260px] max-h-[260px] rounded-lg border border-black/10 object-contain hover:opacity-90 transition-opacity"
+																					/>
+																				</a>
+																			) : (
+																				<a
+																					href={message.file_url}
+																					target="_blank"
+																					rel="noreferrer"
+																					className={`flex items-center gap-3 p-3 rounded-lg border max-w-sm transition-colors ${isOwnMessage
 																						? "bg-white/10 border-white/20 hover:bg-white/20 text-white"
 																						: "bg-black/5 border-black/10 hover:bg-black/10 text-black"
-																				}`}
-																			>
-																				<div
-																					className={`w-10 h-10 rounded flex items-center justify-center shrink-0 ${isOwnMessage ? "bg-white/20" : "bg-black/10"}`}
+																						}`}
 																				>
-																					<FileIcon className="w-5 h-5" />
-																				</div>
-																				<div className="min-w-0 flex-1">
-																					<p className="text-sm font-medium truncate">
-																						{message.file_name || "Attached File"}
-																					</p>
-																					{message.file_size && (
-																						<p
-																							className={`text-xs ${isOwnMessage ? "text-white/70" : "text-black/60"}`}
-																						>
-																							{(message.file_size / 1024).toFixed(1)} KB
+																					<div
+																						className={`w-10 h-10 rounded flex items-center justify-center shrink-0 ${isOwnMessage ? "bg-white/20" : "bg-black/10"}`}
+																					>
+																						<FileIcon className="w-5 h-5" />
+																					</div>
+																					<div className="min-w-0 flex-1">
+																						<p className="text-sm font-medium truncate">
+																							{message.file_name || "Attached File"}
 																						</p>
-																					)}
-																				</div>
-																			</a>
-																		)}
-																	</div>
-																)}
-															</>
-														)}
+																						{message.file_size && (
+																							<p
+																								className={`text-xs ${isOwnMessage ? "text-white/70" : "text-black/60"}`}
+																							>
+																								{(message.file_size / 1024).toFixed(1)} KB
+																							</p>
+																						)}
+																					</div>
+																				</a>
+																			)}
+																		</div>
+																	)}
+																</>
+															)}
 
-														{/* Edit indicator */}
-														{(message.isEdited || message.is_edited) && (
-															<span
-																className={`block text-[10px] mt-1 text-right italic font-medium ${isOwnMessage ? "text-white/60" : "text-black/40"}`}
-															>
-																Edited
-															</span>
+															{/* Edit indicator */}
+															{(message.isEdited || message.is_edited) && (
+																<span
+																	className={`block text-[10px] mt-1 text-right italic font-medium ${isOwnMessage ? "text-white/60" : "text-black/40"}`}
+																>
+																	Edited
+																</span>
+															)}
+														</div>
+
+														{/* Right Side Actions (if !isOwnMessage) */}
+														{!isOwnMessage && !isDeleted && (
+															<div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0 mb-[2px]">
+																<button
+																	type="button"
+																	onClick={() => setReplyTo(message)}
+																	className="p-1.5 rounded-full hover:bg-[#f2f2f7]/80 text-[#8e8e93] hover:text-[#007aff] transition-colors focus:outline-none"
+																	title="Reply"
+																>
+																	<Reply className="w-[15px] h-[15px]" strokeWidth={2} />
+																</button>
+																{togglePinMessage && (
+																	<button
+																		type="button"
+																		onClick={() =>
+																			togglePinMessage(
+																				message.id,
+																				!(message.isPinned || message.is_pinned),
+																			)
+																		}
+																		className={`p-1.5 rounded-full hover:bg-[#f2f2f7]/80 transition-colors focus:outline-none ${message.isPinned || message.is_pinned ? "text-[#ff9f0a]" : "text-[#8e8e93] hover:text-[#ff9f0a]"}`}
+																		title={
+																			message.isPinned || message.is_pinned
+																				? "Unpin message"
+																				: "Pin message"
+																		}
+																	>
+																		<Pin className="w-[15px] h-[15px]" strokeWidth={2} />
+																	</button>
+																)}
+															</div>
 														)}
 													</div>
 
-													{/* Right Side Actions (if !isOwnMessage) */}
-													{!isOwnMessage && !isDeleted && (
-														<div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0 mb-[2px]">
+													{/* Delete Confirmation explicitly placed out of the bubble */}
+													{deleteConfirmId === message.id && (
+														<div
+															className={`mt-2 flex items-center gap-2 p-2 rounded-lg bg-red-50 border border-red-200 ${isOwnMessage && "self-end"}`}
+														>
+															<span className="text-sm text-red-700">Delete this message?</span>
 															<button
 																type="button"
-																onClick={() => setReplyTo(message)}
-																className="p-1.5 rounded-full hover:bg-[#f2f2f7]/80 text-[#8e8e93] hover:text-[#007aff] transition-colors focus:outline-none"
-																title="Reply"
+																onClick={() => {
+																	deleteMessage(message.id);
+																	setDeleteConfirmId(null);
+																}}
+																className="px-2.5 py-1 text-xs font-medium rounded bg-red-500 text-white hover:bg-red-600 transition-colors"
 															>
-																<Reply className="w-[15px] h-[15px]" strokeWidth={2} />
+																Delete
 															</button>
-															{togglePinMessage && (
-																<button
-																	type="button"
-																	onClick={() =>
-																		togglePinMessage(
-																			message.id,
-																			!(message.isPinned || message.is_pinned),
-																		)
-																	}
-																	className={`p-1.5 rounded-full hover:bg-[#f2f2f7]/80 transition-colors focus:outline-none ${message.isPinned || message.is_pinned ? "text-[#ff9f0a]" : "text-[#8e8e93] hover:text-[#ff9f0a]"}`}
-																	title={
-																		message.isPinned || message.is_pinned
-																			? "Unpin message"
-																			: "Pin message"
-																	}
-																>
-																	<Pin className="w-[15px] h-[15px]" strokeWidth={2} />
-																</button>
-															)}
+															<button
+																type="button"
+																onClick={() => setDeleteConfirmId(null)}
+																className="px-2.5 py-1 text-xs font-medium rounded bg-white border border-[#e5e7eb] text-[#404040] hover:bg-[#f5f5f5] transition-colors"
+															>
+																Cancel
+															</button>
 														</div>
 													)}
 												</div>
-
-												{/* Delete Confirmation explicitly placed out of the bubble */}
-												{deleteConfirmId === message.id && (
-													<div
-														className={`mt-2 flex items-center gap-2 p-2 rounded-lg bg-red-50 border border-red-200 ${isOwnMessage && "self-end"}`}
-													>
-														<span className="text-sm text-red-700">Delete this message?</span>
-														<button
-															type="button"
-															onClick={() => {
-																deleteMessage(message.id);
-																setDeleteConfirmId(null);
-															}}
-															className="px-2.5 py-1 text-xs font-medium rounded bg-red-500 text-white hover:bg-red-600 transition-colors"
-														>
-															Delete
-														</button>
-														<button
-															type="button"
-															onClick={() => setDeleteConfirmId(null)}
-															className="px-2.5 py-1 text-xs font-medium rounded bg-white border border-[#e5e7eb] text-[#404040] hover:bg-[#f5f5f5] transition-colors"
-														>
-															Cancel
-														</button>
-													</div>
-												)}
 											</div>
 										</div>
 									</div>
@@ -1132,7 +1181,6 @@ export function ChatArea({
 							</button>
 						</div>
 					)}
-
 					<div className="flex items-end gap-3 w-full px-4 pb-4 pt-2 bg-white">
 						{/* Attach Button (Left) */}
 						<div className="pb-[4px] shrink-0">
@@ -1331,11 +1379,11 @@ export function ChatArea({
 											>
 												<Smile className="w-[18px] h-[18px]" strokeWidth={1.5} />
 											</button>
-										{showEmoji && (
-											<div className="absolute bottom-[120%] right-[-10px] z-50 shadow-xl rounded-xl overflow-hidden border border-[#e5e5ea]">
-												<EmojiPicker onSelect={handleEmojiSelect} />
-											</div>
-										)}
+											{showEmoji && (
+												<div className="absolute bottom-[120%] right-[-10px] z-50 shadow-xl rounded-xl overflow-hidden border border-[#e5e5ea]">
+													<EmojiPicker onSelect={handleEmojiSelect} />
+												</div>
+											)}
 										</div>
 
 										{/* Send Button (visible when not empty) */}

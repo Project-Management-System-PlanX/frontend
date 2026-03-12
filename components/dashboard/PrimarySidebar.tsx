@@ -23,13 +23,11 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app-store";
+import { useUnreadStore } from "@/stores/unread-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 
 const SettingsModal = dynamic(
-	() =>
-		import("@/components/modals/SettingsModal").then(
-			(mod) => mod.SettingsModal,
-		),
+	() => import("@/components/modals/SettingsModal").then((mod) => mod.SettingsModal),
 	{
 		ssr: false,
 	},
@@ -37,9 +35,7 @@ const SettingsModal = dynamic(
 
 const InviteMembersDialog = dynamic(
 	() =>
-		import("@/components/workspaces/InviteMembersDialog").then(
-			(mod) => mod.InviteMembersDialog,
-		),
+		import("@/components/workspaces/InviteMembersDialog").then((mod) => mod.InviteMembersDialog),
 	{
 		ssr: false,
 	},
@@ -80,6 +76,11 @@ export function PrimarySidebar({ defaultCollapsed = false }: PrimarySidebarProps
 		}
 	}, [pathname]);
 
+	const totalUnread = useUnreadStore((s) => {
+		const c = s.counts;
+		return Object.values(c).reduce((sum, v) => sum + v, 0);
+	});
+
 	const navItems = [
 		{ icon: LayoutGrid, label: "Dashboard", href: "/dashboard" },
 		{
@@ -87,6 +88,7 @@ export function PrimarySidebar({ defaultCollapsed = false }: PrimarySidebarProps
 			label: "Chats",
 			href: "/dashboard/chat",
 			active: pathname.startsWith("/dashboard/chat"),
+			badge: totalUnread > 0 ? (totalUnread > 99 ? "99+" : String(totalUnread)) : undefined,
 		},
 		{
 			icon: CheckSquare,
@@ -197,12 +199,11 @@ export function PrimarySidebar({ defaultCollapsed = false }: PrimarySidebarProps
 							}}
 						/>
 					))}
-
 				</div>
 			</motion.div>
 
 			{/* Dialogs — portaled to body so they escape overflow-hidden */}
-			{typeof document !== "undefined" &&
+			{hasMounted &&
 				activeWorkspaceId &&
 				createPortal(
 					<InviteMembersDialog
@@ -214,7 +215,7 @@ export function PrimarySidebar({ defaultCollapsed = false }: PrimarySidebarProps
 					/>,
 					document.body,
 				)}
-			{typeof document !== "undefined" &&
+			{hasMounted &&
 				createPortal(
 					<SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />,
 					document.body,

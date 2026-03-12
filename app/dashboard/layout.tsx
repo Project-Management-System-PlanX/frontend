@@ -5,17 +5,14 @@ import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import type React from "react";
 import { PrimarySidebar } from "@/components/dashboard/PrimarySidebar";
-import { useAppStore } from "@/stores/app-store";
 import { MeetingProvider } from "@/components/meeting/MeetingProvider";
+import { useAppStore } from "@/stores/app-store";
 
 const SynapseSidebar = dynamic(
-	() =>
-		import("@/components/dashboard/SynapseSidebar").then(
-			(mod) => mod.SynapseSidebar,
-		),
-		{
-			ssr: false,
-		},
+	() => import("@/components/dashboard/SynapseSidebar").then((mod) => mod.SynapseSidebar),
+	{
+		ssr: false,
+	},
 );
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -30,8 +27,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 	const isDeepLink =
 		pathname.includes("/channel/") || pathname.includes("/dm/") || pathname.includes("/space/");
 
-	// Only show the secondary sidebar if they are on the root Chat or Task routing pages
-	const hasSecondary = (isChat || isTask) && !isDeepLink && sidebarOpen;
+	// Show the secondary sidebar when on Chat or Task routing pages, even in deep links
+	const hasSecondary = (isChat || isTask) && sidebarOpen;
 
 	return (
 		<MeetingProvider>
