@@ -6,6 +6,7 @@ import {
 } from "@tanstack/query-persist-client-core";
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryStreamedHydration } from "@tanstack/react-query-next-experimental";
 import { useEffect, useState } from "react";
 import { getQueryClient } from "@/lib/query-client";
 
@@ -39,7 +40,9 @@ export function QueryProvider({ children }: QueryProviderProps) {
 
 	return (
 		<QueryClientProvider client={queryClient}>
-			{children}
+			<ReactQueryStreamedHydration>
+				{children}
+			</ReactQueryStreamedHydration>
 			{/* process.env.NODE_ENV === "development" && (
 				<ReactQueryDevtools buttonPosition="bottom-left" />
 			) */}

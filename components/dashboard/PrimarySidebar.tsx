@@ -13,17 +13,37 @@ import {
 	UserPlus,
 	Zap,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { SettingsModal } from "@/components/modals/SettingsModal";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { InviteMembersDialog } from "@/components/workspaces/InviteMembersDialog";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { cn } from "@/lib/utils";
+import { useAppStore } from "@/stores/app-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
+
+const SettingsModal = dynamic(
+	() =>
+		import("@/components/modals/SettingsModal").then(
+			(mod) => mod.SettingsModal,
+		),
+	{
+		ssr: false,
+	},
+);
+
+const InviteMembersDialog = dynamic(
+	() =>
+		import("@/components/workspaces/InviteMembersDialog").then(
+			(mod) => mod.InviteMembersDialog,
+		),
+	{
+		ssr: false,
+	},
+);
 
 interface PrimarySidebarProps {
 	defaultCollapsed?: boolean;
@@ -33,6 +53,7 @@ export function PrimarySidebar({ defaultCollapsed = false }: PrimarySidebarProps
 	const pathname = usePathname();
 	const { user } = useSupabaseAuth();
 	const { activeWorkspaceId, activeWorkspaceName } = useWorkspaceStore();
+	const { sidebarOpen, setSidebarOpen, toggleSidebar } = useAppStore();
 
 	const [isExpanded, setIsExpanded] = useState(!defaultCollapsed);
 	const [inviteOpen, setInviteOpen] = useState(false);
@@ -151,6 +172,14 @@ export function PrimarySidebar({ defaultCollapsed = false }: PrimarySidebarProps
 							{...item}
 							isActive={item.active ?? pathname === item.href}
 							isExpanded={isExpanded}
+							onItemClick={() => {
+								if (item.active) {
+									toggleSidebar();
+								} else {
+									setSidebarOpen(true);
+									if (isExpanded) setIsExpanded(false);
+								}
+							}}
 						/>
 					))}
 				</div>
@@ -163,19 +192,12 @@ export function PrimarySidebar({ defaultCollapsed = false }: PrimarySidebarProps
 							{...item}
 							isActive={item.active}
 							isExpanded={isExpanded}
+							onItemClick={() => {
+								if (isExpanded) setIsExpanded(false);
+							}}
 						/>
 					))}
 
-					{!isExpanded && (
-						<button
-							type="button"
-							onClick={() => setIsExpanded(true)}
-							className="mt-2 w-12 h-12 flex items-center justify-center rounded-xl hover:bg-slate-200/60 text-slate-400 transition-all mx-auto"
-							title="Expand Sidebar"
-						>
-							<PanelLeftOpen className="w-5 h-5" />
-						</button>
-					)}
 				</div>
 			</motion.div>
 
@@ -209,6 +231,7 @@ function PrimaryNavItem({
 	isActive,
 	isExpanded,
 	isAccount,
+	onItemClick,
 }: {
 	icon?: LucideIcon;
 	label: string;
@@ -217,6 +240,7 @@ function PrimaryNavItem({
 	isActive?: boolean;
 	isExpanded: boolean;
 	isAccount?: boolean;
+	onItemClick?: () => void;
 }) {
 	const { user } = useSupabaseAuth();
 	const initials = user?.email?.substring(0, 2).toUpperCase() || "?";
@@ -232,7 +256,10 @@ function PrimaryNavItem({
 					? "bg-gray-900/10 text-gray-900 font-semibold"
 					: "text-gray-500 hover:text-gray-900 hover:bg-gray-900/5",
 			)}
-			onClick={onClick}
+			onClick={() => {
+				onClick?.();
+				onItemClick?.();
+			}}
 		>
 			{isAccount ? (
 				<Avatar

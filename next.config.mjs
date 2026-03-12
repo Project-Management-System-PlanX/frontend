@@ -9,9 +9,13 @@ const nextConfig = {
 	typescript: {
 		ignoreBuildErrors: true,
 	},
+	compiler: {
+		removeConsole: process.env.NODE_ENV === "production",
+	},
 
-	// ✅ Image optimization enabled with remote patterns
+	// ✅ Image optimization: remote patterns + modern formats
 	images: {
+		formats: ["image/webp", "image/avif"],
 		remotePatterns: [
 			{
 				protocol: "https",

@@ -25,7 +25,9 @@ export async function fetchClient<T>(
 
 	// Setup default headers including Authorization
 	const headers = new Headers(customHeaders);
-	headers.set("Content-Type", "application/json");
+	if (customConfig.body) {
+		headers.set("Content-Type", "application/json");
+	}
 	if (token) {
 		headers.set("Authorization", `Bearer ${token}`);
 	}

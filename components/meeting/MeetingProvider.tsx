@@ -1,13 +1,23 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useRef } from "react";
 import { IncomingCallToast } from "@/components/meeting/IncomingCallToast";
-import { VideoRoom } from "@/components/meeting/VideoRoom";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { createClient } from "@/lib/supabase/client";
 import type { MeetingNotification } from "@/lib/types/models";
 import { useMeetingStore } from "@/stores/meeting-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
+
+const VideoRoom = dynamic(
+	() =>
+		import("@/components/meeting/VideoRoom").then(
+			(mod) => mod.VideoRoom,
+		),
+	{
+		ssr: false,
+	},
+);
 
 /**
  * MeetingProvider handles:

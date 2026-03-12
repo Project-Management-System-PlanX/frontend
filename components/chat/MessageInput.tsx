@@ -1,7 +1,5 @@
 "use client";
 
-import data from "@emoji-mart/data";
-import Picker from "@emoji-mart/react";
 import { Node as TiptapNode } from "@tiptap/core";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -26,8 +24,19 @@ import {
 	Strikethrough,
 	Underline as UnderlineIcon,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useWorkspaceMembers } from "@/hooks/use-workspace-members";
+
+const EmojiPicker = dynamic(
+	() =>
+		import("./EmojiPicker").then(
+			(mod) => mod.EmojiPicker,
+		),
+	{
+		ssr: false,
+	},
+);
 
 const MentionNode = TiptapNode.create({
 	name: "mention",
@@ -515,14 +524,7 @@ export function MessageInput({ onSendMessage, disabled, channelName }: MessageIn
 							</button>
 							{showEmoji && (
 								<div className="absolute bottom-10 left-0 z-50 shadow-xl rounded-xl overflow-hidden">
-									<Picker
-										data={data}
-										onEmojiSelect={handleEmojiSelect}
-										theme="light"
-										previewPosition="none"
-										skinTonePosition="none"
-										maxFrequentRows={2}
-									/>
+									<EmojiPicker onSelect={handleEmojiSelect} />
 								</div>
 							)}
 						</div>

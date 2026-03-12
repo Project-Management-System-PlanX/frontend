@@ -1,7 +1,4 @@
 "use client";
-
-import data from "@emoji-mart/data";
-import Picker from "@emoji-mart/react";
 import { Node } from "@tiptap/core";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -69,6 +66,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 const StartMeetingButton = dynamic(
 	() => import("@/components/meeting/StartMeetingButton").then((m) => m.StartMeetingButton),
 	{ ssr: false },
+);
+
+const EmojiPicker = dynamic(
+	() =>
+		import("@/components/chat/EmojiPicker").then(
+			(mod) => mod.EmojiPicker,
+		),
+	{
+		ssr: false,
+	},
 );
 
 import { VoicePlayer } from "@/components/chat/VoicePlayer";
@@ -1324,18 +1331,11 @@ export function ChatArea({
 											>
 												<Smile className="w-[18px] h-[18px]" strokeWidth={1.5} />
 											</button>
-											{showEmoji && (
-												<div className="absolute bottom-[120%] right-[-10px] z-50 shadow-xl rounded-xl overflow-hidden border border-[#e5e5ea]">
-													<Picker
-														data={data}
-														onEmojiSelect={handleEmojiSelect}
-														theme="light"
-														previewPosition="none"
-														skinTonePosition="none"
-														maxFrequentRows={2}
-													/>
-												</div>
-											)}
+										{showEmoji && (
+											<div className="absolute bottom-[120%] right-[-10px] z-50 shadow-xl rounded-xl overflow-hidden border border-[#e5e5ea]">
+												<EmojiPicker onSelect={handleEmojiSelect} />
+											</div>
+										)}
 										</div>
 
 										{/* Send Button (visible when not empty) */}
