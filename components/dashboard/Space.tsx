@@ -77,7 +77,7 @@ export function Space({ spaceId }: { spaceId: string }) {
 
 	return (
 		<div
-			className="flex-1 flex flex-col bg-white min-w-0 h-full"
+			className="flex-1 flex flex-col bg-white min-w-0 h-full overflow-hidden"
 			style={{ fontFamily: "var(--font-figtree), Figtree" }}
 		>
 			{/* ──────── Top Header Bar ──────── */}

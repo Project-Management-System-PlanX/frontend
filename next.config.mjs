@@ -39,18 +39,23 @@ const nextConfig = {
 		const workspaceServiceUrl = process.env.WORKSPACE_SERVICE_URL || "http://localhost:3002";
 		const meetingServiceUrl = process.env.MEETING_SERVICE_URL || "http://localhost:3005";
 
-		return [
-			// Meeting service routes
-			{
-				source: "/api/meetings/:path*",
-				destination: `${meetingServiceUrl}/api/meetings/:path*`,
-			},
-			// Workspace service routes (default for all other /api calls)
-			{
-				source: "/api/:path*",
-				destination: `${workspaceServiceUrl}/:path*`,
-			},
-		];
+		return {
+			beforeFiles: [],
+			afterFiles: [
+				// Meeting service routes
+				{
+					source: "/api/meetings/:path*",
+					destination: `${meetingServiceUrl}/api/meetings/:path*`,
+				},
+			],
+			// Workspace service catch-all — only applies when no Next.js API route matches
+			fallback: [
+				{
+					source: "/api/:path*",
+					destination: `${workspaceServiceUrl}/:path*`,
+				},
+			],
+		};
 	},
 };
 

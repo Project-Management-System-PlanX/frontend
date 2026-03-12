@@ -39,106 +39,76 @@ interface ChatMessage {
 	tasks?: SuggestedTask[];
 }
 
-// ─── Hardcoded AI responses ───
-function generateHardcodedTasks(prompt: string): SuggestedTask[] {
-	const lower = prompt.toLowerCase();
+// ─── API integration ───
+const AI_TASK_API = "/api/process-task";
 
-	if (lower.includes("landing") || lower.includes("website") || lower.includes("homepage")) {
-		return [
-			{ id: "ai-1", title: "Design landing page wireframe", priority: "HIGH", workType: "TASK" },
-			{ id: "ai-2", title: "Implement hero section with CTA", priority: "HIGH", workType: "TASK" },
-			{
-				id: "ai-3",
-				title: "Build features/benefits section",
-				priority: "MEDIUM",
-				workType: "TASK",
-			},
-			{
-				id: "ai-4",
-				title: "Create responsive navigation bar",
-				priority: "MEDIUM",
-				workType: "TASK",
-			},
-			{
-				id: "ai-5",
-				title: "Add footer with links and social icons",
-				priority: "LOW",
-				workType: "TASK",
-			},
-			{
-				id: "ai-6",
-				title: "Optimize for mobile responsiveness",
-				priority: "HIGH",
-				workType: "TASK",
-			},
-		];
+function mapPriority(value?: string): SuggestedTask["priority"] {
+	const v = (value || "medium").toLowerCase();
+	if (v.includes("critical") || v.includes("urgent")) return "CRITICAL";
+	if (v.includes("high")) return "HIGH";
+	if (v.includes("low")) return "LOW";
+	return "MEDIUM";
+}
+
+function mapWorkType(value?: string): SuggestedTask["workType"] {
+	const v = (value || "task").toLowerCase();
+	if (v.includes("bug") || v.includes("fix")) return "BUG";
+	if (v.includes("story") || v.includes("feature")) return "STORY";
+	if (v.includes("epic")) return "EPIC";
+	return "TASK";
+}
+
+function parseDate(dateStr?: string): Date | undefined {
+	if (!dateStr || dateStr === "TBD") return undefined;
+	const d = new Date(dateStr);
+	return Number.isNaN(d.getTime()) ? undefined : d;
+}
+
+async function fetchAITasks(
+	description: string,
+): Promise<{ tasks: SuggestedTask[]; summary: string }> {
+	const res = await fetch(AI_TASK_API, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ task_description: description }),
+	});
+
+	if (!res.ok) {
+		const err = await res.json().catch(() => null);
+		throw new Error(err?.detail?.error || "Failed to generate tasks");
 	}
 
-	if (
-		lower.includes("auth") ||
-		lower.includes("login") ||
-		lower.includes("signup") ||
-		lower.includes("sign")
-	) {
-		return [
-			{
-				id: "ai-1",
-				title: "Set up authentication provider (OAuth/JWT)",
-				priority: "CRITICAL",
-				workType: "TASK",
-			},
-			{ id: "ai-2", title: "Create login page UI", priority: "HIGH", workType: "TASK" },
-			{ id: "ai-3", title: "Create signup/register page UI", priority: "HIGH", workType: "TASK" },
-			{ id: "ai-4", title: "Implement password reset flow", priority: "MEDIUM", workType: "TASK" },
-			{ id: "ai-5", title: "Add email verification", priority: "MEDIUM", workType: "TASK" },
-			{ id: "ai-6", title: "Write auth middleware/guard", priority: "HIGH", workType: "STORY" },
-		];
-	}
+	const data = await res.json();
+	const today = new Date();
 
-	if (lower.includes("api") || lower.includes("backend") || lower.includes("endpoint")) {
-		return [
-			{ id: "ai-1", title: "Design REST API schema & routes", priority: "HIGH", workType: "STORY" },
-			{
-				id: "ai-2",
-				title: "Set up database models/migrations",
-				priority: "HIGH",
-				workType: "TASK",
+	const tasks: SuggestedTask[] = (data.subtasks || []).map(
+		(
+			st: {
+				id?: string;
+				title?: string;
+				effort?: string;
+				start_date?: string;
+				due_date?: string;
 			},
-			{ id: "ai-3", title: "Implement CRUD endpoints", priority: "HIGH", workType: "TASK" },
-			{
-				id: "ai-4",
-				title: "Add input validation & error handling",
-				priority: "MEDIUM",
-				workType: "TASK",
-			},
-			{ id: "ai-5", title: "Write API integration tests", priority: "MEDIUM", workType: "TASK" },
-		];
-	}
+			i: number,
+		) => ({
+			id: st.id || `ai-${i + 1}`,
+			title: st.title || `Subtask ${i + 1}`,
+			priority: mapPriority(st.effort || data.priority),
+			workType: mapWorkType(data.task_type),
+			startDate:
+				parseDate(st.start_date) ||
+				new Date(today.getFullYear(), today.getMonth(), today.getDate() + i * 2),
+			dueDate:
+				parseDate(st.due_date) ||
+				new Date(today.getFullYear(), today.getMonth(), today.getDate() + i * 2 + 3),
+		}),
+	);
 
-	if (lower.includes("bug") || lower.includes("fix") || lower.includes("issue")) {
-		return [
-			{ id: "ai-1", title: "Reproduce and document the bug", priority: "HIGH", workType: "BUG" },
-			{ id: "ai-2", title: "Identify root cause in codebase", priority: "HIGH", workType: "BUG" },
-			{ id: "ai-3", title: "Implement fix", priority: "CRITICAL", workType: "BUG" },
-			{ id: "ai-4", title: "Write regression test", priority: "MEDIUM", workType: "TASK" },
-			{ id: "ai-5", title: "Deploy fix and verify in staging", priority: "HIGH", workType: "TASK" },
-		];
-	}
-
-	// Default generic tasks
-	return [
-		{
-			id: "ai-1",
-			title: "Define project requirements & scope",
-			priority: "HIGH",
-			workType: "STORY",
-		},
-		{ id: "ai-2", title: "Create initial project structure", priority: "HIGH", workType: "TASK" },
-		{ id: "ai-3", title: "Design UI/UX mockups", priority: "MEDIUM", workType: "TASK" },
-		{ id: "ai-4", title: "Implement core feature logic", priority: "HIGH", workType: "TASK" },
-		{ id: "ai-5", title: "Add unit & integration tests", priority: "MEDIUM", workType: "TASK" },
-		{ id: "ai-6", title: "Code review & QA testing", priority: "LOW", workType: "TASK" },
-	];
+	return {
+		tasks,
+		summary: data.llm_summary || `Here are ${tasks.length} suggested tasks for your project.`,
+	};
 }
 
 // ─── Priority badge ───
@@ -187,7 +157,7 @@ export function AskAIPanel({
 		}, 50);
 	}, []);
 
-	const handleSend = useCallback(() => {
+	const handleSend = useCallback(async () => {
 		const trimmed = input.trim();
 		if (!trimmed) return;
 
@@ -197,26 +167,27 @@ export function AskAIPanel({
 		setIsTyping(true);
 		scrollToBottom();
 
-		// Simulate AI "thinking" delay
-		setTimeout(() => {
-			const tasks = generateHardcodedTasks(trimmed);
-			const today = new Date();
-			const tasksWithDates = tasks.map((t, i) => ({
-				...t,
-				startDate: new Date(today.getFullYear(), today.getMonth(), today.getDate() + i * 2),
-				dueDate: new Date(today.getFullYear(), today.getMonth(), today.getDate() + i * 2 + 3),
-			}));
+		try {
+			const { tasks, summary } = await fetchAITasks(trimmed);
 
 			const aiMsg: ChatMessage = {
 				id: `a-${Date.now()}`,
 				role: "ai",
-				content: `Here are ${tasksWithDates.length} suggested tasks for "${trimmed}". You can assign members and adjust dates before creating them:`,
-				tasks: tasksWithDates,
+				content: `${summary} You can assign members and adjust dates before creating them:`,
+				tasks,
 			};
 			setMessages((prev) => [...prev, aiMsg]);
+		} catch (err) {
+			const errorMsg: ChatMessage = {
+				id: `e-${Date.now()}`,
+				role: "ai",
+				content: `Sorry, I couldn't generate tasks right now. ${err instanceof Error ? err.message : "Please try again."}`,
+			};
+			setMessages((prev) => [...prev, errorMsg]);
+		} finally {
 			setIsTyping(false);
 			scrollToBottom();
-		}, 1200);
+		}
 	}, [input, scrollToBottom]);
 
 	const updateTask = useCallback(

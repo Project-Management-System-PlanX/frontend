@@ -41,7 +41,7 @@ export function SpaceListView({ spaceId }: { spaceId: string }) {
 	const selectedTask = tasks?.find((t) => t.id === selectedTaskId) || null;
 
 	return (
-		<>
+		<div className="flex-1 flex flex-col min-h-0">
 			<ScrollArea className="flex-1">
 				<div className="pb-10 animate-[fadeInUp_0.35s_ease-out]">
 					<div className="border-y border-slate-200 overflow-hidden">
@@ -92,7 +92,7 @@ export function SpaceListView({ spaceId }: { spaceId: string }) {
 				onClose={() => setSelectedTaskId(null)}
 				spaceName={space?.name}
 			/>
-		</>
+		</div>
 	);
 }
 
