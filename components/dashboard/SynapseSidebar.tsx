@@ -15,6 +15,7 @@ import { API_ENDPOINTS } from "@/lib/api/config";
 import { cn } from "@/lib/utils";
 import { useChannelStore } from "@/stores/channel-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
+import { CreateSpaceDialog } from "../modals/CreateSpaceDialog";
 import { CreateChannelDialog } from "./CreateChannelDialog";
 
 /* ═══════════════════════════════════════════════════════════
@@ -41,6 +42,7 @@ export function SynapseSidebar() {
 
 	// ── Dialogs ──
 	const [createChannelOpen, setCreateChannelOpen] = useState(false);
+	const [createSpaceOpen, setCreateSpaceOpen] = useState(false);
 
 	// ── Derived data ──
 	const nonDMChannels = useMemo(
@@ -218,6 +220,15 @@ export function SynapseSidebar() {
 							title="Spaces"
 							expanded={spacesExpanded}
 							onToggle={() => setSpacesExpanded(!spacesExpanded)}
+							action={
+								<button
+									type="button"
+									onClick={() => setCreateSpaceOpen(true)}
+									className="p-1 hover:bg-slate-200 rounded-lg text-slate-500 transition-colors"
+								>
+									<Plus className="w-4 h-4" />
+								</button>
+							}
 						>
 							{spaces?.map((space: { id: string; name: string }) => (
 								<Link key={space.id} href={`/dashboard/task/space/${space.id}`}>
@@ -247,6 +258,8 @@ export function SynapseSidebar() {
 				onChannelCreated={() => {}} // Integration logic kept in store
 				workspaceName={activeWorkspaceName || "Workspace"}
 			/>
+
+			<CreateSpaceDialog open={createSpaceOpen} onOpenChange={setCreateSpaceOpen} />
 		</div>
 	);
 }
