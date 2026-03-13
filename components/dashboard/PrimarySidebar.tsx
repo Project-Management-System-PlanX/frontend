@@ -8,7 +8,6 @@ import {
 	type LucideIcon,
 	MessageSquare,
 	PanelLeftClose,
-	PanelLeftOpen,
 	Settings,
 	UserPlus,
 	Zap,
@@ -49,7 +48,7 @@ export function PrimarySidebar({ defaultCollapsed = false }: PrimarySidebarProps
 	const pathname = usePathname();
 	const { user } = useSupabaseAuth();
 	const { activeWorkspaceId, activeWorkspaceName } = useWorkspaceStore();
-	const { sidebarOpen, setSidebarOpen, toggleSidebar } = useAppStore();
+	const { setSidebarOpen, toggleSidebar } = useAppStore();
 
 	const [isExpanded, setIsExpanded] = useState(!defaultCollapsed);
 	const [inviteOpen, setInviteOpen] = useState(false);
@@ -177,6 +176,10 @@ export function PrimarySidebar({ defaultCollapsed = false }: PrimarySidebarProps
 							onItemClick={() => {
 								if (item.active) {
 									toggleSidebar();
+									// Stay on current route, but shrink primary sidebar if it was expanded
+									if (item.label !== "Dashboard" && isExpanded) {
+										setIsExpanded(false);
+									}
 								} else {
 									setSidebarOpen(true);
 									if (isExpanded) setIsExpanded(false);
@@ -307,13 +310,14 @@ function PrimaryNavItem({
 		</button>
 	);
 
-	const linkedContent = href ? (
-		<Link href={href} className="w-full">
-			{content}
-		</Link>
-	) : (
-		content
-	);
+	const linkedContent =
+		href && !isActive ? (
+			<Link href={href} className="w-full">
+				{content}
+			</Link>
+		) : (
+			content
+		);
 
 	if (isExpanded) {
 		return linkedContent;

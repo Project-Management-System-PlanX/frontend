@@ -55,11 +55,13 @@ import {
 	PlusCircle,
 	Reply,
 	Smile,
+	Sparkles,
 	Trash2,
 	Underline as UnderlineIcon,
 	X,
 } from "lucide-react";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -80,6 +82,7 @@ import { UnreadSeparator } from "@/components/chat/UnreadSeparator";
 import { VoicePlayer } from "@/components/chat/VoicePlayer";
 import { VoiceRecorder } from "@/components/chat/VoiceRecorder";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { type Message as SupabaseMessage, useMessages } from "@/hooks/chat/use-messages";
@@ -88,6 +91,7 @@ import { useWorkspaceMembers } from "@/hooks/use-workspace-members";
 import { fetchClient } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/config";
 import { createClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
 import { useChannelStore } from "@/stores/channel-store";
 import { useUnreadStore } from "@/stores/unread-store";
 
@@ -118,6 +122,7 @@ export function ChatArea({
 	const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 	const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
 	const [isRecording, setIsRecording] = useState(false);
+	const [showSummarizer, setShowSummarizer] = useState(false);
 	const [, forceUpdate] = useState({});
 
 	const scrollRef = useRef<HTMLDivElement>(null);
@@ -655,6 +660,27 @@ export function ChatArea({
 				</div>
 
 				<div className="flex items-center gap-1">
+					<TooltipProvider delayDuration={0}>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									variant="ghost"
+									size="icon"
+									onClick={() => setShowSummarizer(!showSummarizer)}
+									className={cn(
+										"w-9 h-9 rounded-full transition-all",
+										showSummarizer
+											? "bg-purple-100 text-purple-600 hover:bg-purple-200"
+											: "text-slate-400 hover:text-slate-600 hover:bg-slate-100",
+									)}
+								>
+									<Sparkles className="w-4.5 h-4.5" />
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent side="bottom">AI Summary</TooltipContent>
+						</Tooltip>
+					</TooltipProvider>
+
 					<StartMeetingButton
 						channelId={isDM ? undefined : channelName}
 						channelName={displayName}
@@ -695,7 +721,12 @@ export function ChatArea({
 			)}
 
 			{/* Summarization Panel */}
-			<ChatSummary unreadCount={effectiveUnreadCount} channelName={displayName} />
+			<ChatSummary
+				unreadCount={effectiveUnreadCount}
+				channelName={displayName}
+				forceShow={showSummarizer}
+				onClose={() => setShowSummarizer(false)}
+			/>
 
 			{/* Messages Area */}
 			<ScrollArea className="flex-1 min-h-0 w-full bg-white">
@@ -841,12 +872,13 @@ export function ChatArea({
 														)}
 
 														<div
-															className={`relative px-[16px] py-[8px] text-[15px] break-words leading-[1.4] transition-opacity hover:opacity-[0.95] max-w-full ${isDeleted
-																? "bg-transparent text-[#8e8e93] italic border border-[#e5e5ea] rounded-2xl"
-																: isOwnMessage
-																	? "bg-[#007aff] text-white rounded-[18px] rounded-br-[4px]"
-																	: "bg-[#e5e5ea] text-black rounded-[18px] rounded-bl-[4px]"
-																}`}
+															className={`relative px-[16px] py-[8px] text-[15px] break-words leading-[1.4] transition-opacity hover:opacity-[0.95] max-w-full ${
+																isDeleted
+																	? "bg-transparent text-[#8e8e93] italic border border-[#e5e5ea] rounded-2xl"
+																	: isOwnMessage
+																		? "bg-[#007aff] text-white rounded-[18px] rounded-br-[4px]"
+																		: "bg-[#e5e5ea] text-black rounded-[18px] rounded-bl-[4px]"
+															}`}
 															title={formatMessageTime(
 																message.created_at || message.createdAt || new Date().toISOString(),
 															)}
@@ -860,10 +892,11 @@ export function ChatArea({
 																	{/* Quoted parent message */}
 																	{message.parent && (
 																		<div
-																			className={`mt-1 mb-2 flex items-start gap-2 pl-2 border-l-[3px] rounded-r py-1 pr-2 max-w-sm cursor-pointer transition-colors ${isOwnMessage
-																				? "border-white/40 bg-white/10 hover:bg-white/20"
-																				: "border-black/20 bg-black/5 hover:bg-black/10"
-																				}`}
+																			className={`mt-1 mb-2 flex items-start gap-2 pl-2 border-l-[3px] rounded-r py-1 pr-2 max-w-sm cursor-pointer transition-colors ${
+																				isOwnMessage
+																					? "border-white/40 bg-white/10 hover:bg-white/20"
+																					: "border-black/20 bg-black/5 hover:bg-black/10"
+																			}`}
 																			onClick={(e) => {
 																				e.stopPropagation();
 																				const parentEl = document.getElementById(
@@ -890,7 +923,7 @@ export function ChatArea({
 																					);
 																				}
 																			}}
-																			onKeyDown={() => { }}
+																			onKeyDown={() => {}}
 																			role="button"
 																			tabIndex={0}
 																		>
@@ -900,13 +933,13 @@ export function ChatArea({
 																				>
 																					{message.parent.user
 																						? [
-																							message.parent.user.firstName,
-																							message.parent.user.lastName,
-																						]
-																							.filter(Boolean)
-																							.join(" ") ||
-																						message.parent.user.username ||
-																						message.parent.user.email?.split("@")[0]
+																								message.parent.user.firstName,
+																								message.parent.user.lastName,
+																							]
+																								.filter(Boolean)
+																								.join(" ") ||
+																							message.parent.user.username ||
+																							message.parent.user.email?.split("@")[0]
 																						: "Unknown"}
 																				</p>
 																				{message.parent.content ? (
@@ -932,10 +965,11 @@ export function ChatArea({
 																	{message.content &&
 																		(isHtmlContent(message.content) ? (
 																			<div
-																				className={`mt-1 leading-relaxed text-[15px] prose prose-sm max-w-none [&_p]:my-0 [&_ul]:my-1 [&_ol]:my-1 ${isOwnMessage
-																					? "[&_a]:text-white [&_a]:underline text-white"
-																					: "[&_a]:text-[#007aff] text-black"
-																					}`}
+																				className={`mt-1 leading-relaxed text-[15px] prose prose-sm max-w-none [&_p]:my-0 [&_ul]:my-1 [&_ol]:my-1 ${
+																					isOwnMessage
+																						? "[&_a]:text-white [&_a]:underline text-white"
+																						: "[&_a]:text-[#007aff] text-black"
+																				}`}
 																				onClick={(e) => {
 																					e.stopPropagation();
 																					const target = e.target as HTMLElement;
@@ -956,7 +990,7 @@ export function ChatArea({
 																					// only stop propagation if we are clicking an interactive element like a link
 																					if (
 																						(e.target as HTMLElement).tagName.toLowerCase() ===
-																						"a" ||
+																							"a" ||
 																						(e.target as HTMLElement).closest("a")
 																					) {
 																						e.stopPropagation();
@@ -968,28 +1002,28 @@ export function ChatArea({
 																					__html:
 																						typeof DOMPurify.sanitize === "function"
 																							? DOMPurify.sanitize(message.content, {
-																								ALLOWED_TAGS: [
-																									"p",
-																									"br",
-																									"strong",
-																									"em",
-																									"u",
-																									"s",
-																									"a",
-																									"ul",
-																									"ol",
-																									"li",
-																									"span",
-																								],
-																								ALLOWED_ATTR: [
-																									"href",
-																									"target",
-																									"rel",
-																									"style",
-																									"class",
-																									"data-mention",
-																								],
-																							})
+																									ALLOWED_TAGS: [
+																										"p",
+																										"br",
+																										"strong",
+																										"em",
+																										"u",
+																										"s",
+																										"a",
+																										"ul",
+																										"ol",
+																										"li",
+																										"span",
+																									],
+																									ALLOWED_ATTR: [
+																										"href",
+																										"target",
+																										"rel",
+																										"style",
+																										"class",
+																										"data-mention",
+																									],
+																								})
 																							: "",
 																				}}
 																			/>
@@ -1005,6 +1039,7 @@ export function ChatArea({
 																	{message.file_url && (
 																		<div
 																			className="mt-2"
+																			role="presentation"
 																			onClick={(e) => e.stopPropagation()}
 																			onKeyDown={(e) => e.stopPropagation()}
 																			onPointerDown={(e) => e.stopPropagation()}
@@ -1017,10 +1052,13 @@ export function ChatArea({
 																				/>
 																			) : message.file_type?.startsWith("image/") ? (
 																				<a href={message.file_url} target="_blank" rel="noreferrer">
-																					<img
+																					<Image
 																						src={message.file_url}
 																						alt={message.file_name || "Attachment"}
+																						width={260}
+																						height={260}
 																						className="max-w-[260px] max-h-[260px] rounded-lg border border-black/10 object-contain hover:opacity-90 transition-opacity"
+																						unoptimized
 																					/>
 																				</a>
 																			) : (
@@ -1028,10 +1066,11 @@ export function ChatArea({
 																					href={message.file_url}
 																					target="_blank"
 																					rel="noreferrer"
-																					className={`flex items-center gap-3 p-3 rounded-lg border max-w-sm transition-colors ${isOwnMessage
-																						? "bg-white/10 border-white/20 hover:bg-white/20 text-white"
-																						: "bg-black/5 border-black/10 hover:bg-black/10 text-black"
-																						}`}
+																					className={`flex items-center gap-3 p-3 rounded-lg border max-w-sm transition-colors ${
+																						isOwnMessage
+																							? "bg-white/10 border-white/20 hover:bg-white/20 text-white"
+																							: "bg-black/5 border-black/10 hover:bg-black/10 text-black"
+																					}`}
 																				>
 																					<div
 																						className={`w-10 h-10 rounded flex items-center justify-center shrink-0 ${isOwnMessage ? "bg-white/20" : "bg-black/10"}`}

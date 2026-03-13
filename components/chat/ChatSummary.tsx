@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { Clock, Sparkles, X } from "lucide-react";
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 const DUMMY_SUMMARIES = {
 	unread: [
@@ -36,9 +36,11 @@ const DUMMY_SUMMARIES = {
 interface ChatSummaryProps {
 	unreadCount: number;
 	channelName: string;
+	forceShow?: boolean;
+	onClose?: () => void;
 }
 
-export function ChatSummary({ unreadCount, channelName }: ChatSummaryProps) {
+export function ChatSummary({ unreadCount, channelName, forceShow, onClose }: ChatSummaryProps) {
 	const [showSummary, setShowSummary] = useState(false);
 	const [summaryType, setSummaryType] = useState<keyof typeof DUMMY_SUMMARIES | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
@@ -79,7 +81,7 @@ export function ChatSummary({ unreadCount, channelName }: ChatSummaryProps) {
 		}
 	};
 
-	if (initialUnreadCount === 0 && !showSummary) return null;
+	if (initialUnreadCount === 0 && !showSummary && !forceShow) return null;
 
 	return (
 		<div className="px-4 pb-2">
@@ -89,8 +91,8 @@ export function ChatSummary({ unreadCount, channelName }: ChatSummaryProps) {
 				transition={{ type: "spring", stiffness: 300, damping: 28 }}
 				className="max-w-4xl mx-auto w-full"
 			>
-				{/* Unread Count Banner */}
-				{initialUnreadCount > 0 && !showSummary && (
+				{/* Unread Count Banner or Forced Toggle */}
+				{(initialUnreadCount > 0 || forceShow) && !showSummary && (
 					<div
 						className="rounded-2xl bg-white/80 backdrop-blur-xl border border-gray-200/60 shadow-lg shadow-black/[0.03] p-4"
 						style={{
@@ -100,10 +102,25 @@ export function ChatSummary({ unreadCount, channelName }: ChatSummaryProps) {
 					>
 						<div className="flex items-center justify-between mb-3">
 							<p className="text-[13px] text-gray-500">
-								You have <span className="font-bold text-gray-900">{initialUnreadCount}</span> unread
-								message{initialUnreadCount !== 1 ? "s" : ""} in{" "}
+								{initialUnreadCount > 0 ? (
+									<>
+										You have <span className="font-bold text-gray-900">{initialUnreadCount}</span>{" "}
+										unread message{initialUnreadCount !== 1 ? "s" : ""} in{" "}
+									</>
+								) : (
+									<>Get an AI summary of </>
+								)}
 								<span className="font-semibold text-gray-700">#{channelName}</span>
 							</p>
+							{forceShow && (
+								<button
+									type="button"
+									onClick={onClose}
+									className="p-1 rounded-full hover:bg-gray-100 text-gray-400"
+								>
+									<X className="w-4 h-4" />
+								</button>
+							)}
 						</div>
 
 						{/* Summarize Unread Button */}
@@ -118,7 +135,11 @@ export function ChatSummary({ unreadCount, channelName }: ChatSummaryProps) {
 							) : (
 								<Sparkles className="w-4 h-4" />
 							)}
-							{isLoading ? "Summarizing..." : "Summarize Unread"}
+							{isLoading
+								? "Summarizing..."
+								: initialUnreadCount > 0
+									? "Summarize Unread"
+									: "Summarize Recent Messages"}
 						</button>
 
 						{/* Time-based Summary Options */}
@@ -165,6 +186,7 @@ export function ChatSummary({ unreadCount, channelName }: ChatSummaryProps) {
 								onClick={() => {
 									setShowSummary(false);
 									setSummaryType(null);
+									onClose?.();
 								}}
 								className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
 							>
@@ -184,12 +206,11 @@ export function ChatSummary({ unreadCount, channelName }: ChatSummaryProps) {
 
 							{/* Summary Items */}
 							<ul className="space-y-2">
-								{DUMMY_SUMMARIES[summaryType].map((item, i) => (
+								{DUMMY_SUMMARIES[summaryType].map((item) => (
 									<motion.li
-										key={`${summaryType}-${i}`}
+										key={item}
 										initial={{ opacity: 0, x: -8 }}
 										animate={{ opacity: 1, x: 0 }}
-										transition={{ delay: i * 0.06 }}
 										className="flex items-start gap-2.5 text-[13px] text-gray-600 leading-relaxed"
 									>
 										<span className="w-1.5 h-1.5 rounded-full bg-[#007AFF] mt-[7px] shrink-0" />
