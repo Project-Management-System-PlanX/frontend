@@ -4,7 +4,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import type React from "react";
-import { PrimarySidebar } from "@/components/dashboard/PrimarySidebar";
+import { TaskSidebar } from "@/components/dashboard/TaskSidebar";
+import { TopNav } from "@/components/dashboard/TopNav";
 import { MeetingProvider } from "@/components/meeting/MeetingProvider";
 import { useAppStore } from "@/stores/app-store";
 
@@ -23,63 +24,46 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 	const isChat = pathname.startsWith("/dashboard/chat");
 	const isTask = pathname.startsWith("/dashboard/task");
 
-	// Check if the user is deep inside a specific chat or task space
-	const isDeepLink =
-		pathname.includes("/channel/") || pathname.includes("/dm/") || pathname.includes("/space/");
-
-	// Show the secondary sidebar when on Chat or Task routing pages, even in deep links
-	const hasSecondary = (isChat || isTask) && sidebarOpen;
+	// Show the secondary sidebar when on Chat routing pages
+	const hasSecondary = isChat && sidebarOpen;
 
 	return (
 		<MeetingProvider>
-			{/* High-end Apple-inspired layout with floating rounded cards */}
 			<div
-				className="h-screen w-full flex overflow-hidden bg-[#eff1f4] relative p-3.5"
-				style={{
-					fontFamily:
-						"'-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Inter', sans-serif",
-				}}
+				className="h-screen w-full flex flex-col overflow-hidden"
+				style={{ backgroundColor: "#0F172A" }}
 			>
-				{/* Ambient depth gradients */}
-				<div className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] rounded-full bg-blue-400/5 blur-[120px] pointer-events-none" />
-				<div className="absolute bottom-[-10%] right-[-5%] w-[40%] h-[40%] rounded-full bg-indigo-500/5 blur-[120px] pointer-events-none" />
+				<TopNav />
 
-				<div className="flex h-full w-full relative z-10 gap-0">
-					<div className="h-full shrink-0 pr-3.5">
-						<aside className="h-full bg-white/60 backdrop-blur-3xl rounded-[30px] border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.06)] overflow-hidden flex flex-col transition-all duration-300">
-							<PrimarySidebar defaultCollapsed={false} />
-						</aside>
-					</div>
-
+				<div className="flex-1 flex min-h-0">
 					{/* Tier 2 Contextual Sidebar Card with Spring Animation */}
 					<AnimatePresence initial={false}>
 						{hasSecondary && (
 							<motion.div
 								key="secondary-sidebar"
-								initial={{ width: 0, opacity: 0, marginRight: 0 }}
+								initial={{ width: 0, opacity: 0 }}
 								animate={{
-									width: 290,
+									width: 400,
 									opacity: 1,
-									marginRight: 14, // Equivalent to 3.5 gap
 								}}
-								exit={{ width: 0, opacity: 0, marginRight: 0 }}
+								exit={{ width: 0, opacity: 0 }}
 								transition={{
 									type: "spring",
 									stiffness: 260,
 									damping: 32,
 									opacity: { duration: 0.2 },
 								}}
-								className="h-full shrink-0 overflow-hidden"
+								className="h-full shrink-0 overflow-hidden border-r border-white/5"
 							>
-								<aside className="h-full w-[290px] bg-white/60 backdrop-blur-3xl rounded-[30px] border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.06)] overflow-hidden flex flex-col transition-all duration-300">
-									<SynapseSidebar />
+								<aside className="h-full w-[400px] bg-transparent overflow-hidden flex flex-col">
+									{isTask ? <TaskSidebar /> : <SynapseSidebar />}
 								</aside>
 							</motion.div>
 						)}
 					</AnimatePresence>
 
-					{/* Tier 3 Main Stage Card */}
-					<main className="flex-1 flex flex-col min-w-0 min-h-0 relative transition-all duration-300">
+					{/* Main Stage */}
+					<main className="flex-1 flex flex-col min-w-0 min-h-0">
 						<AnimatePresence mode="wait">
 							<motion.div
 								key={pathname}
@@ -87,7 +71,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 								animate={{ opacity: 1, y: 0 }}
 								exit={{ opacity: 0, y: -10 }}
 								transition={{ duration: 0.2, ease: "easeOut" }}
-								className="flex-1 w-full flex flex-col min-h-0 rounded-[30px] bg-white border border-white shadow-[0_8px_30px_rgb(0,0,0,0.08)] overflow-hidden"
+								className="flex-1 w-full flex flex-col min-h-0 overflow-hidden"
 							>
 								{children}
 							</motion.div>

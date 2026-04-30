@@ -42,17 +42,23 @@ const InviteMembersDialog = dynamic(
 
 interface PrimarySidebarProps {
 	defaultCollapsed?: boolean;
+	variant?: "side" | "top";
 }
 
-export function PrimarySidebar({ defaultCollapsed = false }: PrimarySidebarProps) {
+export function PrimarySidebar({
+	defaultCollapsed = false,
+	variant = "side",
+}: PrimarySidebarProps) {
 	const pathname = usePathname();
 	const { user } = useSupabaseAuth();
 	const { activeWorkspaceId, activeWorkspaceName } = useWorkspaceStore();
 	const { setSidebarOpen, toggleSidebar } = useAppStore();
+	const isTop = variant === "top";
 
 	const [isExpanded, setIsExpanded] = useState(!defaultCollapsed);
 	const [inviteOpen, setInviteOpen] = useState(false);
 	const [settingsOpen, setSettingsOpen] = useState(false);
+	const [topSearch, setTopSearch] = useState("");
 
 	// Sync expansion state when entering contextual sections, but allow override
 	const [hasMounted, setHasMounted] = useState(false);
@@ -116,94 +122,154 @@ export function PrimarySidebar({ defaultCollapsed = false }: PrimarySidebarProps
 
 	return (
 		<>
-			<motion.div
-				animate={{ width: isExpanded ? 240 : 76 }}
-				transition={{ type: "spring", stiffness: 260, damping: 32 }}
-				className="h-full flex flex-col shrink-0 z-50 overflow-hidden"
-			>
-				{/* Header: Logo + Toggle */}
-				<div
-					className={cn(
-						"py-6 flex items-center transition-all duration-300",
-						isExpanded ? "px-6 justify-between mb-4" : "px-0 justify-center mb-6",
-					)}
-				>
-					<button
-						type="button"
-						onClick={() => setIsExpanded(!isExpanded)}
-						className="flex items-center gap-3 transition-transform hover:scale-[1.02] active:scale-[0.98] group outline-none"
-						title={isExpanded ? "Collapse Sidebar" : "Expand Sidebar"}
-					>
-						<div className="w-10 h-10 rounded-[12px] bg-gradient-to-b from-[#5AC8FA] to-[#007AFF] flex items-center justify-center text-white shadow-md shadow-blue-500/20 shrink-0 transition-all group-hover:shadow-blue-500/30">
-							<Zap className="w-5.5 h-5.5 fill-white/20" />
+			{isTop ? (
+				<div className="w-full flex items-center gap-4">
+					<div className="flex items-center gap-3">
+						<div className="w-9 h-9 rounded-[10px] bg-gradient-to-b from-[#5AC8FA] to-[#007AFF] flex items-center justify-center text-white shadow-md shadow-blue-500/20 shrink-0">
+							<Zap className="w-4.5 h-4.5 fill-white/20" />
 						</div>
-						<AnimatePresence>
-							{isExpanded && (
-								<motion.span
-									initial={{ opacity: 0, x: -10 }}
-									animate={{ opacity: 1, x: 0 }}
-									exit={{ opacity: 0, x: -10 }}
-									className="font-bold text-gray-900 tracking-tight text-[19px] whitespace-nowrap"
-									style={{
-										fontFamily:
-											"'-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Inter', sans-serif",
-									}}
-								>
-									TeamUp
-								</motion.span>
-							)}
-						</AnimatePresence>
-					</button>
-					{isExpanded && (
+						<span
+							className="font-semibold text-white tracking-tight text-[15px]"
+							style={{
+								fontFamily:
+									"'-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Inter', sans-serif",
+							}}
+						>
+							TeamUp
+						</span>
+					</div>
+
+					<div className="hidden md:flex flex-1 max-w-[520px]">
+						<div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 border border-white/10 w-full">
+							<input
+								value={topSearch}
+								onChange={(event) => setTopSearch(event.target.value)}
+								placeholder="Search"
+								className="flex-1 bg-transparent text-[13px] text-white placeholder:text-white/60 outline-none"
+							/>
+						</div>
+					</div>
+
+					<div className="flex items-center gap-2">
+						{navItems.map((item) => (
+							<PrimaryNavItem
+								key={item.label}
+								{...item}
+								isActive={item.active ?? pathname === item.href}
+								isExpanded
+								layout="top"
+								onItemClick={() => {
+									if (item.active) {
+										toggleSidebar();
+									} else {
+										setSidebarOpen(true);
+									}
+								}}
+							/>
+						))}
+					</div>
+
+					<div className="ml-auto flex items-center gap-2">
+						{bottomItems.map((item) => (
+							<PrimaryNavItem
+								key={item.label}
+								{...item}
+								isActive={item.active}
+								isExpanded
+								layout="top"
+							/>
+						))}
+					</div>
+				</div>
+			) : (
+				<motion.div
+					animate={{ width: isExpanded ? 240 : 76 }}
+					transition={{ type: "spring", stiffness: 260, damping: 32 }}
+					className="h-full flex flex-col shrink-0 z-50 overflow-hidden"
+				>
+					{/* Header: Logo + Toggle */}
+					<div
+						className={cn(
+							"py-6 flex items-center transition-all duration-300",
+							isExpanded ? "px-6 justify-between mb-4" : "px-0 justify-center mb-6",
+						)}
+					>
 						<button
 							type="button"
-							onClick={() => setIsExpanded(false)}
-							className="p-1.5 rounded-lg hover:bg-slate-200/60 text-slate-400 hover:text-slate-600 transition-colors shrink-0"
+							onClick={() => setIsExpanded(!isExpanded)}
+							className="flex items-center gap-3 transition-transform hover:scale-[1.02] active:scale-[0.98] group outline-none"
+							title={isExpanded ? "Collapse Sidebar" : "Expand Sidebar"}
 						>
-							<PanelLeftClose className="w-4.5 h-4.5" />
+							<div className="w-10 h-10 rounded-[12px] bg-gradient-to-b from-[#5AC8FA] to-[#007AFF] flex items-center justify-center text-white shadow-md shadow-blue-500/20 shrink-0 transition-all group-hover:shadow-blue-500/30">
+								<Zap className="w-5.5 h-5.5 fill-white/20" />
+							</div>
+							<AnimatePresence>
+								{isExpanded && (
+									<motion.span
+										initial={{ opacity: 0, x: -10 }}
+										animate={{ opacity: 1, x: 0 }}
+										exit={{ opacity: 0, x: -10 }}
+										className="font-bold text-gray-900 tracking-tight text-[19px] whitespace-nowrap"
+										style={{
+											fontFamily:
+												"'-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Inter', sans-serif",
+										}}
+									>
+										TeamUp
+									</motion.span>
+								)}
+							</AnimatePresence>
 						</button>
-					)}
-				</div>
+						{isExpanded && (
+							<button
+								type="button"
+								onClick={() => setIsExpanded(false)}
+								className="p-1.5 rounded-lg hover:bg-slate-200/60 text-slate-400 hover:text-slate-600 transition-colors shrink-0"
+							>
+								<PanelLeftClose className="w-4.5 h-4.5" />
+							</button>
+						)}
+					</div>
 
-				{/* Navigation */}
-				<div className={cn("flex-1 flex flex-col gap-1 px-3")}>
-					{navItems.map((item) => (
-						<PrimaryNavItem
-							key={item.label}
-							{...item}
-							isActive={item.active ?? pathname === item.href}
-							isExpanded={isExpanded}
-							onItemClick={() => {
-								if (item.active) {
-									toggleSidebar();
-									// Stay on current route, but shrink primary sidebar if it was expanded
-									if (item.label !== "Dashboard" && isExpanded) {
-										setIsExpanded(false);
+					{/* Navigation */}
+					<div className={cn("flex-1 flex flex-col gap-1 px-3")}>
+						{navItems.map((item) => (
+							<PrimaryNavItem
+								key={item.label}
+								{...item}
+								isActive={item.active ?? pathname === item.href}
+								isExpanded={isExpanded}
+								onItemClick={() => {
+									if (item.active) {
+										toggleSidebar();
+										if (item.label !== "Dashboard" && isExpanded) {
+											setIsExpanded(false);
+										}
+									} else {
+										setSidebarOpen(true);
+										if (isExpanded) setIsExpanded(false);
 									}
-								} else {
-									setSidebarOpen(true);
-									if (isExpanded) setIsExpanded(false);
-								}
-							}}
-						/>
-					))}
-				</div>
+								}}
+							/>
+						))}
+					</div>
 
-				{/* Bottom Actions */}
-				<div className={cn("flex flex-col gap-1 px-3 pt-4 border-t border-slate-200/60 mb-6")}>
-					{bottomItems.map((item) => (
-						<PrimaryNavItem
-							key={item.label}
-							{...item}
-							isActive={item.active}
-							isExpanded={isExpanded}
-							onItemClick={() => {
-								if (isExpanded) setIsExpanded(false);
-							}}
-						/>
-					))}
-				</div>
-			</motion.div>
+					{/* Bottom Actions */}
+					<div className={cn("flex flex-col gap-1 px-3 pt-4 border-t border-slate-200/60 mb-6")}>
+						{bottomItems.map((item) => (
+							<PrimaryNavItem
+								key={item.label}
+								{...item}
+								isActive={item.active}
+								isExpanded={isExpanded}
+								onItemClick={() => {
+									if (isExpanded) setIsExpanded(false);
+								}}
+							/>
+						))}
+					</div>
+				</motion.div>
+			)}
 
 			{/* Dialogs — portaled to body so they escape overflow-hidden */}
 			{hasMounted &&
@@ -236,6 +302,7 @@ function PrimaryNavItem({
 	isExpanded,
 	isAccount,
 	onItemClick,
+	layout = "side",
 }: {
 	icon?: LucideIcon;
 	label: string;
@@ -245,6 +312,7 @@ function PrimaryNavItem({
 	isExpanded: boolean;
 	isAccount?: boolean;
 	onItemClick?: () => void;
+	layout?: "side" | "top";
 }) {
 	const { user } = useSupabaseAuth();
 	const initials = user?.email?.substring(0, 2).toUpperCase() || "?";
@@ -254,11 +322,19 @@ function PrimaryNavItem({
 		<button
 			type="button"
 			className={cn(
-				"relative flex items-center transition-all duration-200 group outline-none w-full rounded-xl cursor-pointer",
-				isExpanded ? "px-3 py-2.5 gap-3" : "h-11 w-11 mx-auto justify-center",
-				isActive
-					? "bg-gray-900/10 text-gray-900 font-semibold"
-					: "text-gray-500 hover:text-gray-900 hover:bg-gray-900/5",
+				"relative flex items-center transition-all duration-200 group outline-none rounded-xl cursor-pointer",
+				layout === "top"
+					? "px-3 py-1.5 gap-2 text-white/90 hover:bg-white/10"
+					: isExpanded
+						? "px-3 py-2.5 gap-3 w-full"
+						: "h-11 w-11 mx-auto justify-center",
+				layout === "top"
+					? isActive
+						? "bg-white/15 text-white"
+						: "text-white/80"
+					: isActive
+						? "bg-gray-900/10 text-gray-900 font-semibold"
+						: "text-gray-500 hover:text-gray-900 hover:bg-gray-900/5",
 			)}
 			onClick={() => {
 				onClick?.();
@@ -312,14 +388,14 @@ function PrimaryNavItem({
 
 	const linkedContent =
 		href && !isActive ? (
-			<Link href={href} className="w-full">
+			<Link href={href} className={cn(layout === "top" ? "" : "w-full")}>
 				{content}
 			</Link>
 		) : (
 			content
 		);
 
-	if (isExpanded) {
+	if (isExpanded || layout === "top") {
 		return linkedContent;
 	}
 

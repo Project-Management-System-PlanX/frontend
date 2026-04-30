@@ -203,7 +203,7 @@
 
 	body {
 		/* Set body text to Figtree 18px */
-		@apply bg-background text-foreground text-lg;
+		@apply bg-background text-foreground text-base;
 		font-family: var(--font-figtree), "Figtree", "Figtree Fallback", system-ui, sans-serif;
 		@apply bg-background text-foreground;
 	}

@@ -308,7 +308,7 @@ export function SynapseSidebar() {
 			<CreateChannelDialog
 				open={createChannelOpen}
 				onOpenChange={setCreateChannelOpen}
-				onChannelCreated={() => { }} // Integration logic kept in store
+				onChannelCreated={() => {}} // Integration logic kept in store
 				workspaceName={activeWorkspaceName || "Workspace"}
 			/>
 
