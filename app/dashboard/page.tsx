@@ -1,7 +1,15 @@
 "use client";
 
-import { DashboardHome } from "@/components/dashboard/DashboardHome";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function DashboardPage() {
-	return <DashboardHome />;
+	const router = useRouter();
+
+	useEffect(() => {
+		// Redirect to task/tasks page by default
+		router.replace("/dashboard/task/tasks");
+	}, [router]);
+
+	return null;
 }

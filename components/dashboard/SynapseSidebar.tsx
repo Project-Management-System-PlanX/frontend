@@ -51,7 +51,7 @@ export function SynapseSidebar() {
 			}
 		}
 		return null;
-	}, [pathname, members, channels]);
+	}, [pathname, members, channels, user.id]);
 
 	const { markChannelAsRead } = useUnread(
 		activeWorkspaceId,
@@ -308,7 +308,7 @@ export function SynapseSidebar() {
 			<CreateChannelDialog
 				open={createChannelOpen}
 				onOpenChange={setCreateChannelOpen}
-				onChannelCreated={() => { }} // Integration logic kept in store
+				onChannelCreated={() => {}} // Integration logic kept in store
 				workspaceName={activeWorkspaceName || "Workspace"}
 			/>
 

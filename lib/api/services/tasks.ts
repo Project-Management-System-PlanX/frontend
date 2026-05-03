@@ -1,9 +1,10 @@
-import type { Task, TaskAttachment, TaskComment } from "../../types/models";
+import type { Task, TaskComment, TaskLabel } from "../../types/models";
 import { apiClient } from "../client";
 import { API_ENDPOINTS } from "../config";
 
 export interface CreateTaskPayload {
 	spaceId: string;
+	statusId: string;
 	title: string;
 	description?: string;
 	priority?: string;
@@ -12,70 +13,62 @@ export interface CreateTaskPayload {
 	dueDate?: string;
 	startDate?: string;
 	position?: number;
-	statusId?: string;
 	parentId?: string;
 	teamId?: string;
 	flagged?: boolean;
-	restrictTo?: string;
-	labels?: string[];
 }
 
 export interface UpdateTaskPayload {
 	title?: string;
 	description?: string;
+	statusId?: string;
 	priority?: string;
 	workType?: string;
-	assigneeId?: string;
+	assigneeId?: string | null;
 	dueDate?: string | null;
 	startDate?: string | null;
-	position?: number;
-	statusId?: string;
 	resolution?: string;
-	labels?: string[];
+	position?: number;
 	parentId?: string | null;
-	teamId?: string | null;
+	teamId?: string;
 	flagged?: boolean;
-	restrictTo?: string | null;
+	restrictTo?: string;
 }
 
 export interface MoveTaskPayload {
 	statusId: string;
 	position: number;
+	parentId?: string | null;
 }
 
-export interface CreateTaskCommentPayload {
-	content: string;
+export interface BulkPositionPayload {
+	updates: Array<{
+		id: string;
+		statusId: string;
+		position: number;
+	}>;
 }
 
-export interface CreateTaskAttachmentPayload {
-	fileName: string;
-	fileUrl: string;
-	fileType?: string;
-	fileSize?: number;
+export interface ActivityLogEntry {
+	id: string;
+	taskId: string;
+	userId: string;
+	action: string;
+	field?: string;
+	oldValue?: string;
+	newValue?: string;
+	metadata?: Record<string, unknown>;
+	createdAt: string;
 }
 
-export const tasksService = {
+export const taskService = {
+	// ─── CRUD ───
+
 	create: async (data: CreateTaskPayload, token?: string) =>
 		apiClient.post<Task>(API_ENDPOINTS.TASKS, data, { token }),
 
-	bulkCreate: async (tasks: CreateTaskPayload[], token?: string) =>
-		apiClient.post<Task[]>(API_ENDPOINTS.TASKS_BULK, { tasks }, { token }),
-
-	listBySpace: async (
-		spaceId: string,
-		filters?: { status?: string; assignee?: string; priority?: string },
-		token?: string,
-	) =>
-		apiClient.get<Task[]>(API_ENDPOINTS.TASKS_BY_SPACE(spaceId), {
-			token,
-			queryParams: filters,
-		}),
-
-	listAssignedToMe: async (token?: string) =>
-		apiClient.get<Task[]>(API_ENDPOINTS.TASKS_ASSIGNED_TO_ME, { token }),
-
-	listWorkedOn: async (token?: string) =>
-		apiClient.get<Task[]>(API_ENDPOINTS.TASKS_WORKED_ON, { token }),
+	getBySpace: async (spaceId: string, token?: string) =>
+		apiClient.get<Task[]>(API_ENDPOINTS.TASKS_BY_SPACE(spaceId), { token }),
 
 	getById: async (id: string, token?: string) =>
 		apiClient.get<Task>(API_ENDPOINTS.TASK_BY_ID(id), { token }),
@@ -83,31 +76,54 @@ export const tasksService = {
 	update: async (id: string, data: UpdateTaskPayload, token?: string) =>
 		apiClient.patch<Task>(API_ENDPOINTS.TASK_BY_ID(id), data, { token }),
 
+	delete: async (id: string, token?: string) =>
+		apiClient.delete<{ deleted: boolean }>(API_ENDPOINTS.TASK_BY_ID(id), { token }),
+
+	// ─── Drag-and-Drop ───
+
 	move: async (id: string, data: MoveTaskPayload, token?: string) =>
 		apiClient.patch<Task>(API_ENDPOINTS.TASK_MOVE(id), data, { token }),
 
-	delete: async (id: string, token?: string) =>
-		apiClient.delete<Task>(API_ENDPOINTS.TASK_BY_ID(id), { token }),
+	bulkUpdatePositions: async (data: BulkPositionPayload, token?: string) =>
+		apiClient.post<{ updated: number }>(API_ENDPOINTS.TASKS_BULK, data, { token }),
 
-	// Comments
-	createComment: async (taskId: string, data: CreateTaskCommentPayload, token?: string) =>
-		apiClient.post<TaskComment>(API_ENDPOINTS.TASK_COMMENTS(taskId), data, { token }),
+	// ─── Queries ───
 
-	listComments: async (taskId: string, token?: string) =>
+	getAssignedToMe: async (workspaceId: string, token?: string) =>
+		apiClient.get<Task[]>(API_ENDPOINTS.TASKS_ASSIGNED_TO_ME, {
+			token,
+			queryParams: { workspaceId },
+		}),
+
+	getWorkedOn: async (workspaceId: string, token?: string) =>
+		apiClient.get<Task[]>(API_ENDPOINTS.TASKS_WORKED_ON, {
+			token,
+			queryParams: { workspaceId },
+		}),
+
+	// ─── Comments ───
+
+	getComments: async (taskId: string, token?: string) =>
 		apiClient.get<TaskComment[]>(API_ENDPOINTS.TASK_COMMENTS(taskId), { token }),
 
+	addComment: async (taskId: string, content: string, token?: string) =>
+		apiClient.post<TaskComment>(API_ENDPOINTS.TASK_COMMENTS(taskId), { content }, { token }),
+
 	deleteComment: async (taskId: string, commentId: string, token?: string) =>
-		apiClient.delete<TaskComment>(API_ENDPOINTS.TASK_COMMENT(taskId, commentId), { token }),
-
-	// Attachments
-	createAttachment: async (taskId: string, data: CreateTaskAttachmentPayload, token?: string) =>
-		apiClient.post<TaskAttachment>(API_ENDPOINTS.TASK_ATTACHMENTS(taskId), data, { token }),
-
-	listAttachments: async (taskId: string, token?: string) =>
-		apiClient.get<TaskAttachment[]>(API_ENDPOINTS.TASK_ATTACHMENTS(taskId), { token }),
-
-	deleteAttachment: async (taskId: string, attachmentId: string, token?: string) =>
-		apiClient.delete<TaskAttachment>(API_ENDPOINTS.TASK_ATTACHMENT(taskId, attachmentId), {
+		apiClient.delete<{ deleted: boolean }>(API_ENDPOINTS.TASK_COMMENT(taskId, commentId), {
 			token,
 		}),
+
+	// ─── Labels ───
+
+	addLabel: async (taskId: string, name: string, color: string, token?: string) =>
+		apiClient.post<TaskLabel>(`/tasks/${taskId}/labels`, { name, color }, { token }),
+
+	removeLabel: async (taskId: string, labelId: string, token?: string) =>
+		apiClient.delete<{ deleted: boolean }>(`/tasks/${taskId}/labels/${labelId}`, { token }),
+
+	// ─── Activities ───
+
+	getActivities: async (taskId: string, token?: string) =>
+		apiClient.get<ActivityLogEntry[]>(`/tasks/${taskId}/activities`, { token }),
 };

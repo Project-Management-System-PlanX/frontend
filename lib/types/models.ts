@@ -214,3 +214,56 @@ export interface MeetingNotification {
 	channelName?: string;
 	workspaceId?: string;
 }
+
+// ─── Checklists ───
+
+export interface Checklist {
+	id: string;
+	taskId: string;
+	title: string;
+	position: number;
+	createdAt: string;
+	items: ChecklistItem[];
+}
+
+export interface ChecklistItem {
+	id: string;
+	checklistId: string;
+	content: string;
+	isComplete: boolean;
+	position: number;
+	assigneeId?: string;
+	dueDate?: string;
+}
+
+// ─── Activity Log ───
+
+export interface ActivityLog {
+	id: string;
+	taskId: string;
+	userId: string;
+	action: string;
+	field?: string;
+	oldValue?: string;
+	newValue?: string;
+	metadata?: Record<string, unknown>;
+	createdAt: string;
+}
+
+// ─── Boards ───
+
+export interface Board {
+	id: string;
+	spaceId: string;
+	name: string;
+	createdAt: string;
+	updatedAt: string;
+	columns: BoardColumnModel[];
+}
+
+export interface BoardColumnModel {
+	id: string;
+	boardId: string;
+	statusId: string;
+	position: number;
+}

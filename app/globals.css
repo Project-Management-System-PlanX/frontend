@@ -203,7 +203,7 @@
 
 	body {
 		/* Set body text to Figtree 18px */
-		@apply bg-background text-foreground text-lg;
+		@apply bg-background text-foreground text-base;
 		font-family: var(--font-figtree), "Figtree", "Figtree Fallback", system-ui, sans-serif;
 		@apply bg-background text-foreground;
 	}
@@ -341,4 +341,34 @@ html {
 }
 .prose .mention:hover {
 	text-decoration: underline;
+}
+
+/* ============================================
+   CUSTOM SCROLLBAR STYLES
+   ============================================ */
+.custom-scrollbar {
+	scrollbar-width: thin;
+	scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+	display: block;
+	width: 6px;
+	height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+	background: rgba(255, 255, 255, 0.1);
+	border-radius: 10px;
+	border: 1px solid transparent;
+	background-clip: padding-box;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+	background: rgba(255, 255, 255, 0.2);
+	background-clip: padding-box;
 }
