@@ -31,6 +31,8 @@ export const metadata: Metadata = {
 	},
 };
 
+import { Toaster } from "sonner";
+
 export default function RootLayout({
 	children,
 }: Readonly<{
@@ -42,6 +44,7 @@ export default function RootLayout({
 				className={`${inter.variable} ${figtree.variable} ${geistMono.variable} font-sans antialiased`}
 			>
 				<QueryProvider>{children}</QueryProvider>
+				<Toaster position="bottom-right" richColors />
 				<Analytics />
 			</body>
 		</html>
