@@ -14,7 +14,12 @@ const directories = [
 	{ id: "people", label: "People", icon: Users2, href: "/dashboard/chat/directories/people" },
 	{ id: "channels", label: "Channels", icon: Hash, href: "/dashboard/chat/directories/channel" },
 	{ id: "groups", label: "Groups", icon: Users, href: "#" },
-	{ id: "invitations", label: "Invitations", icon: UserCheck, href: "#" },
+	{
+		id: "invitations",
+		label: "Invitations",
+		icon: UserCheck,
+		href: "/dashboard/chat/directories/invitations",
+	},
 ];
 
 export function DirectoriesSection(_props: DirectoriesSectionProps) {

@@ -1,6 +1,10 @@
 import { Plus, Search } from "lucide-react";
 
-export function ForYouHeader() {
+interface ForYouHeaderProps {
+	onCreateClick?: () => void;
+}
+
+export function ForYouHeader({ onCreateClick }: ForYouHeaderProps) {
 	return (
 		<div className="h-14 px-6 flex items-center justify-center gap-4 border-b border-slate-200 shrink-0 bg-white">
 			{/* Search */}
@@ -16,6 +20,7 @@ export function ForYouHeader() {
 			{/* + Create */}
 			<button
 				type="button"
+				onClick={onCreateClick}
 				className="flex items-center gap-2 bg-[#0B6E4F] hover:bg-[#095a40] text-white text-[13px] font-semibold px-5 py-2 rounded-lg transition-colors shadow-sm shrink-0"
 			>
 				<Plus className="w-4 h-4" />

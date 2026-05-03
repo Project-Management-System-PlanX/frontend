@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
+import { channelService } from "@/lib/api/services";
 import { useChannelStore } from "@/stores/channel-store";
 
 interface ChannelDetailsProps {
@@ -12,18 +14,6 @@ interface ChannelDetailsProps {
 	isOpen: boolean;
 	onClose: () => void;
 }
-
-interface DetailItem {
-	icon: React.ComponentType<{ className?: string }>;
-	label: string;
-	count: number;
-}
-
-const detailItems: DetailItem[] = [
-	{ icon: Users, label: "Members", count: 15 },
-	{ icon: Pin, label: "Pinned Items", count: 4 },
-	{ icon: FileText, label: "Files", count: 28 },
-];
 
 const integrations = [
 	{ name: "Slack", icon: Slack, color: "bg-[#4A154B]" },
@@ -38,18 +28,51 @@ const integrations = [
 
 export function ChannelDetails({ channelName, isOpen, onClose }: ChannelDetailsProps) {
 	const router = useRouter();
-	const removeChannel = useChannelStore((state) => state.removeChannel);
+	const { token, user } = useSupabaseAuth();
+	const { channels, removeChannel } = useChannelStore();
+
+	// Find channel in the store by ID
+	const channel = channels.find((c) => c.id === channelName);
+	const displayName = channel?.name || channelName;
+	const description = channel?.description || "No description available.";
+	const memberCount = channel?.members || 0;
 
 	if (!isOpen) return null;
 
-	const handleLeaveChannel = () => {
-		removeChannel(channelName); // Assuming channelName is the ID as per TeamSidebar implementation
-		router.push("/dashboard");
+	const handleLeaveChannel = async () => {
+		if (!confirm(`Are you sure you want to leave #${displayName}?`)) return;
+
+		if (!token || !user?.id) {
+			removeChannel(channelName);
+			router.push("/dashboard/chat");
+			return;
+		}
+
+		try {
+			await channelService.removeMember(channelName, user.id, token);
+			removeChannel(channelName);
+			router.push("/dashboard/chat");
+			console.log(`Successfully left channel: ${channelName}`);
+		} catch (error) {
+			console.error("Failed to leave channel:", error);
+			alert(
+				"Failed to leave channel. It might be a system channel or you might not have permission.",
+			);
+			// Still remove from local store as fallback
+			removeChannel(channelName);
+			router.push("/dashboard/chat");
+		}
 	};
+
+	const detailItems = [
+		{ icon: Users, label: "Members", count: memberCount },
+		{ icon: Pin, label: "Pinned Items", count: 0 },
+		{ icon: FileText, label: "Files", count: 0 },
+	];
 
 	return (
 		<div
-			className="w-72 bg-white border-l border-[#e5e7eb] flex flex-col shrink-0 h-full"
+			className="w-72 bg-white/50 backdrop-blur-xl border-l border-white/40 flex flex-col shrink-0 h-full"
 			style={{ fontFamily: "var(--font-figtree), Figtree" }}
 		>
 			{/* Header */}
@@ -73,14 +96,14 @@ export function ChannelDetails({ channelName, isOpen, onClose }: ChannelDetailsP
 					<div className="flex flex-col items-center text-center">
 						<Avatar className="w-16 h-16 rounded-xl">
 							<AvatarFallback className="rounded-xl bg-[#202020] text-white text-xl font-semibold">
-								{channelName
+								{displayName
 									.split("-")
 									.map((w) => w[0]?.toUpperCase())
 									.join("")}
 							</AvatarFallback>
 						</Avatar>
 						<div className="flex items-center gap-2 mt-3">
-							<span className="text-[#202020] font-medium text-base">#{channelName}</span>
+							<span className="text-[#202020] font-medium text-base">#{displayName}</span>
 							<Button
 								variant="ghost"
 								size="icon"
@@ -90,8 +113,13 @@ export function ChannelDetails({ channelName, isOpen, onClose }: ChannelDetailsP
 							</Button>
 						</div>
 						<p className="text-xs text-[#9a9a9a] mt-2 leading-relaxed max-w-[200px]">
-							Collaborative channel for UI, UX, and Design Systems.
+							{description}
 						</p>
+						{channel?.type && (
+							<span className="mt-2 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-slate-100 text-slate-600 rounded-full">
+								{channel.type}
+							</span>
+						)}
 					</div>
 
 					<div className="h-px bg-[#e5e7eb]" />

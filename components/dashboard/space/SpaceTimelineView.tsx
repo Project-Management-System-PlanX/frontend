@@ -1,503 +1,421 @@
 "use client";
 
-import { ChevronDown, ChevronRight } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import { useSpace } from "@/hooks/api/use-spaces";
+import { useTasks } from "@/hooks/api/use-tasks";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
+import type { Task } from "@/lib/types/models";
 
-/* ═══════════════════════════════════════════════
-   Types & Data
-   ═══════════════════════════════════════════════ */
-
-interface TimelineTask {
-	id: number;
-	text: string;
-	start: Date;
-	end: Date;
-	progress: number;
-	color: string;
-	type: "group" | "task" | "milestone";
-	parentId?: number;
-}
-
-const TASKS: TimelineTask[] = [
-	// ── Group 1: Q1 Product Launch ──
-	{
-		id: 1,
-		text: "Q1 Product Launch",
-		start: new Date(2026, 0, 6),
-		end: new Date(2026, 2, 28),
-		progress: 65,
-		color: "#0B6E4F",
-		type: "group",
-	},
-	{
-		id: 2,
-		text: "UI/UX Research & Design",
-		start: new Date(2026, 0, 6),
-		end: new Date(2026, 0, 31),
-		progress: 100,
-		color: "#10B981",
-		type: "task",
-		parentId: 1,
-	},
-	{
-		id: 3,
-		text: "Frontend Development",
-		start: new Date(2026, 1, 1),
-		end: new Date(2026, 1, 28),
-		progress: 80,
-		color: "#3B82F6",
-		type: "task",
-		parentId: 1,
-	},
-	{
-		id: 4,
-		text: "Backend API Integration",
-		start: new Date(2026, 1, 10),
-		end: new Date(2026, 2, 15),
-		progress: 50,
-		color: "#8B5CF6",
-		type: "task",
-		parentId: 1,
-	},
-	{
-		id: 5,
-		text: "QA & Testing",
-		start: new Date(2026, 2, 1),
-		end: new Date(2026, 2, 20),
-		progress: 20,
-		color: "#F59E0B",
-		type: "task",
-		parentId: 1,
-	},
-	{
-		id: 6,
-		text: "Launch Day",
-		start: new Date(2026, 2, 28),
-		end: new Date(2026, 2, 28),
-		progress: 0,
-		color: "#EF4444",
-		type: "milestone",
-		parentId: 1,
-	},
-
-	// ── Group 2: Sales Pipeline ──
-	{
-		id: 10,
-		text: "Sales Pipeline Optimization",
-		start: new Date(2026, 0, 13),
-		end: new Date(2026, 3, 15),
-		progress: 40,
-		color: "#3B82F6",
-		type: "group",
-	},
-	{
-		id: 11,
-		text: "CRM Data Migration",
-		start: new Date(2026, 0, 13),
-		end: new Date(2026, 1, 10),
-		progress: 90,
-		color: "#10B981",
-		type: "task",
-		parentId: 10,
-	},
-	{
-		id: 12,
-		text: "Lead Scoring Model",
-		start: new Date(2026, 1, 1),
-		end: new Date(2026, 2, 1),
-		progress: 60,
-		color: "#6366F1",
-		type: "task",
-		parentId: 10,
-	},
-	{
-		id: 13,
-		text: "Outreach Automation",
-		start: new Date(2026, 2, 1),
-		end: new Date(2026, 3, 1),
-		progress: 10,
-		color: "#F59E0B",
-		type: "task",
-		parentId: 10,
-	},
-	{
-		id: 14,
-		text: "Team Training & Rollout",
-		start: new Date(2026, 3, 1),
-		end: new Date(2026, 3, 15),
-		progress: 0,
-		color: "#94A3B8",
-		type: "task",
-		parentId: 10,
-	},
-
-	// ── Group 3: Marketing Campaign ──
-	{
-		id: 20,
-		text: "Marketing Campaign",
-		start: new Date(2026, 1, 15),
-		end: new Date(2026, 3, 30),
-		progress: 30,
-		color: "#F59E0B",
-		type: "group",
-	},
-	{
-		id: 21,
-		text: "Content Strategy",
-		start: new Date(2026, 1, 15),
-		end: new Date(2026, 2, 10),
-		progress: 70,
-		color: "#EC4899",
-		type: "task",
-		parentId: 20,
-	},
-	{
-		id: 22,
-		text: "Social Media Assets",
-		start: new Date(2026, 2, 1),
-		end: new Date(2026, 2, 25),
-		progress: 40,
-		color: "#8B5CF6",
-		type: "task",
-		parentId: 20,
-	},
-	{
-		id: 23,
-		text: "Email Campaign Launch",
-		start: new Date(2026, 2, 20),
-		end: new Date(2026, 3, 15),
-		progress: 0,
-		color: "#3B82F6",
-		type: "task",
-		parentId: 20,
-	},
-	{
-		id: 24,
-		text: "Campaign Review",
-		start: new Date(2026, 3, 20),
-		end: new Date(2026, 3, 30),
-		progress: 0,
-		color: "#94A3B8",
-		type: "task",
-		parentId: 20,
-	},
-];
-
-/* ═══════════════════════════════════════════════
-   Helpers
-   ═══════════════════════════════════════════════ */
+/* ──────────────────────────────────────────────
+   Layout constants
+────────────────────────────────────────────── */
+const DAY_W = 24; // px per calendar day — wider so individual days are easier to read
+const ROW_H = 52; // px per task row
+const HEADER_H = 64; // px for the two-row header
+const SIDEBAR_W = 280; // px for the task name panel
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
+/* ──────────────────────────────────────────────
+   Date helpers
+────────────────────────────────────────────── */
 function daysBetween(a: Date, b: Date) {
-	return Math.ceil((b.getTime() - a.getTime()) / (1000 * 60 * 60 * 24));
+	return Math.round((b.getTime() - a.getTime()) / 86_400_000);
 }
-
-function generateWeeks(start: Date, end: Date) {
-	const weeks: { label: string; start: Date; days: number }[] = [];
-	const cur = new Date(start);
-	// align to Monday
-	cur.setDate(cur.getDate() - ((cur.getDay() + 6) % 7));
-
-	while (cur <= end) {
-		const weekEnd = new Date(cur);
-		weekEnd.setDate(weekEnd.getDate() + 6);
-		weeks.push({
-			label: `${MONTHS[cur.getMonth()]} ${cur.getDate()}`,
-			start: new Date(cur),
-			days: 7,
-		});
-		cur.setDate(cur.getDate() + 7);
-	}
-	return weeks;
+function startOfDay(d: Date) {
+	return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
-
-function generateMonths(start: Date, end: Date) {
-	const months: { label: string; start: Date; days: number }[] = [];
+function monthSegments(start: Date, end: Date) {
+	const segs: { label: string; days: number }[] = [];
 	const cur = new Date(start.getFullYear(), start.getMonth(), 1);
-
 	while (cur <= end) {
-		const nextMonth = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
-		const daysInMonth = daysBetween(cur, nextMonth);
-		months.push({
+		const next = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
+		segs.push({
 			label: `${MONTHS[cur.getMonth()]} ${cur.getFullYear()}`,
-			start: new Date(cur),
-			days: daysInMonth,
+			days: daysBetween(cur, next),
 		});
 		cur.setMonth(cur.getMonth() + 1);
 	}
-	return months;
+	return segs;
+}
+function weekStarts(start: Date, end: Date) {
+	const out: Date[] = [];
+	const cur = new Date(start);
+	cur.setDate(cur.getDate() - ((cur.getDay() + 6) % 7)); // Monday
+	while (cur <= end) {
+		out.push(new Date(cur));
+		cur.setDate(cur.getDate() + 7);
+	}
+	return out;
 }
 
-/* ═══════════════════════════════════════════════
+/* ──────────────────────────────────────────────
+   Task colour — priority + variety
+────────────────────────────────────────────── */
+const TASK_PALETTE = [
+	{ bar: "#6366F1", dot: "#4F46E5" }, // indigo
+	{ bar: "#F59E0B", dot: "#D97706" }, // amber
+	{ bar: "#EC4899", dot: "#DB2777" }, // pink
+	{ bar: "#14B8A6", dot: "#0D9488" }, // teal
+	{ bar: "#8B5CF6", dot: "#7C3AED" }, // violet
+	{ bar: "#F97316", dot: "#EA580C" }, // orange
+	{ bar: "#06B6D4", dot: "#0891B2" }, // cyan
+	{ bar: "#84CC16", dot: "#65A30D" }, // lime
+];
+
+const PRIORITY_COLORS: Record<string, { bar: string; dot: string }> = {
+	CRITICAL: { bar: "#EF4444", dot: "#DC2626" },
+	HIGH: { bar: "#F97316", dot: "#EA580C" },
+	MEDIUM: { bar: "#F59E0B", dot: "#D97706" },
+	LOW: { bar: "#3B82F6", dot: "#2563EB" },
+};
+
+function taskColor(task: Task): { bar: string; dot: string } {
+	if (task.status?.isDone) return { bar: "#10B981", dot: "#059669" };
+	const s = (task.status?.name ?? "").toLowerCase();
+	if (s.includes("progress")) return { bar: "#3B82F6", dot: "#2563EB" };
+	if (s.includes("review")) return { bar: "#F59E0B", dot: "#D97706" };
+	if (task.priority && task.priority !== "NONE" && PRIORITY_COLORS[task.priority]) {
+		return PRIORITY_COLORS[task.priority];
+	}
+	const hash = (task.taskNumber ?? task.title.length) % TASK_PALETTE.length;
+	return TASK_PALETTE[hash];
+}
+
+/* ──────────────────────────────────────────────
    Component
-   ═══════════════════════════════════════════════ */
+────────────────────────────────────────────── */
+export function SpaceTimelineView({ spaceId }: { spaceId: string }) {
+	const { token } = useSupabaseAuth();
+	const { data: space } = useSpace(spaceId, token || undefined);
+	const { data: tasks, isLoading } = useTasks(spaceId, undefined, token || undefined);
 
-const ROW_HEIGHT = 40;
-const DAY_WIDTH = 7;
-const TASK_LIST_WIDTH = 260;
+	/* rows */
+	const rows = useMemo(() => {
+		if (!tasks) return [];
+		return tasks
+			.filter((t) => t.startDate || t.dueDate)
+			.map((t) => {
+				const s = startOfDay(new Date(t.startDate ?? t.dueDate ?? new Date()));
+				const e = startOfDay(new Date(t.dueDate ?? t.startDate ?? new Date()));
+				const colors = taskColor(t);
+				return {
+					id: t.id,
+					title: t.title,
+					taskNumber: t.taskNumber,
+					start: s <= e ? s : e,
+					end: e >= s ? e : s,
+					...colors,
+					statusName: t.status?.name ?? "",
+					isDone: !!t.status?.isDone,
+				};
+			})
+			.sort(
+				(a, b) =>
+					a.start.getTime() - b.start.getTime() || (a.taskNumber ?? 0) - (b.taskNumber ?? 0),
+			);
+	}, [tasks]);
 
-export function SpaceTimelineView() {
-	const [collapsedGroups, setCollapsedGroups] = useState<Set<number>>(new Set());
-
-	const toggleGroup = (id: number) => {
-		setCollapsedGroups((prev) => {
-			const next = new Set(prev);
-			if (next.has(id)) next.delete(id);
-			else next.add(id);
-			return next;
-		});
-	};
-
-	// Filter visible tasks
-	const visibleTasks = useMemo(() => {
-		return TASKS.filter((t) => {
-			if (!t.parentId) return true;
-			return !collapsedGroups.has(t.parentId);
-		});
-	}, [collapsedGroups]);
-
-	// Timeline range
-	const timelineStart = new Date(2026, 0, 1);
-	const timelineEnd = new Date(2026, 11, 31);
-	const totalDays = daysBetween(timelineStart, timelineEnd);
-	const timelineWidth = totalDays * DAY_WIDTH;
-
-	const months = generateMonths(timelineStart, timelineEnd);
-	const weeks = generateWeeks(timelineStart, timelineEnd);
-
-	// Today marker
-	const today = new Date();
-	const todayOffset =
-		today >= timelineStart && today <= timelineEnd
-			? daysBetween(timelineStart, today) * DAY_WIDTH
-			: -1;
-
-	const getBarStyle = (task: TimelineTask) => {
-		const startOffset = Math.max(0, daysBetween(timelineStart, task.start)) * DAY_WIDTH;
-		const duration = Math.max(1, daysBetween(task.start, task.end)) * DAY_WIDTH;
-
-		if (task.type === "milestone") {
-			return { left: startOffset - 6, width: 12 };
+	/* range */
+	const { tStart, tEnd } = useMemo(() => {
+		const now = startOfDay(new Date());
+		if (rows.length === 0) {
+			return {
+				tStart: new Date(now.getFullYear(), now.getMonth() - 1, 1),
+				tEnd: new Date(now.getFullYear(), now.getMonth() + 3, 0),
+			};
 		}
-		return { left: startOffset, width: Math.max(duration, 8) };
-	};
+		const minMs = Math.min(...rows.map((r) => r.start.getTime()), now.getTime());
+		const maxMs = Math.max(...rows.map((r) => r.end.getTime()), now.getTime());
+		const lo = new Date(minMs);
+		const hi = new Date(maxMs);
+		return {
+			tStart: new Date(lo.getFullYear(), lo.getMonth() - 2, 1),
+			tEnd: new Date(hi.getFullYear(), hi.getMonth() + 4, 0),
+		};
+	}, [rows]);
+
+	const totalDays = daysBetween(tStart, tEnd);
+	const gridW = Math.max(totalDays * DAY_W, 800);
+	const months = monthSegments(tStart, tEnd);
+	const weeks = weekStarts(tStart, tEnd);
+
+	const today = startOfDay(new Date());
+	const todayX = today >= tStart && today <= tEnd ? daysBetween(tStart, today) * DAY_W : -1;
+
+	/* scroll to today */
+	const scrollRef = useRef<HTMLDivElement>(null);
+	useEffect(() => {
+		if (scrollRef.current && todayX >= 0) {
+			const vw = scrollRef.current.clientWidth - SIDEBAR_W;
+			scrollRef.current.scrollLeft = Math.max(0, todayX - vw / 2);
+		}
+	}, [todayX]);
+
+	/* bar geometry */
+	function bar(row: (typeof rows)[0]) {
+		const left = Math.max(0, daysBetween(tStart, row.start)) * DAY_W;
+		const width = Math.max(DAY_W * 2, daysBetween(row.start, row.end) * DAY_W + DAY_W);
+		return { left, width };
+	}
+
+	/* loading */
+	if (isLoading) {
+		return (
+			<div className="flex-1 flex items-center justify-center">
+				<div className="flex flex-col items-center gap-3 text-slate-400">
+					<div className="w-8 h-8 border-2 border-slate-200 border-t-blue-400 rounded-full animate-spin" />
+					<span className="text-sm">Loading timeline…</span>
+				</div>
+			</div>
+		);
+	}
+
+	/* empty */
+	if (rows.length === 0) {
+		return (
+			<div className="flex-1 flex items-center justify-center">
+				<div className="flex flex-col items-center gap-3 text-center text-slate-400 max-w-xs">
+					<div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center">
+						<svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+							<rect x="3" y="8" width="22" height="17" rx="2" stroke="#CBD5E1" strokeWidth="1.5" />
+							<path
+								d="M9 4v4M19 4v4M3 13h22"
+								stroke="#CBD5E1"
+								strokeWidth="1.5"
+								strokeLinecap="round"
+							/>
+						</svg>
+					</div>
+					<p className="text-sm font-semibold text-slate-600">No scheduled tasks</p>
+					<p className="text-xs leading-relaxed">
+						Add a start or due date to any task and it will appear here on the timeline.
+					</p>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div
-			className="flex-1 flex flex-col bg-white overflow-hidden animate-[fadeInUp_0.3s_ease-out]"
-			style={{ fontFamily: "var(--font-figtree), Figtree" }}
+			className="flex-1 flex flex-col bg-white overflow-hidden"
+			style={{ fontFamily: "var(--font-figtree, Figtree), sans-serif" }}
 		>
-			<div className="flex flex-1 overflow-hidden border-t border-slate-200">
-				{/* ──── Task List (Left Panel) ──── */}
-				<div
-					className="shrink-0 border-r border-slate-200 bg-white flex flex-col"
-					style={{ width: TASK_LIST_WIDTH }}
-				>
-					{/* Header */}
+			<div ref={scrollRef} className="flex-1 overflow-auto">
+				{/* ── total width wrapper ── */}
+				<div className="relative flex flex-col" style={{ minWidth: SIDEBAR_W + gridW }}>
+					{/* ══════ STICKY HEADER ══════ */}
 					<div
-						className="flex items-center px-4 border-b border-slate-200 bg-slate-50 text-xs font-semibold text-slate-500 uppercase tracking-wider shrink-0"
-						style={{ height: 60 }}
+						className="sticky top-0 z-30 flex border-b border-slate-200"
+						style={{ height: HEADER_H, boxShadow: "0 1px 3px 0 rgba(0,0,0,0.06)" }}
 					>
-						Task Name
-					</div>
-
-					{/* Task Rows */}
-					<div className="flex-1 overflow-auto">
-						{visibleTasks.map((task) => {
-							const isGroup = task.type === "group";
-							const isCollapsed = collapsedGroups.has(task.id);
-							const isChild = !!task.parentId;
-
-							return (
-								<div
-									key={task.id}
-									className={`flex items-center gap-2 border-b border-slate-100 hover:bg-slate-50 transition-colors ${isGroup ? "bg-slate-50/50" : ""}`}
-									style={{
-										height: ROW_HEIGHT,
-										paddingLeft: isChild ? 32 : 12,
-										paddingRight: 12,
-									}}
-								>
-									{isGroup ? (
-										<button
-											type="button"
-											onClick={() => toggleGroup(task.id)}
-											className="w-5 h-5 flex items-center justify-center rounded hover:bg-slate-200 transition-colors shrink-0"
-										>
-											{isCollapsed ? (
-												<ChevronRight className="w-3.5 h-3.5 text-slate-500" />
-											) : (
-												<ChevronDown className="w-3.5 h-3.5 text-slate-500" />
-											)}
-										</button>
-									) : (
-										<div
-											className="w-2 h-2 rounded-full shrink-0"
-											style={{ backgroundColor: task.color }}
-										/>
-									)}
-									<span
-										className={`text-sm truncate ${isGroup ? "font-semibold text-slate-800" : "text-slate-600"}`}
-									>
-										{task.text}
-									</span>
-									{isGroup && (
-										<span className="ml-auto text-[10px] font-bold text-slate-400">
-											{task.progress}%
-										</span>
-									)}
-								</div>
-							);
-						})}
-					</div>
-				</div>
-
-				{/* ──── Timeline Chart (Right Panel) ──── */}
-				<div className="flex-1 overflow-auto flex flex-col min-w-0">
-					{/* Scale Headers */}
-					<div className="shrink-0 border-b border-slate-200" style={{ width: timelineWidth }}>
-						{/* Month row */}
-						<div className="flex border-b border-slate-100" style={{ height: 30 }}>
-							{months.map((m) => (
-								<div
-									key={m.label}
-									className="shrink-0 flex items-center justify-center text-[11px] font-semibold text-slate-600 bg-slate-50 border-r border-slate-100"
-									style={{ width: m.days * DAY_WIDTH }}
-								>
-									{m.label}
-								</div>
-							))}
+						{/* top-left corner */}
+						<div
+							className="sticky left-0 z-40 shrink-0 flex items-center px-5 bg-slate-50 border-r border-slate-200"
+							style={{ width: SIDEBAR_W }}
+						>
+							<span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+								Task
+							</span>
 						</div>
-						{/* Week row */}
-						<div className="flex" style={{ height: 30 }}>
+
+						{/* month + week header */}
+						<div className="flex flex-col bg-white relative" style={{ width: gridW }}>
+							{/* month row */}
+							<div className="flex border-b border-slate-100" style={{ height: 32 }}>
+								{months.map((m) => (
+									<div
+										key={m.label}
+										className="shrink-0 flex items-center justify-center bg-slate-50 border-r border-slate-100 select-none"
+										style={{ width: m.days * DAY_W }}
+									>
+										<span className="text-[11px] font-bold text-slate-500">{m.label}</span>
+									</div>
+								))}
+							</div>
+							{/* week row — Today pill is rendered here, inside the header, so it never overlaps task bars */}
+							<div className="relative overflow-visible" style={{ height: 32 }}>
+								{weeks.map((w) => {
+									const leftOffset = daysBetween(tStart, w) * DAY_W;
+									return (
+										<div
+											key={w.getTime()}
+											className="absolute top-0 bottom-0 flex items-center justify-center border-l border-slate-100 select-none"
+											style={{ left: leftOffset, width: 7 * DAY_W }}
+										>
+											<span className="text-[10px] font-medium text-slate-400">
+												{MONTHS[w.getMonth()]} {w.getDate()}
+											</span>
+										</div>
+									);
+								})}
+								{/* Today pill anchored inside the week-row header — shows actual date */}
+								{todayX >= 0 && (
+									<div
+										className="absolute inset-y-0 flex items-center justify-center pointer-events-none z-20"
+										style={{ left: todayX + DAY_W / 2 - 1 }}
+									>
+										<div className="bg-red-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm whitespace-nowrap">
+											Today ·{" "}
+											{today.toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+										</div>
+									</div>
+								)}
+							</div>
+						</div>
+					</div>
+
+					{/* ══════ BODY ══════ */}
+					<div className="relative flex flex-col pb-10">
+						{/* ── background grid (absolute, behind rows) ── */}
+						<div className="absolute inset-0 pointer-events-none" style={{ left: SIDEBAR_W }}>
+							{/* alternate row stripes */}
+							{rows.map((row, i) => (
+								<div
+									key={`stripe-${row.id}`}
+									className={i % 2 === 1 ? "absolute w-full bg-slate-50/60" : ""}
+									style={{ top: i * ROW_H, height: ROW_H, right: 0, left: 0 }}
+								/>
+							))}
+
+							{/* week columns */}
 							{weeks.map((w) => (
 								<div
-									key={`w-${w.label}-${w.start.getTime()}`}
-									className="shrink-0 flex items-center justify-center text-[9px] font-medium text-slate-400 border-r border-slate-50"
-									style={{ width: w.days * DAY_WIDTH }}
-								>
-									{w.label}
-								</div>
-							))}
-						</div>
-					</div>
-
-					{/* Bars area */}
-					<div className="relative flex-1 overflow-auto" style={{ width: timelineWidth }}>
-						{/* Vertical grid lines (weekly) */}
-						{weeks.map((w) => {
-							const offset = daysBetween(timelineStart, w.start) * DAY_WIDTH;
-							return (
-								<div
-									key={`grid-${w.start.getTime()}`}
+									key={`wl-${w.getTime()}`}
 									className="absolute top-0 bottom-0 border-l border-slate-100"
-									style={{ left: offset }}
+									style={{ left: daysBetween(tStart, w) * DAY_W }}
 								/>
-							);
-						})}
+							))}
 
-						{/* Today marker */}
-						{todayOffset >= 0 && (
-							<div
-								className="absolute top-0 bottom-0 w-[2px] bg-red-400 z-20"
-								style={{ left: todayOffset }}
-							>
-								<div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-red-400" />
-							</div>
-						)}
+							{/* today column soft highlight */}
+							{todayX >= 0 && (
+								<div
+									className="absolute top-0 bottom-0 bg-red-50/40"
+									style={{ left: todayX, width: DAY_W }}
+								/>
+							)}
 
-						{/* Task Bars */}
-						{visibleTasks.map((task, idx) => {
-							const { left, width } = getBarStyle(task);
-							const top =
-								idx * ROW_HEIGHT +
-								(ROW_HEIGHT - (task.type === "group" ? 8 : task.type === "milestone" ? 12 : 22)) /
-									2;
+							{/* today line — clean 2px, no pill here (pill is in the header) */}
+							{todayX >= 0 && (
+								<div
+									className="absolute top-0 bottom-0 z-10"
+									style={{ left: todayX + DAY_W / 2, width: 2, background: "rgba(239,68,68,0.75)" }}
+								/>
+							)}
+						</div>
 
-							if (task.type === "milestone") {
-								return (
-									<div
-										key={task.id}
-										className="absolute z-10"
-										style={{
-											left,
-											top: top + 2,
-											width: 12,
-											height: 12,
-										}}
-										title={task.text}
-									>
-										<div
-											className="w-3 h-3 rotate-45 rounded-[2px]"
-											style={{ backgroundColor: task.color }}
-										/>
-									</div>
-								);
-							}
+						{/* ── task rows ── */}
+						{rows.map((row) => {
+							const { left, width } = bar(row);
 
-							if (task.type === "group") {
-								return (
-									<div
-										key={task.id}
-										className="absolute z-10 rounded-sm"
-										style={{
-											left,
-											top,
-											width,
-											height: 8,
-											backgroundColor: task.color,
-											opacity: 0.35,
-										}}
-										title={`${task.text} — ${task.progress}%`}
-									>
-										{/* Group bar with left/right ticks */}
-										<div
-											className="absolute left-0 top-0 w-[3px] rounded-l-sm"
-											style={{ height: 14, backgroundColor: task.color }}
-										/>
-										<div
-											className="absolute right-0 top-0 w-[3px] rounded-r-sm"
-											style={{ height: 14, backgroundColor: task.color }}
-										/>
-									</div>
-								);
-							}
-
-							// Regular task bar
 							return (
 								<div
-									key={task.id}
-									className="absolute z-10 rounded-md group cursor-pointer"
-									style={{
-										left,
-										top,
-										width,
-										height: 22,
-									}}
-									title={`${task.text} — ${task.progress}%`}
+									key={row.id}
+									className="relative flex items-center group"
+									style={{ height: ROW_H }}
 								>
-									{/* Background */}
+									{/* sidebar */}
 									<div
-										className="absolute inset-0 rounded-md opacity-20"
-										style={{ backgroundColor: task.color }}
-									/>
-									{/* Progress fill */}
+										className="sticky left-0 z-20 shrink-0 flex items-center gap-2.5 px-4 bg-white border-r border-b border-slate-100 group-hover:bg-blue-50/30 transition-colors"
+										style={{ width: SIDEBAR_W, height: ROW_H }}
+									>
+										{/* status dot */}
+										<span
+											className="w-2 h-2 rounded-full shrink-0 ring-2 ring-white"
+											style={{ backgroundColor: row.dot }}
+										/>
+										<span className="text-[11px] font-semibold text-slate-400 shrink-0 tabular-nums">
+											{space?.prefix}-{row.taskNumber}
+										</span>
+										<div className="flex flex-col min-w-0">
+											<span className="text-[13px] text-slate-700 font-medium truncate leading-tight">
+												{row.title}
+											</span>
+											<span className="text-[10px] text-slate-400 tabular-nums">
+												{row.start.toLocaleDateString(undefined, {
+													month: "short",
+													day: "numeric",
+												})}
+												{" → "}
+												{row.end.toLocaleDateString(undefined, {
+													month: "short",
+													day: "numeric",
+													year: "numeric",
+												})}
+											</span>
+										</div>
+										{row.isDone && (
+											<span className="ml-auto shrink-0 text-[9px] font-bold uppercase tracking-wide text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full">
+												Done
+											</span>
+										)}
+									</div>
+
+									{/* grid area */}
 									<div
-										className="absolute inset-y-0 left-0 rounded-md transition-all"
-										style={{
-											width: `${task.progress}%`,
-											backgroundColor: task.color,
-											opacity: 0.85,
-										}}
-									/>
-									{/* Label */}
-									<span className="absolute inset-0 flex items-center px-2 text-[10px] font-semibold text-white mix-blend-normal truncate drop-shadow-sm">
-										{width > 60 ? task.text : ""}
-									</span>
-									{/* Hover tooltip */}
-									<div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2.5 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-30 shadow-lg">
-										{task.text} · {task.progress}%
+										className="relative shrink-0 border-b border-slate-100"
+										style={{ width: gridW, height: ROW_H }}
+									>
+										{/* ─ Gantt bar ─ */}
+										<div
+											className="absolute top-1/2 -translate-y-1/2 flex items-center select-none cursor-pointer"
+											style={{ left, height: 28 }}
+										>
+											{/* coloured bar */}
+											<div
+												className="rounded-full shrink-0 relative"
+												style={{
+													width,
+													height: 28,
+													background: `linear-gradient(135deg, ${row.bar}ee, ${row.dot}cc)`,
+													boxShadow: `0 2px 8px 0 ${row.bar}55`,
+												}}
+											>
+												<div
+													className="absolute inset-0 rounded-full"
+													style={{
+														background:
+															"linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.0) 100%)",
+													}}
+												/>
+											</div>
+											{/* label — always outside to the right */}
+											<span className="ml-2.5 text-[11px] font-semibold text-slate-700 whitespace-nowrap">
+												{row.title}
+											</span>
+										</div>
+
+										{/* tooltip on hover */}
+										<div
+											className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50"
+											style={{ left: left + width / 2, transform: "translateX(-50%)" }}
+										>
+											<div className="bg-slate-900 text-white text-[11px] font-medium px-3 py-2 rounded-lg shadow-xl whitespace-nowrap">
+												<span className="text-slate-400 mr-1">
+													{space?.prefix}-{row.taskNumber}
+												</span>
+												{row.title}
+												<div className="flex items-center gap-1 mt-1 text-slate-400 text-[10px]">
+													<span>
+														{row.start.toLocaleDateString(undefined, {
+															month: "short",
+															day: "numeric",
+														})}
+													</span>
+													<span>→</span>
+													<span>
+														{row.end.toLocaleDateString(undefined, {
+															month: "short",
+															day: "numeric",
+															year: "numeric",
+														})}
+													</span>
+												</div>
+											</div>
+											<div className="flex justify-center">
+												<div className="border-l-4 border-r-4 border-t-4 border-transparent border-t-slate-900" />
+											</div>
+										</div>
 									</div>
 								</div>
 							);

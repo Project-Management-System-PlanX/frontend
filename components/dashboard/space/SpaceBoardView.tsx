@@ -7,187 +7,46 @@ import {
 	Clock,
 	MessageSquare,
 	MoreHorizontal,
-	Paperclip,
 	Plus,
 	User,
 } from "lucide-react";
 import type { DragEvent, KeyboardEvent } from "react";
 import { useEffect, useRef, useState } from "react";
-
-/* ═══════════════════════════════════════════════
-   Types & Data
-   ═══════════════════════════════════════════════ */
-
-interface Task {
-	id: string;
-	title: string;
-	columnId: string;
-	priority: "critical" | "high" | "medium" | "low" | "none";
-	assignee: string;
-	avatar: string;
-	avatarColor: string;
-	dueDate?: string;
-	tags?: string[];
-	comments?: number;
-	attachments?: number;
-	progress?: number;
-}
-
-const INITIAL_TASKS: Task[] = [
-	{
-		id: "KAN-12",
-		title: "Research competitor onboarding flows",
-		columnId: "todo",
-		priority: "medium",
-		assignee: "Sarah Chen",
-		avatar: "SC",
-		avatarColor: "bg-pink-500",
-		dueDate: "Feb 18",
-		tags: ["Research"],
-		comments: 3,
-	},
-	{
-		id: "KAN-15",
-		title: "Write API documentation for v2 endpoints",
-		columnId: "todo",
-		priority: "high",
-		assignee: "Alex Morgan",
-		avatar: "AM",
-		avatarColor: "bg-blue-500",
-		dueDate: "Feb 20",
-		tags: ["Docs", "API"],
-		attachments: 2,
-	},
-	{
-		id: "KAN-18",
-		title: "Set up E2E test pipeline",
-		columnId: "todo",
-		priority: "low",
-		assignee: "James Lee",
-		avatar: "JL",
-		avatarColor: "bg-teal-500",
-		tags: ["DevOps"],
-	},
-	{
-		id: "KAN-7",
-		title: "Implement notification preferences UI",
-		columnId: "inprogress",
-		priority: "high",
-		assignee: "Ravikrishna J",
-		avatar: "RJ",
-		avatarColor: "bg-orange-500",
-		dueDate: "Feb 14",
-		tags: ["Frontend", "UI"],
-		comments: 5,
-		progress: 60,
-	},
-	{
-		id: "KAN-9",
-		title: "Optimize database query for dashboard analytics",
-		columnId: "inprogress",
-		priority: "critical",
-		assignee: "Priya Patel",
-		avatar: "PP",
-		avatarColor: "bg-violet-500",
-		dueDate: "Feb 13",
-		tags: ["Backend", "Perf"],
-		comments: 8,
-		attachments: 1,
-		progress: 35,
-	},
-	{
-		id: "KAN-11",
-		title: "Design email template system",
-		columnId: "inprogress",
-		priority: "medium",
-		assignee: "Sarah Chen",
-		avatar: "SC",
-		avatarColor: "bg-pink-500",
-		tags: ["Design"],
-		progress: 80,
-	},
-	{
-		id: "KAN-3",
-		title: "Review PR #247 — auth middleware refactor",
-		columnId: "review",
-		priority: "high",
-		assignee: "Alex Morgan",
-		avatar: "AM",
-		avatarColor: "bg-blue-500",
-		tags: ["Review"],
-		comments: 12,
-	},
-	{
-		id: "KAN-5",
-		title: "QA sign-off on billing module",
-		columnId: "review",
-		priority: "critical",
-		assignee: "Priya Patel",
-		avatar: "PP",
-		avatarColor: "bg-violet-500",
-		dueDate: "Feb 12",
-		tags: ["QA"],
-		attachments: 3,
-	},
-	{
-		id: "KAN-1",
-		title: "Landing page redesign with new brand colors",
-		columnId: "done",
-		priority: "high",
-		assignee: "Sarah Chen",
-		avatar: "SC",
-		avatarColor: "bg-pink-500",
-		tags: ["Design", "UI"],
-		comments: 6,
-	},
-	{
-		id: "KAN-2",
-		title: "Set up CI/CD pipeline for staging",
-		columnId: "done",
-		priority: "medium",
-		assignee: "James Lee",
-		avatar: "JL",
-		avatarColor: "bg-teal-500",
-		tags: ["DevOps"],
-	},
-	{
-		id: "KAN-4",
-		title: "User authentication flow — SSO integration",
-		columnId: "done",
-		priority: "critical",
-		assignee: "Ravikrishna J",
-		avatar: "RJ",
-		avatarColor: "bg-orange-500",
-		tags: ["Auth", "Backend"],
-		comments: 14,
-		attachments: 4,
-	},
-];
-
-const COLUMNS = [
-	{ id: "todo", title: "To Do", color: "#94A3B8", dotColor: "bg-slate-400" },
-	{ id: "inprogress", title: "In Progress", color: "#3B82F6", dotColor: "bg-blue-500" },
-	{ id: "review", title: "In Review", color: "#F59E0B", dotColor: "bg-amber-500" },
-	{ id: "done", title: "Done", color: "#0B6E4F", dotColor: "bg-[#0B6E4F]" },
-];
+import { TaskDetailModal } from "@/components/modals/TaskDetailModal";
+import { useSpace } from "@/hooks/api/use-spaces";
+import { useCreateTask, useMoveTask, useTasks } from "@/hooks/api/use-tasks";
+import { useMemberLookup } from "@/hooks/use-member-lookup";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
+import type { Task, TaskStatus } from "@/lib/types/models";
 
 const PRIORITY_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-	critical: { label: "Critical", color: "text-red-700", bg: "bg-red-50 border-red-200" },
-	high: { label: "High", color: "text-orange-700", bg: "bg-orange-50 border-orange-200" },
-	medium: { label: "Medium", color: "text-blue-700", bg: "bg-blue-50 border-blue-200" },
-	low: { label: "Low", color: "text-slate-600", bg: "bg-slate-50 border-slate-200" },
-	none: { label: "", color: "", bg: "" },
+	CRITICAL: { label: "Critical", color: "text-red-700", bg: "bg-red-50 border-red-200" },
+	HIGH: { label: "High", color: "text-orange-700", bg: "bg-orange-50 border-orange-200" },
+	MEDIUM: { label: "Medium", color: "text-blue-700", bg: "bg-blue-50 border-blue-200" },
+	LOW: { label: "Low", color: "text-slate-600", bg: "bg-slate-50 border-slate-200" },
+	NONE: { label: "", color: "", bg: "" },
 };
 
-/* ═══════════════════════════════════════════════
-   Main Board
-   ═══════════════════════════════════════════════ */
+export function SpaceBoardView({ spaceId }: { spaceId: string }) {
+	const { token } = useSupabaseAuth();
 
-export function SpaceBoardView() {
-	const [tasks, setTasks] = useState(INITIAL_TASKS);
+	const { data: space, isLoading: isSpaceLoading } = useSpace(spaceId, token || undefined);
+	const { data: serverTasks } = useTasks(spaceId, undefined, token || undefined);
+	const { mutateAsync: createTask } = useCreateTask(token || undefined);
+	const { mutateAsync: moveTask } = useMoveTask(token || undefined);
+
+	const [tasks, setTasks] = useState<Task[]>([]);
+	const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 	const [isCreating, setIsCreating] = useState<string | null>(null);
 	const [newTitle, setNewTitle] = useState("");
 	const inputRef = useRef<HTMLTextAreaElement>(null);
+
+	// Sync local tasks with server
+	useEffect(() => {
+		if (serverTasks) {
+			setTasks(serverTasks);
+		}
+	}, [serverTasks]);
 
 	useEffect(() => {
 		if (isCreating && inputRef.current) {
@@ -195,29 +54,54 @@ export function SpaceBoardView() {
 		}
 	}, [isCreating]);
 
-	const handleCreateTask = (columnId: string) => {
+	const columns = space?.statuses || [];
+
+	const handleCreateTask = async (statusId: string) => {
 		if (!newTitle.trim()) {
 			setIsCreating(null);
 			return;
 		}
-		const newTask: Task = {
-			id: `KAN-${Math.floor(Math.random() * 900) + 100}`,
-			title: newTitle,
-			columnId,
-			priority: "none",
-			assignee: "Unassigned",
-			avatar: "?",
-			avatarColor: "bg-slate-400",
-		};
-		setTasks((prev) => [...prev, newTask]);
+
+		const title = newTitle;
 		setNewTitle("");
 		setIsCreating(null);
+
+		// Optimistic update
+		const tempId = `temp-${Date.now()}`;
+		const newTask: Task = {
+			id: tempId,
+			spaceId,
+			statusId,
+			title,
+			priority: "NONE",
+			workType: "TASK",
+			taskNumber: 0,
+			reporterId: "me", // Placeholder
+			resolution: "UNRESOLVED",
+			position: 0,
+			flagged: false,
+			createdAt: new Date().toISOString(),
+			updatedAt: new Date().toISOString(),
+		};
+		setTasks((prev) => [...prev, newTask]);
+
+		try {
+			await createTask({
+				spaceId,
+				statusId,
+				title,
+			});
+		} catch (error) {
+			console.error("Failed to create task", error);
+			// Rollback on error handled mostly by invalidation if we refetch, but a strict rollback would filter tempId
+			setTasks((prev) => prev.filter((t) => t.id !== tempId));
+		}
 	};
 
-	const handleKeyDown = (e: KeyboardEvent, columnId: string) => {
+	const handleKeyDown = (e: KeyboardEvent, statusId: string) => {
 		if (e.key === "Enter" && !e.shiftKey) {
 			e.preventDefault();
-			handleCreateTask(columnId);
+			handleCreateTask(statusId);
 		} else if (e.key === "Escape") {
 			setIsCreating(null);
 			setNewTitle("");
@@ -238,249 +122,258 @@ export function SpaceBoardView() {
 	};
 
 	const triggerCelebration = () => {
-		// Fire confetti
 		const count = 200;
-		const defaults = {
-			origin: { y: 0.7 },
-			zIndex: 9999, // Ensure it's on top of everything
-		};
+		const defaults = { origin: { y: 0.7 }, zIndex: 9999 };
 
 		function fire(particleRatio: number, opts: confetti.Options) {
-			confetti({
-				...defaults,
-				...opts,
-				particleCount: Math.floor(count * particleRatio),
-			});
+			confetti({ ...defaults, ...opts, particleCount: Math.floor(count * particleRatio) });
 		}
 
 		fire(0.25, {
 			spread: 26,
 			startVelocity: 55,
-			colors: ["#0B6E4F", "#F59E0B"], // Green and Orange
+			colors: ["#0B6E4F", "#F59E0B"],
 			shapes: ["circle"],
 		});
-
-		fire(0.2, {
-			spread: 60,
-			colors: ["#3B82F6", "#EF4444"], // Blue and Red
-			shapes: ["square"],
-		});
-
+		fire(0.2, { spread: 60, colors: ["#3B82F6", "#EF4444"], shapes: ["square"] });
 		fire(0.35, {
 			spread: 100,
 			decay: 0.91,
 			scalar: 0.8,
-			colors: ["#8B5CF6", "#10B981"], // Purple and Emerald
+			colors: ["#8B5CF6", "#10B981"],
 			shapes: ["star"],
 		});
-
 		fire(0.1, {
 			spread: 120,
 			startVelocity: 25,
 			decay: 0.92,
 			scalar: 1.2,
-			colors: ["#F472B6"], // Pink
+			colors: ["#F472B6"],
 			shapes: ["circle"],
 		});
-
-		fire(0.1, {
-			spread: 120,
-			startVelocity: 45,
-			shapes: ["circle"], // Default colors
-		});
+		fire(0.1, { spread: 120, startVelocity: 45, shapes: ["circle"] });
 	};
 
-	const handleDrop = (e: DragEvent, targetColumnId: string) => {
+	const handleDrop = async (e: DragEvent, targetStatus: TaskStatus) => {
 		e.preventDefault();
 		const taskId = e.dataTransfer.getData("taskId");
-		if (!taskId) return;
+		if (!taskId || taskId.startsWith("temp-")) return;
 
-		// Trigger celebration if moving to Done column from a different column
 		const task = tasks.find((t) => t.id === taskId);
-		if (task && task.columnId !== "done" && targetColumnId === "done") {
-			triggerCelebration();
+		if (task && task.statusId !== targetStatus.id) {
+			// Trigger celebration if moving to a 'Done' column
+			if (targetStatus.isDone && !columns.find((c) => c.id === task.statusId)?.isDone) {
+				triggerCelebration();
+			}
+
+			// Optimistic UI update
+			setTasks((prev) =>
+				prev.map((t) => (t.id === taskId ? { ...t, statusId: targetStatus.id } : t)),
+			);
+
+			// Backend update
+			try {
+				await moveTask({ id: taskId, data: { statusId: targetStatus.id, position: tasks.length } });
+			} catch (error) {
+				console.error("Failed to move task", error);
+				// Revert on error
+				setTasks((prev) =>
+					prev.map((t) => (t.id === taskId ? { ...t, statusId: task.statusId } : t)),
+				);
+			}
 		}
-
-		setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, columnId: targetColumnId } : t)));
 	};
 
-	const handleDragOver = (e: DragEvent) => {
-		e.preventDefault();
-	};
+	const handleDragOver = (e: DragEvent) => e.preventDefault();
+	const getColumnTasks = (statusId: string) => tasks.filter((t) => t.statusId === statusId);
 
-	const getColumnTasks = (colId: string) => tasks.filter((t) => t.columnId === colId);
+	if (isSpaceLoading) {
+		return <div className="p-6 text-slate-400">Loading board...</div>;
+	}
 
 	return (
-		<div
-			className="flex-1 overflow-x-auto bg-slate-50/50 animate-[fadeInUp_0.3s_ease-out]"
-			style={{ fontFamily: "var(--font-figtree), Figtree" }}
-		>
-			<div className="p-6 flex gap-5 min-h-full min-w-max">
-				{COLUMNS.map((col) => {
-					const colTasks = getColumnTasks(col.id);
-					return (
-						<ul
-							key={col.id}
-							className="w-[300px] flex flex-col shrink-0 list-none p-0 m-0"
-							aria-label={`${col.title} tasks`}
-							onDrop={(e) => handleDrop(e, col.id)}
-							onDragOver={handleDragOver}
-						>
-							{/* Column Header */}
-							<div className="flex items-center justify-between mb-4 px-1">
-								<div className="flex items-center gap-2.5">
-									<div className={`w-2.5 h-2.5 rounded-full ${col.dotColor}`} />
-									<span className="text-[13px] font-bold text-slate-700">{col.title}</span>
-									<span className="px-2 py-0.5 rounded-full text-[11px] font-bold tabular-nums bg-slate-100 text-slate-500">
-										{colTasks.length}
-									</span>
-								</div>
-								<div className="flex items-center gap-1">
-									<button
-										type="button"
-										onClick={() => setIsCreating(col.id)}
-										className="p-1 rounded-md hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors"
-									>
-										<Plus className="w-4 h-4" />
-									</button>
-									<button
-										type="button"
-										className="p-1 rounded-md hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors"
-									>
-										<MoreHorizontal className="w-4 h-4" />
-									</button>
-								</div>
-							</div>
-
-							{/* Column accent line */}
-							<div className="h-[3px] rounded-full mb-3" style={{ backgroundColor: col.color }} />
-
-							{/* Cards */}
-							<div className="flex flex-col gap-2.5 flex-1 min-h-[80px]">
-								{colTasks.map((task) => (
-									<TaskCard
-										key={task.id}
-										task={task}
-										isDone={col.id === "done"}
-										onDragStart={handleDragStart}
-										onDragEnd={handleDragEnd}
-									/>
-								))}
-
-								{/* Create new task inline */}
-								{isCreating === col.id && (
-									<div className="bg-white p-3 rounded-xl border-2 border-[#0B6E4F] shadow-md animate-[fadeIn_0.15s_ease-out]">
-										<textarea
-											ref={inputRef}
-											value={newTitle}
-											onChange={(e) => setNewTitle(e.target.value)}
-											onKeyDown={(e) => handleKeyDown(e, col.id)}
-											onBlur={() => {
-												if (!newTitle.trim()) setIsCreating(null);
-											}}
-											placeholder="What needs to be done?"
-											className="w-full text-[13px] text-slate-800 placeholder:text-slate-400 resize-none outline-none bg-transparent min-h-[44px]"
+		<>
+			<div
+				className="flex-1 overflow-x-auto bg-slate-50/50 animate-[fadeInUp_0.3s_ease-out]"
+				style={{ fontFamily: "var(--font-figtree), Figtree" }}
+			>
+				<div className="p-6 flex gap-5 min-h-full min-w-max">
+					{columns.map((col: TaskStatus) => {
+						const colTasks = getColumnTasks(col.id);
+						return (
+							<ul
+								key={col.id}
+								className="w-[300px] flex flex-col shrink-0 list-none p-0 m-0"
+								aria-label={`${col.name} tasks`}
+								onDrop={(e) => handleDrop(e, col)}
+								onDragOver={handleDragOver}
+							>
+								<div className="flex items-center justify-between mb-4 px-1">
+									<div className="flex items-center gap-2.5">
+										<div
+											className="w-2.5 h-2.5 rounded-full"
+											style={{ backgroundColor: col.color }}
 										/>
-										<div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">
-											<div className="flex items-center gap-1.5">
-												<button
-													type="button"
-													className="p-1 rounded hover:bg-slate-100 text-slate-400"
-												>
-													<User className="w-3.5 h-3.5" />
-												</button>
-												<button
-													type="button"
-													className="p-1 rounded hover:bg-slate-100 text-slate-400"
-												>
-													<Calendar className="w-3.5 h-3.5" />
-												</button>
-												<button
-													type="button"
-													className="p-1 rounded hover:bg-slate-100 text-slate-400"
-												>
-													<AlertCircle className="w-3.5 h-3.5" />
-												</button>
-											</div>
-											<div className="flex items-center gap-1.5">
-												<button
-													type="button"
-													onClick={() => {
-														setIsCreating(null);
-														setNewTitle("");
-													}}
-													className="px-2.5 py-1 text-[11px] font-medium text-slate-500 hover:text-slate-700 rounded-md hover:bg-slate-100"
-												>
-													Cancel
-												</button>
-												<button
-													type="button"
-													onClick={() => handleCreateTask(col.id)}
-													className="px-3 py-1 text-[11px] font-semibold text-white bg-[#0B6E4F] rounded-md hover:bg-[#095C42] transition-colors"
-												>
-													Add
-												</button>
+										<span className="text-[13px] font-bold text-slate-700">{col.name}</span>
+										<span className="px-2 py-0.5 rounded-full text-[11px] font-bold tabular-nums bg-slate-100 text-slate-500">
+											{colTasks.length}
+										</span>
+									</div>
+									<div className="flex items-center gap-1">
+										<button
+											type="button"
+											onClick={() => setIsCreating(col.id)}
+											className="p-1 rounded-md hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors"
+										>
+											<Plus className="w-4 h-4" />
+										</button>
+										<button
+											type="button"
+											className="p-1 rounded-md hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors"
+										>
+											<MoreHorizontal className="w-4 h-4" />
+										</button>
+									</div>
+								</div>
+
+								<div className="h-[3px] rounded-full mb-3" style={{ backgroundColor: col.color }} />
+
+								<div className="flex flex-col gap-2.5 flex-1 min-h-[80px]">
+									{colTasks.map((task) => (
+										<TaskCard
+											key={task.id}
+											task={task}
+											isDone={col.isDone}
+											prefix={space?.prefix || ""}
+											onDragStart={handleDragStart}
+											onDragEnd={handleDragEnd}
+											onClick={() => setSelectedTask(task)}
+										/>
+									))}
+
+									{isCreating === col.id && (
+										<div className="bg-white p-3 rounded-xl border-2 border-[#0B6E4F] shadow-md animate-[fadeIn_0.15s_ease-out]">
+											<textarea
+												ref={inputRef}
+												value={newTitle}
+												onChange={(e) => setNewTitle(e.target.value)}
+												onKeyDown={(e) => handleKeyDown(e, col.id)}
+												onBlur={() => {
+													if (!newTitle.trim()) setIsCreating(null);
+												}}
+												placeholder="What needs to be done?"
+												className="w-full text-[13px] text-slate-800 placeholder:text-slate-400 resize-none outline-none bg-transparent min-h-[44px]"
+											/>
+											<div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">
+												<div className="flex items-center gap-1.5">
+													<button
+														type="button"
+														className="p-1 rounded hover:bg-slate-100 text-slate-400"
+													>
+														<User className="w-3.5 h-3.5" />
+													</button>
+													<button
+														type="button"
+														className="p-1 rounded hover:bg-slate-100 text-slate-400"
+													>
+														<Calendar className="w-3.5 h-3.5" />
+													</button>
+													<button
+														type="button"
+														className="p-1 rounded hover:bg-slate-100 text-slate-400"
+													>
+														<AlertCircle className="w-3.5 h-3.5" />
+													</button>
+												</div>
+												<div className="flex items-center gap-1.5">
+													<button
+														type="button"
+														onClick={() => {
+															setIsCreating(null);
+															setNewTitle("");
+														}}
+														className="px-2.5 py-1 text-[11px] font-medium text-slate-500 hover:text-slate-700 rounded-md hover:bg-slate-100"
+													>
+														Cancel
+													</button>
+													<button
+														type="button"
+														onClick={() => handleCreateTask(col.id)}
+														className="px-3 py-1 text-[11px] font-semibold text-white bg-[#0B6E4F] rounded-md hover:bg-[#095C42] transition-colors"
+													>
+														Add
+													</button>
+												</div>
 											</div>
 										</div>
-									</div>
-								)}
-							</div>
-						</ul>
-					);
-				})}
-
-				{/* Add Column button */}
-				<button
-					type="button"
-					className="w-[300px] shrink-0 h-10 flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 text-slate-400 hover:text-slate-600 hover:border-slate-300 hover:bg-slate-50 transition-all"
-				>
-					<Plus className="w-4 h-4" />
-					<span className="text-[13px] font-medium">Add Column</span>
-				</button>
+									)}
+								</div>
+							</ul>
+						);
+					})}
+				</div>
 			</div>
-		</div>
+
+			<TaskDetailModal
+				task={selectedTask}
+				isOpen={!!selectedTask}
+				onClose={() => setSelectedTask(null)}
+				spaceName={space?.name}
+			/>
+		</>
 	);
 }
-
-/* ═══════════════════════════════════════════════
-   Task Card
-   ═══════════════════════════════════════════════ */
 
 function TaskCard({
 	task,
 	isDone,
+	prefix,
 	onDragStart,
 	onDragEnd,
+	onClick,
 }: {
 	task: Task;
 	isDone: boolean;
+	prefix: string;
 	onDragStart: (e: DragEvent, id: string) => void;
 	onDragEnd: (e: DragEvent) => void;
+	onClick: () => void;
 }) {
-	const pri = PRIORITY_CONFIG[task.priority];
+	const { getMember } = useMemberLookup();
+	const pri = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG.NONE;
+
+	const displayId = task.taskNumber ? `${prefix}-${task.taskNumber}` : task.id;
 
 	return (
-		// biome-ignore lint/a11y/noStaticElementInteractions: drag source
+		// biome-ignore lint/a11y/useSemanticElements: complex card component
 		<div
 			draggable
+			role="button"
+			tabIndex={0}
 			onDragStart={(e) => onDragStart(e, task.id)}
 			onDragEnd={onDragEnd}
-			className={`group bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all cursor-grab active:cursor-grabbing ${isDone ? "opacity-75" : ""}`}
+			onClick={onClick}
+			onKeyDown={(e) => {
+				if (e.key === "Enter" || e.key === " ") {
+					e.preventDefault();
+					onClick();
+				}
+			}}
+			className={`group bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all cursor-pointer active:cursor-grabbing ${isDone ? "opacity-75" : ""}`}
 		>
-			{/* Card Body */}
 			<div className="p-3.5">
-				{/* Tags Row */}
-				{task.tags && task.tags.length > 0 && (
+				{((task.labels && task.labels.length > 0) || task.priority !== "NONE") && (
 					<div className="flex items-center gap-1.5 mb-2.5 flex-wrap">
-						{task.tags.map((tag) => (
+						{task.labels?.map((label) => (
 							<span
-								key={tag}
-								className="text-[10px] font-semibold px-2 py-[2px] rounded-full bg-slate-100 text-slate-500"
+								key={label.id}
+								className="text-[10px] font-semibold px-2 py-[2px] rounded-full text-white"
+								style={{ backgroundColor: label.color }}
 							>
-								{tag}
+								{label.name}
 							</span>
 						))}
-						{task.priority !== "none" && (
+						{task.priority !== "NONE" && (
 							<span
 								className={`text-[10px] font-semibold px-2 py-[2px] rounded-full border ${pri.bg} ${pri.color}`}
 							>
@@ -490,68 +383,46 @@ function TaskCard({
 					</div>
 				)}
 
-				{/* Title */}
 				<p
 					className={`text-[13px] font-medium leading-snug mb-3 ${isDone ? "line-through text-slate-400" : "text-slate-800"}`}
 				>
 					{task.title}
 				</p>
 
-				{/* Progress Bar (if present) */}
-				{task.progress !== undefined && task.progress > 0 && (
-					<div className="mb-3">
-						<div className="flex items-center justify-between mb-1">
-							<span className="text-[10px] text-slate-400 font-medium">Progress</span>
-							<span className="text-[10px] font-bold text-slate-500">{task.progress}%</span>
-						</div>
-						<div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-							<div
-								className="h-full rounded-full bg-gradient-to-r from-[#0B6E4F] to-emerald-400 transition-all"
-								style={{ width: `${task.progress}%` }}
-							/>
-						</div>
-					</div>
-				)}
-
-				{/* Footer */}
-				<div className="flex items-center justify-between">
+				<div className="flex items-center justify-between mt-2">
 					<div className="flex items-center gap-2.5">
-						{/* ID */}
-						<span className="text-[10px] font-mono text-slate-400">{task.id}</span>
+						<span className="text-[10px] font-mono text-slate-400 font-bold">{displayId}</span>
 
-						{/* Due Date */}
 						{task.dueDate && (
 							<div className="flex items-center gap-1 text-slate-400">
 								<Clock className="w-3 h-3" />
-								<span className="text-[10px] font-medium">{task.dueDate}</span>
+								<span className="text-[10px] font-medium">
+									{new Date(task.dueDate).toLocaleDateString()}
+								</span>
 							</div>
 						)}
 					</div>
 
 					<div className="flex items-center gap-2">
-						{/* Comments */}
-						{task.comments && (
+						{task.comments && task.comments.length > 0 && (
 							<div className="flex items-center gap-0.5 text-slate-400">
 								<MessageSquare className="w-3 h-3" />
-								<span className="text-[10px] font-medium">{task.comments}</span>
+								<span className="text-[10px] font-medium">{task.comments.length}</span>
 							</div>
 						)}
 
-						{/* Attachments */}
-						{task.attachments && (
-							<div className="flex items-center gap-0.5 text-slate-400">
-								<Paperclip className="w-3 h-3" />
-								<span className="text-[10px] font-medium">{task.attachments}</span>
+						{task.assigneeId ? (
+							<div
+								title={getMember(task.assigneeId).name}
+								className={`w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-[9px] font-bold`}
+							>
+								{getMember(task.assigneeId).initials}
+							</div>
+						) : (
+							<div className="w-6 h-6 rounded-full bg-slate-100 text-slate-400 border border-slate-200 flex items-center justify-center text-[9px] font-bold">
+								<User className="w-3 h-3" />
 							</div>
 						)}
-
-						{/* Assignee Avatar */}
-						<div
-							className={`w-6 h-6 rounded-full ${task.avatarColor} text-white flex items-center justify-center text-[9px] font-bold`}
-							title={task.assignee}
-						>
-							{task.avatar}
-						</div>
 					</div>
 				</div>
 			</div>

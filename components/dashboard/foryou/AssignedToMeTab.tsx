@@ -1,131 +1,65 @@
+"use client";
+
+import { CheckCircle2, MoreHorizontal, Plus } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
+const MOCK_TASKS = [
+	{ id: "1", title: "Review architectural changes", status: "TODO", color: "#5c4a1c" },
+	{ id: "2", title: "Update documentation for V2", status: "TODO", color: "#5c4a1c" },
+	{ id: "3", title: "Simplify task area UI", status: "IN_PROGRESS", color: "#1e5a46" },
+	{ id: "4", title: "Integrate mock data", status: "IN_PROGRESS", color: "#1e5a46" },
+];
+
 export function AssignedToMeTab() {
 	return (
-		<div className="flex flex-col items-center justify-center py-16 animate-[fadeInUp_0.5s_ease-out]">
-			{/* Illustration */}
-			<div className="relative mb-8 animate-[gentleFloat_3s_ease-in-out_infinite]">
-				{/* Green check badge */}
-				<div
-					className="absolute -top-4 left-1/2 z-10"
-					style={{
-						animation: "bounceIn 0.6s ease-out 0.3s both, checkPulse 2s ease-in-out 1.2s infinite",
-					}}
-				>
-					<div className="w-12 h-12 rounded-full bg-[#0B6E4F] flex items-center justify-center shadow-lg">
-						<svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-							<title>Checkmark</title>
-							<path
-								d="M5 13l4 4L19 7"
-								stroke="white"
-								strokeWidth="2.5"
-								strokeLinecap="round"
-								strokeLinejoin="round"
-							/>
-						</svg>
+		<div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden p-6">
+			<div
+				className="flex-1 flex flex-col rounded-[34px] border overflow-hidden shadow-[0_26px_70px_rgba(0,0,0,0.35)]"
+				style={{ backgroundColor: "rgba(0,0,0,0.15)", borderColor: "rgba(255,255,255,0.1)" }}
+			>
+				<ScrollArea className="flex-1">
+					<div className="py-10 px-10 max-w-5xl mx-auto space-y-8">
+						<div className="flex items-center justify-between">
+							<h2 className="text-[24px] font-bold text-white">Assigned to me</h2>
+							<button className="flex items-center gap-2 px-4 py-2 rounded-md bg-white/10 hover:bg-white/20 text-white text-[14px] font-medium transition-colors">
+								<Plus className="w-4 h-4" />
+								Add Task
+							</button>
+						</div>
+
+						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+							{MOCK_TASKS.map((task) => (
+								<div
+									key={task.id}
+									className="rounded-2xl overflow-hidden shadow-xl flex flex-col min-h-[160px]"
+									style={{ backgroundColor: task.color || "#1b1b1b" }}
+								>
+									<div className="p-5 flex flex-col h-full">
+										<div className="flex items-start justify-between mb-4">
+											<span className="text-[16px] font-bold text-white leading-tight">
+												{task.title}
+											</span>
+											<button className="p-1 hover:bg-black/10 rounded transition-colors">
+												<MoreHorizontal className="w-5 h-5 text-white/50" />
+											</button>
+										</div>
+
+										<div className="mt-auto flex items-center justify-between pt-4 border-t border-white/10">
+											<div className="flex items-center gap-2 text-[11px] font-bold text-white/50 uppercase tracking-widest">
+												<div className="w-2 h-2 rounded-full bg-white/30" />
+												{task.status.replace("_", " ")}
+											</div>
+											<button className="w-7 h-7 rounded-full border border-white/20 flex items-center justify-center hover:bg-white/10 transition-colors">
+												<CheckCircle2 className="w-4 h-4 text-white/30" />
+											</button>
+										</div>
+									</div>
+								</div>
+							))}
+						</div>
 					</div>
-					{/* Stem below circle */}
-					<div className="w-3 h-4 bg-[#0B6E4F] mx-auto rounded-b-sm" />
-				</div>
-
-				{/* Laptop / Monitor SVG */}
-				<svg
-					width="240"
-					height="150"
-					viewBox="0 0 240 150"
-					fill="none"
-					className="drop-shadow-lg"
-					role="img"
-					aria-label="No assigned items illustration"
-				>
-					<title>No assigned items illustration</title>
-					{/* Monitor body */}
-					<rect
-						x="30"
-						y="20"
-						width="180"
-						height="110"
-						rx="8"
-						fill="#f1f5f9"
-						stroke="#e2e8f0"
-						strokeWidth="1.5"
-					/>
-					{/* Screen */}
-					<rect x="38" y="28" width="164" height="86" rx="4" fill="white" />
-					{/* Top bar dots */}
-					<circle cx="48" cy="36" r="2.5" fill="#94a3b8" />
-					<circle cx="56" cy="36" r="2.5" fill="#0B6E4F" />
-					<circle cx="64" cy="36" r="2.5" fill="#0B6E4F" />
-					{/* Content blocks - left sidebar */}
-					<rect x="44" y="44" width="50" height="6" rx="2" fill="#e2e8f0" />
-					<rect x="44" y="54" width="40" height="5" rx="2" fill="#f1f5f9" />
-					<rect x="44" y="63" width="45" height="5" rx="2" fill="#f1f5f9" />
-					{/* Content blocks - main area (shimmer) */}
-					<rect x="102" y="44" width="90" height="28" rx="4" fill="#dbeafe">
-						<animate
-							attributeName="opacity"
-							values="0.6;1;0.6"
-							dur="2.5s"
-							repeatCount="indefinite"
-						/>
-					</rect>
-					<rect x="110" y="50" width="50" height="4" rx="1.5" fill="#93c5fd">
-						<animate
-							attributeName="opacity"
-							values="0.5;1;0.5"
-							dur="2s"
-							begin="0.3s"
-							repeatCount="indefinite"
-						/>
-					</rect>
-					<rect x="110" y="58" width="35" height="4" rx="1.5" fill="#bfdbfe">
-						<animate
-							attributeName="opacity"
-							values="0.5;1;0.5"
-							dur="2s"
-							begin="0.6s"
-							repeatCount="indefinite"
-						/>
-					</rect>
-					{/* Bottom card (shimmer) */}
-					<rect x="102" y="78" width="60" height="20" rx="4" fill="#d1fae5">
-						<animate
-							attributeName="opacity"
-							values="0.6;1;0.6"
-							dur="2.5s"
-							begin="0.4s"
-							repeatCount="indefinite"
-						/>
-					</rect>
-					<rect x="110" y="84" width="36" height="4" rx="1.5" fill="#6ee7b7">
-						<animate
-							attributeName="opacity"
-							values="0.5;1;0.5"
-							dur="2s"
-							begin="0.7s"
-							repeatCount="indefinite"
-						/>
-					</rect>
-					<rect x="110" y="92" width="24" height="3" rx="1" fill="#a7f3d0">
-						<animate
-							attributeName="opacity"
-							values="0.5;1;0.5"
-							dur="2s"
-							begin="1s"
-							repeatCount="indefinite"
-						/>
-					</rect>
-					{/* Stand */}
-					<rect x="95" y="130" width="50" height="4" rx="2" fill="#cbd5e1" />
-					<rect x="112" y="122" width="16" height="10" rx="2" fill="#e2e8f0" />
-				</svg>
+				</ScrollArea>
 			</div>
-
-			{/* Text */}
-			<h3 className="text-[15px] font-semibold text-slate-800 mb-2 animate-[fadeInUp_0.5s_ease-out_0.2s_both]">
-				Find all your open work items in one place
-			</h3>
-			<p className="text-[13px] text-slate-400 animate-[fadeInUp_0.5s_ease-out_0.35s_both]">
-				You have no open work items assigned to you
-			</p>
 		</div>
 	);
 }

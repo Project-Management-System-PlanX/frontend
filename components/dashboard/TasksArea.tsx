@@ -1,390 +1,749 @@
 "use client";
 
 import {
-	AtSign,
-	Bold,
-	CheckCircle2,
-	Clock,
-	FileText,
-	Info,
-	Italic,
-	Link as LinkIcon,
-	List,
-	ListOrdered,
-	Mic,
-	MoreHorizontal,
-	PlusCircle,
-	Search,
-	Star,
-	Strikethrough,
+	closestCorners,
+	DndContext,
+	type DragEndEvent,
+	type DragOverEvent,
+	DragOverlay,
+	type DragStartEvent,
+	defaultDropAnimationSideEffects,
+	KeyboardSensor,
+	PointerSensor,
+	useDroppable,
+	useSensor,
+	useSensors,
+} from "@dnd-kit/core";
+import {
+	arrayMove,
+	SortableContext,
+	sortableKeyboardCoordinates,
+	verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+	AlertCircle,
+	Calendar as CalendarIcon,
+	Inbox as InboxIcon,
+	Layout,
+	Plus,
+	Trash2,
+	X,
 } from "lucide-react";
-import { useState } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+import TaskDetailModal from "@/components/modals/TaskDetailModal";
+import { useCreateTaskStatus, useSpaces, useUpdateTaskStatus } from "@/hooks/api/use-spaces";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
+import { useBoardSync } from "@/lib/hooks/useBoardSync";
+import { usePersonalTasks } from "@/lib/hooks/usePersonalTasks";
+import type { Task } from "@/lib/types/models";
+import { cn } from "@/lib/utils";
+import { useWorkspaceStore } from "@/stores/workspace-store";
+import { BoardPanel } from "./tasks/BoardPanel";
+// Modular Components
+import { InboxPanel } from "./tasks/InboxPanel";
+import { PlannerPanel } from "./tasks/PlannerPanel";
+import { TaskCard } from "./tasks/TaskCard";
 
-interface TaskMessage {
-	id: string;
-	user: {
-		name: string;
-		avatar?: string;
-		isBot?: boolean;
-	};
-	content: string;
-	timestamp: string;
-	status?: "todo" | "in-progress" | "done";
-	priority?: "low" | "medium" | "high";
-	dueDate?: string;
-	reactions?: { emoji: string; count: number }[];
-	attachment?: {
-		name: string;
-		type: string;
-		size: string;
-	};
-	comments?: {
-		count: number;
-		lastComment: string;
-		avatars: string[];
-	};
-}
-
-const tasks: TaskMessage[] = [
-	{
-		id: "1",
-		user: { name: "Alex Morgan", avatar: "/avatars/alex.png" },
-		content:
-			"Design the new dashboard layout for the Q3 release. Focusing on improved data visualization and dark mode support.",
-		timestamp: "Today, 10:30 AM",
-		status: "in-progress",
-		priority: "high",
-		dueDate: "Tomorrow",
-		reactions: [{ emoji: "👍", count: 3 }],
-		attachment: {
-			name: "Dashboard_V3_Draft.fig",
-			type: "FIGMA FILE",
-			size: "4.2 MB",
+const dropAnimation: DropAnimation = {
+	sideEffects: defaultDropAnimationSideEffects({
+		styles: {
+			active: {
+				opacity: "0.5",
+			},
 		},
-	},
-	{
-		id: "2",
-		user: { name: "Sarah Chen", avatar: "/avatars/sarah.png" },
-		content:
-			"Review and merge the latest PR for the authentication flow updates. Need to ensure all edge cases are covered.",
-		timestamp: "Today, 11:15 AM",
-		status: "todo",
-		priority: "medium",
-		dueDate: "Feb 14",
-		comments: {
-			count: 2,
-			lastComment: "Looking into it now...",
-			avatars: ["/avatars/user.png", "/avatars/alex.png"],
-		},
-	},
-	{
-		id: "3",
-		user: { name: "TeamUP Bot", isBot: true },
-		content: "Weekly team sync preparation. Please update your status items before the meeting.",
-		timestamp: "Yesterday, 4:00 PM",
-		status: "done",
-	},
-];
+	}),
+};
 
 export function TasksArea() {
-	const [taskInput, setTaskInput] = useState("");
-	const [detailsOpen, setDetailsOpen] = useState(false);
+	const { token, user } = useSupabaseAuth();
+	const { activeWorkspaceId } = useWorkspaceStore();
+	const { data: spaces, isLoading: isLoadingSpaces } = useSpaces(activeWorkspaceId || "", token);
+
+	const createStatus = useCreateTaskStatus(token);
+	const updateStatus = useUpdateTaskStatus(token);
+
+	// For the "Board" view, we need a space. We'll pick the first one by default.
+	const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
+
+	useEffect(() => {
+		if (spaces && spaces.length > 0 && !selectedSpaceId) {
+			setSelectedSpaceId(spaces[0].id);
+		}
+	}, [spaces, selectedSpaceId]);
+
+	const selectedSpace = useMemo(() => {
+		return spaces?.find((s) => s.id === selectedSpaceId);
+	}, [spaces, selectedSpaceId]);
+
+	const {
+		columns: liveColumns,
+		columnOrder: liveColumnOrder,
+		tasks: liveTasksMap,
+		isLoading: isLoadingTasks,
+		createTask: createTaskApi,
+		moveTask,
+		updateTask: updateTaskApi,
+		deleteTask: deleteTaskApi,
+	} = useBoardSync({
+		spaceId: selectedSpaceId,
+		statuses: selectedSpace?.statuses || [],
+		token: token || undefined,
+		enabled: !!selectedSpaceId && !!token,
+	});
+
+	// Handle default status creation if empty
+	useEffect(() => {
+		if (
+			selectedSpaceId &&
+			spaces &&
+			selectedSpace &&
+			(selectedSpace.statuses?.length || 0) === 0 &&
+			!isLoadingTasks &&
+			!createStatus.isPending
+		) {
+			const initDefaults = async () => {
+				try {
+					await createStatus.mutateAsync({
+						spaceId: selectedSpaceId,
+						data: { name: "Today", color: "#A16207", position: 0, isDone: false },
+					});
+					await createStatus.mutateAsync({
+						spaceId: selectedSpaceId,
+						data: { name: "This Week", color: "#166534", position: 1, isDone: false },
+					});
+					await createStatus.mutateAsync({
+						spaceId: selectedSpaceId,
+						data: { name: "Later", color: "#111111", position: 2, isDone: false },
+					});
+				} catch (err) {
+					console.error("Failed to create default statuses", err);
+				}
+			};
+			initDefaults();
+		}
+	}, [selectedSpaceId, selectedSpace, spaces, isLoadingTasks, createStatus.isPending]);
+
+	const {
+		inboxTasks,
+		plannerTasks: allPlannerTasks,
+		refetch: refetchPersonalTasks,
+		addOptimisticTask: addOptimisticPersonalTask,
+		removeOptimisticTask,
+	} = usePersonalTasks(activeWorkspaceId, token || undefined);
+
+	// Board vs Inbox Separation: Filter board data to exclude tasks already in Inbox
+	const { liveColumnsFiltered, liveTasksMapFiltered } = useMemo(() => {
+		// During drag, we might want to avoid heavy filtering if it causes lag
+		const inboxIds = new Set(inboxTasks.map((t) => t.id));
+		const filteredMap = { ...liveTasksMap };
+		const filteredCols: Record<string, any> = {};
+
+		for (const colId in liveColumns) {
+			filteredCols[colId] = {
+				...liveColumns[colId],
+				taskIds: liveColumns[colId].taskIds.filter((tid) => !inboxIds.has(tid)),
+			};
+		}
+
+		return { liveColumnsFiltered: filteredCols, liveTasksMapFiltered: filteredMap };
+	}, [liveColumns, liveTasksMap, inboxTasks]);
+
+	// Planner tasks should only be tasks with dates (scheduled)
+	const plannerTasks = useMemo(() => {
+		return allPlannerTasks.filter((t) => t.startDate || t.dueDate);
+	}, [allPlannerTasks]);
+
+	const [activeTabs, setActiveTabs] = useState<string[]>(["inbox", "planner", "board"]);
+	const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+	const [isModalOpen, setIsModalOpen] = useState(false);
+	const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+	const [widths, setWidths] = useState<Record<string, number>>({});
+	const [activeId, setActiveId] = useState<string | null>(null);
+
+	const sensors = useSensors(
+		useSensor(PointerSensor, {
+			activationConstraint: {
+				distance: 8,
+			},
+		}),
+		useSensor(KeyboardSensor, {
+			coordinateGetter: sortableKeyboardCoordinates,
+		}),
+	);
+
+	const handleTaskClick = (task: Task) => {
+		setSelectedTask(task);
+		setIsModalOpen(true);
+	};
+
+	const toggleTaskCompletion = async (taskId: string) => {
+		const task = liveTasksMap[taskId] || inboxTasks.find((t) => t.id === taskId);
+		if (!task) return;
+
+		if (!selectedSpace?.statuses) return;
+		const isDone = !task.status?.isDone;
+		const doneStatus = selectedSpace.statuses.find((s) => s.isDone === isDone);
+
+		if (doneStatus) {
+			updateTaskApi(taskId, { statusId: doneStatus.id });
+			refetchPersonalTasks();
+		}
+	};
+
+	const renameColumn = async (columnId: string, newName: string) => {
+		if (!selectedSpaceId) return;
+		try {
+			await updateStatus.mutateAsync({
+				spaceId: selectedSpaceId,
+				statusId: columnId,
+				data: { name: newName },
+			});
+			refetchPersonalTasks();
+		} catch (err) {
+			// Silent error
+		}
+	};
+
+	const addColumn = async (name: string) => {
+		if (!selectedSpaceId) return;
+		try {
+			await createStatus.mutateAsync({
+				spaceId: selectedSpaceId,
+				data: {
+					name,
+					color: "#" + Math.floor(Math.random() * 16777215).toString(16),
+					position: liveColumnOrder.length,
+				},
+			});
+			refetchPersonalTasks();
+		} catch (err) {
+			// Silent error
+		}
+	};
+
+	const addTask = async (containerId: string, title: string) => {
+		if (
+			!selectedSpaceId ||
+			!selectedSpace ||
+			!selectedSpace.statuses ||
+			selectedSpace.statuses.length === 0
+		) {
+			toast.error("No active space or status found to create task");
+			return;
+		}
+
+		const defaultStatusId = selectedSpace.statuses[0].id;
+
+		// Create a temporary task for immediate UI feedback in personal panels
+		const tempId = `temp-${Date.now()}`;
+		const tempTask: Task = {
+			id: tempId,
+			title,
+			statusId: defaultStatusId,
+			spaceId: selectedSpaceId,
+			assigneeId: containerId === "inbox" ? user?.id : null,
+			reporterId: user?.id || "",
+			priority: "NONE",
+			workType: "TASK",
+			taskNumber: 0,
+			createdAt: new Date().toISOString(),
+			updatedAt: new Date().toISOString(),
+			status: selectedSpace.statuses[0],
+		} as unknown as Task;
+
+		try {
+			if (containerId === "inbox") {
+				addOptimisticPersonalTask(tempTask, "inbox");
+				await createTaskApi(defaultStatusId, title, { assigneeId: user?.id });
+			} else if (containerId === "planner") {
+				addOptimisticPersonalTask(tempTask, "planner");
+				await createTaskApi(defaultStatusId, title);
+			} else if (liveColumns[containerId]) {
+				// Board creation is already optimistic via useRealtimeTasks
+				await createTaskApi(containerId, title);
+			}
+
+			// Background refetch to ensure everything is in sync
+			refetchPersonalTasks();
+		} catch (err) {
+			refetchPersonalTasks(); // Rollback/Sync
+		}
+	};
+
+	const containerRef = useRef<HTMLDivElement>(null);
+	const isResizing = useRef<string | null>(null);
+
+	useEffect(() => {
+		const count = activeTabs.length;
+		if (count === 0) return;
+
+		const newWidths: Record<string, number> = {};
+		if (activeTabs.includes("inbox") && count > 1) {
+			const inboxWidth = 20;
+			newWidths.inbox = inboxWidth;
+			const remainingWidth = 100 - inboxWidth;
+			const othersCount = count - 1;
+			activeTabs
+				.filter((t) => t !== "inbox")
+				.forEach((tab) => {
+					newWidths[tab] = remainingWidth / othersCount;
+				});
+		} else {
+			const equalWidth = 100 / count;
+			activeTabs.forEach((tab) => {
+				newWidths[tab] = equalWidth;
+			});
+		}
+		setWidths(newWidths);
+	}, [activeTabs]);
+
+	const toggleTab = (tabId: string) => {
+		setActiveTabs((prev) =>
+			prev.includes(tabId)
+				? prev.filter((t) => t !== tabId)
+				: [...prev, tabId].sort((a, b) => {
+						const order = ["inbox", "planner", "board"];
+						return order.indexOf(a) - order.indexOf(b);
+					}),
+		);
+	};
+
+	const startResizing = (leftTabId: string) => {
+		isResizing.current = leftTabId;
+		document.body.style.cursor = "col-resize";
+		document.body.style.userSelect = "none";
+	};
+
+	const stopResizing = useCallback(() => {
+		isResizing.current = null;
+		document.body.style.cursor = "";
+		document.body.style.userSelect = "";
+	}, []);
+
+	const onResize = useCallback(
+		(e: MouseEvent) => {
+			if (!isResizing.current || !containerRef.current) return;
+			const containerRect = containerRef.current.getBoundingClientRect();
+			const mouseX = e.clientX - containerRect.left;
+			const totalWidth = containerRect.width;
+
+			const activeTabList = activeTabs;
+			const leftTabIndex = activeTabList.indexOf(isResizing.current);
+			const rightTabId = activeTabList[leftTabIndex + 1];
+
+			if (!rightTabId) return;
+
+			const leftTabId = isResizing.current;
+			const leftWidthPct = widths[leftTabId];
+			const rightWidthPct = widths[rightTabId];
+
+			let offsetPx = 0;
+			for (let i = 0; i < leftTabIndex; i++) {
+				offsetPx += (widths[activeTabList[i]] / 100) * totalWidth;
+			}
+
+			const newLeftWidthPx = mouseX - offsetPx;
+			const newLeftWidthPct = (newLeftWidthPx / totalWidth) * 100;
+			const delta = newLeftWidthPct - leftWidthPct;
+
+			if (leftWidthPct + delta > 10 && rightWidthPct - delta > 10) {
+				setWidths((prev) => ({
+					...prev,
+					[leftTabId]: leftWidthPct + delta,
+					[rightTabId]: rightWidthPct - delta,
+				}));
+			}
+		},
+		[activeTabs, widths],
+	);
+
+	useEffect(() => {
+		window.addEventListener("mousemove", onResize);
+		window.addEventListener("mouseup", stopResizing);
+		return () => {
+			window.removeEventListener("mousemove", onResize);
+			window.removeEventListener("mouseup", stopResizing);
+		};
+	}, [onResize, stopResizing]);
+
+	const findContainer = (fullId: string) => {
+		const id = fullId.replace(/^(inbox-|board-|planner-)/, "");
+		if (id === "inbox" || id === "planner" || id in liveColumns) return id;
+		if (fullId.startsWith("inbox-")) return "inbox";
+		if (fullId.startsWith("planner-")) return "planner";
+
+		for (const key in liveColumns) {
+			if (liveColumns[key].taskIds.includes(id)) return key;
+		}
+
+		return null;
+	};
+
+	const handleDragStart = (event: DragStartEvent) => {
+		setActiveId(event.active.id as string);
+	};
+
+	const handleDragOver = (event: DragOverEvent) => {
+		const { active, over } = event;
+		const fullOverId = over?.id as string;
+		if (!fullOverId) return;
+
+		const activeContainer = findContainer(active.id as string);
+		const overContainer = findContainer(fullOverId);
+
+		if (!activeContainer || !overContainer || activeContainer === overContainer) return;
+
+		// Here we could update local state for smooth card jumping
+		// For now, dnd-kit handles sorting within the same container automatically via SortableContext
+	};
+
+	const handleDragEnd = async (event: DragEndEvent) => {
+		const { active, over } = event;
+		const fullId = active.id as string;
+		const fullOverId = over?.id as string;
+
+		if (!fullOverId) {
+			setActiveId(null);
+			return;
+		}
+
+		const id = fullId.replace(/^(inbox-|board-|planner-)/, "");
+		const overId = fullOverId.replace(/^(inbox-|board-|planner-)/, "");
+
+		const activeContainer = findContainer(fullId);
+		const overContainer = findContainer(fullOverId);
+
+		if (activeContainer && overContainer) {
+			if (
+				activeContainer === overContainer &&
+				(activeContainer === "inbox" || liveColumnOrder.includes(activeContainer))
+			) {
+				// Reordering within the same container
+				const containerTasks =
+					activeContainer === "inbox"
+						? inboxTasks.map((t) => t.id)
+						: liveColumns[activeContainer].taskIds;
+
+				const oldIndex = containerTasks.indexOf(id);
+				const newIndex = (
+					activeContainer === "inbox"
+						? inboxTasks.map((t) => t.id)
+						: liveColumns[activeContainer].taskIds
+				).indexOf(overId);
+
+				if (oldIndex !== newIndex) {
+					// Calculate new position
+					const overCol = activeContainer === "inbox" ? null : liveColumns[activeContainer];
+					const taskIds =
+						activeContainer === "inbox" ? inboxTasks.map((t) => t.id) : overCol!.taskIds;
+
+					let newPosition: number;
+					if (newIndex === 0) newPosition = (liveTasksMap[taskIds[0]]?.position ?? 0) / 2;
+					else if (newIndex === taskIds.length - 1)
+						newPosition = (liveTasksMap[taskIds[newIndex]]?.position ?? 0) + 65536;
+					else {
+						const prevPos = liveTasksMap[taskIds[newIndex - 1]]?.position ?? 0;
+						const nextPos = liveTasksMap[taskIds[newIndex]]?.position ?? 0;
+						newPosition = (prevPos + nextPos) / 2;
+					}
+
+					// Optimistic update for same-container move
+					if (activeContainer === "inbox") {
+						// For inbox, we just let the API handle it or could add optimistic reorder if we had a dedicated hook
+						moveTask(id, liveTasksMap[id]?.statusId || "", newPosition);
+					} else {
+						moveTask(id, activeContainer, newPosition);
+					}
+				}
+			} else if (
+				liveColumnOrder.includes(overContainer) ||
+				overContainer === "inbox" ||
+				overContainer === "planner"
+			) {
+				// Cross-container movement
+				let newPosition: number;
+				let targetStatusId = overContainer;
+
+				if (liveColumnOrder.includes(overContainer)) {
+					const overCol = liveColumns[overContainer];
+					const lastTaskId = overCol.taskIds[overCol.taskIds.length - 1];
+					newPosition = lastTaskId ? (liveTasksMap[lastTaskId]?.position ?? 0) + 65536 : 65536;
+				} else {
+					targetStatusId = selectedSpace?.statuses?.[0]?.id || "";
+					newPosition = 65536;
+				}
+
+				const task =
+					liveTasksMap[id] ||
+					inboxTasks.find((t) => t.id === id) ||
+					plannerTasks.find((t) => t.id === id);
+				if (!task) return;
+
+				if (overContainer === "inbox" && user?.id) {
+					// Moving TO Inbox
+					addOptimisticPersonalTask(task, "inbox");
+					updateTaskApi(id, {
+						assigneeId: user.id,
+						statusId: targetStatusId,
+						parentId: null,
+						position: newPosition,
+					});
+				} else if (overContainer === "planner") {
+					// Moving TO Planner
+					addOptimisticPersonalTask(task, "planner");
+					updateTaskApi(id, { statusId: targetStatusId, position: newPosition });
+				} else if (liveColumnOrder.includes(overContainer)) {
+					// Moving TO Board — also clear assigneeId so it leaves Inbox on reload
+					removeOptimisticTask(id);
+					// Use updateTaskApi (not moveTask) so we can clear assigneeId in the same call
+					updateTaskApi(id, {
+						statusId: overContainer,
+						position: newPosition,
+						parentId: null,
+						assigneeId: null,
+					});
+				}
+			}
+		}
+
+		setActiveId(null);
+	};
+
+	const activeTask = activeId
+		? (() => {
+				const id = activeId.replace(/^(inbox-|board-|planner-)/, "");
+				return (
+					liveTasksMap[id] ||
+					inboxTasks.find((t) => t.id === id) ||
+					plannerTasks.find((t) => t.id === id)
+				);
+			})()
+		: null;
+
+	if (isLoadingSpaces || (isLoadingTasks && Object.keys(liveTasksMap).length === 0)) {
+		return (
+			<div className="flex-1 flex items-center justify-center bg-[#111111]">
+				<div className="flex flex-col items-center gap-4">
+					<div className="w-12 h-12 border-4 border-white/10 border-t-white rounded-full animate-spin" />
+					<p className="text-white/40 font-bold text-[15px] uppercase tracking-widest">
+						Synchronizing...
+					</p>
+				</div>
+			</div>
+		);
+	}
 
 	return (
-		<div
-			className="flex-1 flex flex-col bg-white min-w-0"
-			style={{ fontFamily: "var(--font-figtree), Figtree" }}
-		>
-			{/* Tasks Header */}
-			<div className="h-14 px-4 flex items-center justify-between border-b border-[#e5e7eb] shrink-0">
-				<div className="flex items-center gap-3">
-					<span className="text-[#202020] font-medium text-lg flex items-center gap-2">
-						<CheckCircle2 className="w-5 h-5 text-[#0B6E4F]" />
-						Tasks
-					</span>
-					<Button variant="ghost" size="icon" className="w-6 h-6 text-amber-400">
-						<Star className="w-4 h-4 fill-current" />
-					</Button>
+		<div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden p-5 relative bg-[#111111]">
+			<DndContext
+				sensors={sensors}
+				collisionDetection={closestCorners}
+				onDragStart={handleDragStart}
+				onDragOver={handleDragOver}
+				onDragEnd={handleDragEnd}
+			>
+				<div
+					ref={containerRef}
+					className="flex-1 flex gap-0 min-w-0 h-full overflow-hidden relative"
+				>
+					<AnimatePresence initial={false}>
+						{activeTabs.map((tabId, index) => (
+							<div key={tabId} className="flex h-full" style={{ width: `${widths[tabId]}%` }}>
+								<PanelContainer id={tabId}>
+									{tabId === "inbox" && (
+										<InboxPanel
+											tasks={inboxTasks}
+											onToggleTask={toggleTaskCompletion}
+											onAddTask={(title) => addTask("inbox", title)}
+											onTaskClick={handleTaskClick}
+											onDeleteTask={(id) => {
+												const task = liveTasksMap[id] || inboxTasks.find((t) => t.id === id);
+												if (task) {
+													setTaskToDelete(task);
+													setShowDeleteConfirm(true);
+												}
+											}}
+										/>
+									)}
+									{tabId === "planner" && (
+										<PlannerPanel
+											tasks={plannerTasks}
+											onToggleTask={toggleTaskCompletion}
+											onTaskClick={handleTaskClick}
+											onDeleteTask={(id) => {
+												const task = liveTasksMap[id] || plannerTasks.find((t) => t.id === id);
+												if (task) {
+													setTaskToDelete(task);
+													setShowDeleteConfirm(true);
+												}
+											}}
+										/>
+									)}
+									{tabId === "board" && (
+										<BoardPanel
+											columnOrder={liveColumnOrder}
+											columns={liveColumnsFiltered}
+											tasks={liveTasksMapFiltered}
+											onToggleTask={toggleTaskCompletion}
+											onRenameColumn={renameColumn}
+											onAddColumn={addColumn}
+											onAddTask={addTask}
+											onTaskClick={handleTaskClick}
+											onDeleteTask={(id) => {
+												const task = liveTasksMap[id];
+												if (task) {
+													setTaskToDelete(task);
+													setShowDeleteConfirm(true);
+												}
+											}}
+										/>
+									)}
+								</PanelContainer>
+
+								{index < activeTabs.length - 1 && (
+									<div
+										className="w-[1px] h-full cursor-col-resize group relative z-10 mx-1 bg-white/5"
+										onMouseDown={() => startResizing(tabId)}
+									>
+										<div className="absolute inset-y-0 -left-2 -right-2 hover:bg-white/10 transition-colors" />
+									</div>
+								)}
+							</div>
+						))}
+					</AnimatePresence>
 				</div>
 
-				<div className="flex items-center gap-2">
-					<div className="flex items-center gap-1 mr-2">
-						<Badge
-							variant="outline"
-							className="text-xs font-normal text-slate-500 border-slate-200"
-						>
-							All Tasks
-						</Badge>
-						<Badge
-							variant="outline"
-							className="text-xs font-normal text-slate-500 border-slate-200"
-						>
-							My Tasks
-						</Badge>
-					</div>
+				<DragOverlay dropAnimation={dropAnimation}>
+					{activeId && activeTask ? (
+						<div className="w-[300px]">
+							<TaskCard task={activeTask} isOverlay />
+						</div>
+					) : null}
+				</DragOverlay>
+			</DndContext>
 
-					<div className="w-px h-6 bg-[#e5e7eb] mx-2" />
+			<TaskDetailModal
+				isOpen={isModalOpen}
+				onClose={() => setIsModalOpen(false)}
+				task={selectedTask}
+			/>
 
-					<TooltipProvider delayDuration={0}>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									variant="ghost"
-									size="icon"
-									className="w-8 h-8 text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"
-								>
-									<Search className="w-4 h-4" />
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>Search tasks</TooltipContent>
-						</Tooltip>
+			{/* Floating Switcher */}
 
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									variant="ghost"
-									size="icon"
-									onClick={() => setDetailsOpen(!detailsOpen)}
-									className={`w-8 h-8 hover:bg-[#f5f5f5] ${detailsOpen ? "text-[#0B6E4F]" : "text-[#9a9a9a] hover:text-[#202020]"}`}
-								>
-									<Info className="w-4 h-4" />
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>{detailsOpen ? "Hide details" : "Show details"}</TooltipContent>
-						</Tooltip>
-					</TooltipProvider>
+			{/* Floating Bottom Nav (Oldest Design) */}
+			<div className="absolute left-1/2 -translate-x-1/2 bottom-8 z-40">
+				<div className="flex items-center gap-1.5 px-3 py-2 rounded-2xl border shadow-2xl bg-[#0D0F12] border-white/10">
+					<NavButton
+						icon={<InboxIcon className="w-5 h-5" />}
+						label="Inbox"
+						active={activeTabs.includes("inbox")}
+						onClick={() => toggleTab("inbox")}
+					/>
+					<NavButton
+						icon={<CalendarIcon className="w-5 h-5" />}
+						label="Planner"
+						active={activeTabs.includes("planner")}
+						onClick={() => toggleTab("planner")}
+					/>
+					<NavButton
+						icon={<Layout className="w-5 h-5" />}
+						label="Board"
+						active={activeTabs.includes("board")}
+						onClick={() => toggleTab("board")}
+					/>
 				</div>
 			</div>
 
-			{/* Tasks List Area */}
-			<ScrollArea className="flex-1">
-				<div className="p-4 space-y-4">
-					{tasks.map((task) => (
-						<div
-							key={task.id}
-							className="p-4 rounded-xl border border-[#e5e7eb] hover:bg-[#f9fafb] transition-colors group"
+			{/* Deletion Confirmation Modal */}
+			<AnimatePresence>
+				{showDeleteConfirm && taskToDelete && (
+					<div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+						<motion.div
+							initial={{ scale: 0.9, opacity: 0 }}
+							animate={{ scale: 1, opacity: 1 }}
+							exit={{ scale: 0.9, opacity: 0 }}
+							className="w-full max-w-md bg-[#1A1C1E] border border-white/10 rounded-[32px] overflow-hidden shadow-2xl"
 						>
-							<div className="flex gap-3">
-								<div className="mt-1">
+							<div className="p-8">
+								<div className="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center mb-6">
+									<AlertCircle className="w-8 h-8 text-red-500" />
+								</div>
+								<h2 className="text-[24px] font-black text-white mb-3 tracking-tight">
+									Delete Task?
+								</h2>
+								<p className="text-white/40 leading-relaxed mb-8">
+									You're about to delete{" "}
+									<span className="text-white font-bold">"{taskToDelete.title}"</span>. This action
+									cannot be undone and will remove the task for everyone.
+								</p>
+								<div className="flex items-center gap-4">
 									<button
-										type="button"
-										className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${task.status === "done" ? "bg-[#0B6E4F] border-[#0B6E4F]" : "border-slate-300 hover:border-[#0B6E4F]"}`}
+										onClick={() => setShowDeleteConfirm(false)}
+										className="flex-1 px-6 py-4 rounded-2xl bg-white/5 hover:bg-white/10 text-white font-bold transition-all active:scale-95"
 									>
-										{task.status === "done" && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+										Cancel
+									</button>
+									<button
+										onClick={async () => {
+											if (taskToDelete) {
+												await deleteTaskApi(taskToDelete.id);
+												toast.success("Task deleted");
+												setShowDeleteConfirm(false);
+												setTaskToDelete(null);
+												refetchPersonalTasks();
+											}
+										}}
+										className="flex-1 px-6 py-4 rounded-2xl bg-red-500 hover:bg-red-600 text-white font-bold shadow-lg shadow-red-500/20 transition-all active:scale-95"
+									>
+										Delete Now
 									</button>
 								</div>
-
-								<div className="flex-1 min-w-0">
-									<div className="flex items-start justify-between">
-										<div className="space-y-1">
-											<p
-												className={`text-[15px] font-medium leading-normal ${task.status === "done" ? "text-slate-500 line-through" : "text-[#202020]"}`}
-											>
-												{task.content}
-											</p>
-
-											<div className="flex items-center gap-2 text-xs text-slate-500">
-												<div className="flex items-center gap-1.5">
-													<Avatar className="w-4 h-4">
-														<AvatarImage src={task.user.avatar} />
-														<AvatarFallback className="text-[8px] bg-slate-100">
-															{task.user.name.charAt(0)}
-														</AvatarFallback>
-													</Avatar>
-													<span>{task.user.name}</span>
-												</div>
-												<span>•</span>
-												<div className="flex items-center gap-1">
-													<Clock className="w-3 h-3" />
-													<span>{task.timestamp}</span>
-												</div>
-												{task.dueDate && (
-													<>
-														<span>•</span>
-														<span className="text-[#0B6E4F] font-medium bg-[#0B6E4F]/10 px-1.5 py-0.5 rounded">
-															Due {task.dueDate}
-														</span>
-													</>
-												)}
-												{task.priority && (
-													<>
-														<span>•</span>
-														<Badge
-															variant="secondary"
-															className={`h-5 px-1.5 text-[10px] uppercase font-bold
-															${
-																task.priority === "high"
-																	? "bg-red-50 text-red-600"
-																	: task.priority === "medium"
-																		? "bg-amber-50 text-amber-600"
-																		: "bg-blue-50 text-blue-600"
-															}`}
-														>
-															{task.priority}
-														</Badge>
-													</>
-												)}
-											</div>
-										</div>
-									</div>
-
-									{/* Attachments */}
-									{task.attachment && (
-										<div className="mt-3 inline-flex items-center gap-3 bg-white rounded-lg px-3 py-2 border border-[#e5e7eb] max-w-sm">
-											<div className="w-8 h-8 rounded bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
-												<FileText className="w-4 h-4 text-white" />
-											</div>
-											<div className="min-w-0">
-												<p className="text-sm font-medium text-[#202020] truncate">
-													{task.attachment.name}
-												</p>
-												<p className="text-[10px] text-[#9a9a9a]">
-													{task.attachment.type} • {task.attachment.size}
-												</p>
-											</div>
-										</div>
-									)}
-
-									{/* Bottom Actions Row */}
-									<div className="mt-3 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
-										<div className="flex items-center gap-2">
-											{task.comments && (
-												<Button
-													variant="ghost"
-													size="sm"
-													className="h-7 text-slate-500 text-xs gap-1.5 px-2"
-												>
-													<span className="flex -space-x-1">
-														{task.comments.avatars.map((ava) => (
-															<Avatar key={ava} className="w-4 h-4 border border-white">
-																<AvatarImage src={ava} />
-															</Avatar>
-														))}
-													</span>
-													{task.comments.count} comments
-												</Button>
-											)}
-											{!task.comments && (
-												<Button
-													variant="ghost"
-													size="sm"
-													className="h-7 text-slate-500 text-xs px-2"
-												>
-													Comment
-												</Button>
-											)}
-										</div>
-										<Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400">
-											<MoreHorizontal className="w-4 h-4" />
-										</Button>
-									</div>
-								</div>
 							</div>
-						</div>
-					))}
-				</div>
-			</ScrollArea>
-
-			{/* Task Input */}
-			<div className="p-4 border-t border-[#e5e7eb] shrink-0">
-				<div className="bg-white rounded-xl border border-[#e5e7eb] shadow-sm">
-					{/* Formatting Toolbar - Similar to Chat */}
-					<div className="flex items-center gap-1 px-3 py-2 border-b border-[#e5e7eb]">
-						<TooltipProvider delayDuration={0}>
-							{[
-								{ icon: Bold, label: "Bold" },
-								{ icon: Italic, label: "Italic" },
-								{ icon: Strikethrough, label: "Strikethrough" },
-							].map(({ icon: Icon, label }) => (
-								<Tooltip key={label}>
-									<TooltipTrigger asChild>
-										<Button
-											variant="ghost"
-											size="icon"
-											className="w-7 h-7 text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"
-										>
-											<Icon className="w-4 h-4" />
-										</Button>
-									</TooltipTrigger>
-									<TooltipContent>{label}</TooltipContent>
-								</Tooltip>
-							))}
-
-							<div className="w-px h-4 bg-[#e5e7eb] mx-1" />
-
-							{[
-								{ icon: LinkIcon, label: "Add link" },
-								{ icon: List, label: "Bulleted list" },
-								{ icon: ListOrdered, label: "Numbered list" },
-							].map(({ icon: Icon, label }) => (
-								<Tooltip key={label}>
-									<TooltipTrigger asChild>
-										<Button
-											variant="ghost"
-											size="icon"
-											className="w-7 h-7 text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"
-										>
-											<Icon className="w-4 h-4" />
-										</Button>
-									</TooltipTrigger>
-									<TooltipContent>{label}</TooltipContent>
-								</Tooltip>
-							))}
-						</TooltipProvider>
+						</motion.div>
 					</div>
-
-					{/* Input */}
-					<div className="px-3 py-3">
-						<input
-							type="text"
-							value={taskInput}
-							onChange={(e) => setTaskInput(e.target.value)}
-							placeholder="Add a new task..."
-							className="w-full bg-transparent text-[#202020] placeholder-[#9a9a9a] outline-none text-[15px]"
-						/>
-					</div>
-
-					{/* Bottom Actions */}
-					<div className="flex items-center justify-between px-3 py-2 border-t border-[#e5e7eb]">
-						<div className="flex items-center gap-1">
-							<TooltipProvider delayDuration={0}>
-								{[
-									{ icon: PlusCircle, label: "Attach" },
-									{ icon: AtSign, label: "Assign" },
-									{ icon: Clock, label: "Due Date" },
-									{ icon: Mic, label: "Voice Note" },
-								].map(({ icon: Icon, label }) => (
-									<Tooltip key={label}>
-										<TooltipTrigger asChild>
-											<Button
-												variant="ghost"
-												size="icon"
-												className="w-8 h-8 text-[#9a9a9a] hover:text-[#202020] hover:bg-[#f5f5f5]"
-											>
-												<Icon className="w-4 h-4" />
-											</Button>
-										</TooltipTrigger>
-										<TooltipContent>{label}</TooltipContent>
-									</Tooltip>
-								))}
-							</TooltipProvider>
-						</div>
-
-						<Button
-							size="icon"
-							className="w-9 h-9 rounded-lg bg-[#0B6E4F] hover:bg-[#0B6E4F]/90 text-white"
-							disabled={!taskInput.trim()}
-						>
-							<PlusCircle className="w-4 h-4" />
-						</Button>
-					</div>
-				</div>
-			</div>
+				)}
+			</AnimatePresence>
 		</div>
+	);
+}
+
+function PanelContainer({ id, children }: { id: string; children: React.ReactNode }) {
+	const { setNodeRef } = useDroppable({ id });
+	return (
+		<div
+			ref={setNodeRef}
+			className="flex-1 h-full overflow-hidden rounded-[24px] border border-white/5 shadow-2xl"
+		>
+			{children}
+		</div>
+	);
+}
+
+function NavButton({
+	icon,
+	label,
+	active,
+	onClick,
+}: {
+	icon: React.ReactNode;
+	label: string;
+	active: boolean;
+	onClick: () => void;
+}) {
+	return (
+		<button
+			type="button"
+			onClick={onClick}
+			className={cn(
+				"flex items-center gap-2 px-4 py-2.5 rounded-xl text-[14px] font-bold transition-all",
+				active ? "bg-white text-black shadow-lg" : "text-white/40 hover:text-white/60",
+			)}
+		>
+			{icon}
+			{label}
+		</button>
 	);
 }

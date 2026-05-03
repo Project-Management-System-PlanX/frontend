@@ -17,44 +17,98 @@ import {
 	Plus,
 	Search,
 	Share2,
+	Sparkles,
 	User,
 	Zap,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useSpace } from "@/hooks/api/use-spaces";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
+import { useTasksRealtime } from "@/hooks/use-tasks-realtime";
 import { ForYouHeader } from "./foryou/ForYouHeader";
-import { SpaceBoardView } from "./space/SpaceBoardView";
-import { SpaceCalendarView } from "./space/SpaceCalendarView";
-import { SpaceChartView } from "./space/SpaceChartView";
-import { SpaceColumnView } from "./space/SpaceColumnView";
-import { SpaceFormsView } from "./space/SpaceFormsView";
-import { SpaceListView } from "./space/SpaceListView";
-import { SpaceTimelineView } from "./space/SpaceTimelineView";
 
-export function Space() {
+const CreateTaskModal = dynamic(
+	() => import("../modals/CreateTaskModal").then((mod) => mod.CreateTaskModal),
+	{ ssr: false },
+);
+const AskAIPanel = dynamic(() => import("./space/AskAIPanel").then((mod) => mod.AskAIPanel), {
+	ssr: false,
+});
+const SpaceBoardView = dynamic(
+	() => import("./space/SpaceBoardView").then((mod) => mod.SpaceBoardView),
+	{ ssr: false },
+);
+const SpaceCalendarView = dynamic(
+	() => import("./space/SpaceCalendarView").then((mod) => mod.SpaceCalendarView),
+	{ ssr: false },
+);
+const SpaceChartView = dynamic(
+	() => import("./space/SpaceChartView").then((mod) => mod.SpaceChartView),
+	{ ssr: false },
+);
+const SpaceColumnView = dynamic(
+	() => import("./space/SpaceColumnView").then((mod) => mod.SpaceColumnView),
+	{ ssr: false },
+);
+const SpaceFormsView = dynamic(
+	() => import("./space/SpaceFormsView").then((mod) => mod.SpaceFormsView),
+	{ ssr: false },
+);
+const SpaceListView = dynamic(
+	() => import("./space/SpaceListView").then((mod) => mod.SpaceListView),
+	{ ssr: false },
+);
+const SpaceTimelineView = dynamic(
+	() => import("./space/SpaceTimelineView").then((mod) => mod.SpaceTimelineView),
+	{ ssr: false },
+);
+
+export function Space({ spaceId }: { spaceId: string }) {
 	const [viewMode, _setViewMode] = useState<"list" | "column">("list");
-	const [activeTab, setActiveTab] = useState("List");
+	const [activeTab, setActiveTab] = useState("Board");
+	const [showCreateTask, setShowCreateTask] = useState(false);
+	const [showAskAI, setShowAskAI] = useState(false);
+
+	const { token } = useSupabaseAuth();
+	const { data: space, isLoading } = useSpace(spaceId, token || undefined);
+	useTasksRealtime(spaceId);
 
 	return (
 		<div
-			className="flex-1 flex flex-col bg-white min-w-0 h-full"
+			className="flex-1 flex flex-col bg-white min-w-0 h-full overflow-hidden"
 			style={{ fontFamily: "var(--font-figtree), Figtree" }}
 		>
 			{/* ──────── Top Header Bar ──────── */}
-			<ForYouHeader />
+			<ForYouHeader onCreateClick={() => setShowCreateTask(true)} />
 
 			{/* ──────── Header ──────── */}
 			<div className="px-6 pt-5 pb-3">
 				<div className="flex items-center justify-between">
 					{/* Title Section */}
 					<div className="flex items-center gap-3">
-						<div className="w-8 h-8 rounded flex items-center justify-center bg-[#FF9800] text-white shadow-sm shrink-0">
-							<span className="text-sm">📋</span>
-						</div>
+						{isLoading ? (
+							<Skeleton className="w-8 h-8 rounded" />
+						) : (
+							<div
+								className="w-8 h-8 rounded flex items-center justify-center text-white shadow-sm shrink-0"
+								style={{ backgroundColor: space?.color || "#0B6E4F" }}
+							>
+								<span className="text-sm font-bold">
+									{space?.icon || space?.prefix?.charAt(0) || "P"}
+								</span>
+							</div>
+						)}
 						<div>
 							<div className="flex items-center gap-2">
-								<h1 className="text-[18px] font-semibold text-slate-900 leading-tight">
-									My Sales Team
-								</h1>
+								{isLoading ? (
+									<Skeleton className="h-6 w-48" />
+								) : (
+									<h1 className="text-[18px] font-semibold text-slate-900 leading-tight">
+										{space?.name || "Space"}
+									</h1>
+								)}
 								<button type="button" className="text-slate-400 hover:text-slate-600">
 									<User className="w-4 h-4" />
 								</button>
@@ -153,6 +207,17 @@ export function Space() {
 							>
 								<Filter className="w-3.5 h-3.5 text-slate-500" /> Filter
 							</button>
+							<button
+								type="button"
+								onClick={() => setShowAskAI((v) => !v)}
+								className={`flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium rounded-[4px] transition-colors ml-1 ${
+									showAskAI
+										? "bg-[#0B6E4F] text-white shadow-sm"
+										: "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+								}`}
+							>
+								<Sparkles className="w-3.5 h-3.5" /> Ask AI
+							</button>
 						</div>
 
 						{/* Right: Actions */}
@@ -188,20 +253,28 @@ export function Space() {
 
 			{/* View Content */}
 			{activeTab === "Board" ? (
-				<SpaceBoardView />
+				<SpaceBoardView spaceId={spaceId} />
 			) : activeTab === "Calendar" ? (
-				<SpaceCalendarView />
+				<SpaceCalendarView spaceId={spaceId} />
 			) : activeTab === "Timeline" ? (
-				<SpaceTimelineView />
+				<SpaceTimelineView spaceId={spaceId} />
 			) : activeTab === "Forms" ? (
 				<SpaceFormsView />
 			) : activeTab === "Chart" ? (
 				<SpaceChartView />
-			) : viewMode === "list" ? (
-				<SpaceListView />
+			) : viewMode === "list" || activeTab === "List" ? (
+				<SpaceListView spaceId={spaceId} />
 			) : (
 				<SpaceColumnView />
 			)}
+
+			<CreateTaskModal
+				open={showCreateTask}
+				onOpenChange={setShowCreateTask}
+				defaultSpaceId={spaceId}
+			/>
+
+			<AskAIPanel open={showAskAI} onClose={() => setShowAskAI(false)} spaceId={spaceId} />
 		</div>
 	);
 }

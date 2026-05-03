@@ -428,10 +428,10 @@ export function SpaceColumnView() {
 
 							<MetaField label="Reporter">
 								<div className="flex items-center gap-2">
-									<div className="w-5 h-5 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 border border-orange-200 text-[9px] font-bold">
-										RK
+									<div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 border border-slate-200">
+										<User className="w-3 h-3" />
 									</div>
-									<span className="text-[13px] text-slate-600">ravikrishnaj25</span>
+									<span className="text-[13px] text-slate-500">Unassigned</span>
 								</div>
 							</MetaField>
 						</div>

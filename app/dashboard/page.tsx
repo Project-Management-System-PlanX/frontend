@@ -1,16 +1,15 @@
 "use client";
 
-import { DashboardHome } from "@/components/dashboard/DashboardHome";
-import { TeamSidebar } from "@/components/dashboard/TeamSidebar";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function DashboardPage() {
-	return (
-		<div className="h-screen flex overflow-hidden bg-[#D1F2EB]">
-			{/* Left Sidebar - Shared across all dashboard pages */}
-			<TeamSidebar activeChannel="" onChannelSelect={() => {}} />
+	const router = useRouter();
 
-			{/* Main Dashboard Home */}
-			<DashboardHome />
-		</div>
-	);
+	useEffect(() => {
+		// Redirect to task/tasks page by default
+		router.replace("/dashboard/task/tasks");
+	}, [router]);
+
+	return null;
 }
