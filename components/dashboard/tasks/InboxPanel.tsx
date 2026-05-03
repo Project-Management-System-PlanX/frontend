@@ -55,7 +55,6 @@ export function InboxPanel({
 					{isAdding ? (
 						<div className="rounded-xl py-2 px-3 shadow-2xl bg-black/40 border border-white/10 mb-4 animate-in fade-in slide-in-from-top-1 duration-200">
 							<input
-								autoFocus
 								className="w-full bg-transparent border-none outline-none py-1.5 text-white font-bold text-[16px] placeholder:text-white/20"
 								placeholder="What's on your mind?"
 								value={newTaskTitle}

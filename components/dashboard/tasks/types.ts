@@ -1,5 +1,3 @@
-import type { Task } from "@/lib/types/models";
-
 export interface Column {
 	id: string;
 	name: string;

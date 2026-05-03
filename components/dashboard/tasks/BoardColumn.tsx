@@ -88,7 +88,7 @@ export const BoardColumn = memo(
 						{...attributes}
 						{...listeners}
 						className="flex flex-col items-center py-8 cursor-grab active:cursor-grabbing gap-6"
-						onClick={(e) => {
+						onClick={(_e) => {
 							if (!isDragging) setIsCollapsed(false);
 						}}
 					>
@@ -118,7 +118,6 @@ export const BoardColumn = memo(
 							<div className="flex items-center gap-3">
 								{isEditing ? (
 									<input
-										autoFocus
 										className="bg-black/20 border-none outline-none rounded px-2 py-1 text-white font-bold text-[15px] w-full"
 										value={editName}
 										onChange={(e) => setEditName(e.target.value)}
@@ -168,7 +167,6 @@ export const BoardColumn = memo(
 							{isAddingTask ? (
 								<div className="mt-1">
 									<input
-										autoFocus
 										className="w-full bg-black/20 border-none outline-none rounded-lg px-3 py-2 text-white font-medium text-[14px] placeholder:text-white/20 mb-2"
 										placeholder="What needs to be done?"
 										value={newTaskTitle}

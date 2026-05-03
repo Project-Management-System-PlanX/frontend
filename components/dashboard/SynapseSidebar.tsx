@@ -51,7 +51,7 @@ export function SynapseSidebar() {
 			}
 		}
 		return null;
-	}, [pathname, members, channels]);
+	}, [pathname, members, channels, user.id]);
 
 	const { markChannelAsRead } = useUnread(
 		activeWorkspaceId,

@@ -91,6 +91,11 @@ export function usePersonalTasks(workspaceId: string | null, token: string | und
 		}, 3000);
 	}, []);
 
+	const updateOptimisticTask = useCallback((taskId: string, updates: Partial<Task>) => {
+		setInboxTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, ...updates } : t)));
+		setPlannerTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, ...updates } : t)));
+	}, []);
+
 	return {
 		inboxTasks,
 		plannerTasks,
@@ -98,5 +103,6 @@ export function usePersonalTasks(workspaceId: string | null, token: string | und
 		refetch: fetchTasks,
 		addOptimisticTask,
 		removeOptimisticTask,
+		updateOptimisticTask,
 	};
 }
