@@ -151,7 +151,7 @@ export function TimelineView({
 											{/* Tasks for this day in this column */}
 											{columns[colId].taskIds
 												.map((tid) => tasks[tid])
-												.filter((t) => t && t.dueDate && isSameDay(new Date(t.dueDate), day))
+												.filter((t) => t?.dueDate && isSameDay(new Date(t.dueDate), day))
 												.map((task) => (
 													<div
 														key={task.id}

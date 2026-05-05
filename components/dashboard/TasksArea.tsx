@@ -14,22 +14,9 @@ import {
 	useSensor,
 	useSensors,
 } from "@dnd-kit/core";
-import {
-	arrayMove,
-	SortableContext,
-	sortableKeyboardCoordinates,
-	verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
+import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-	AlertCircle,
-	Calendar as CalendarIcon,
-	Inbox as InboxIcon,
-	Layout,
-	Plus,
-	Trash2,
-	X,
-} from "lucide-react";
+import { AlertCircle, Calendar as CalendarIcon, Inbox as InboxIcon, Layout } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import TaskDetailModal from "@/components/modals/TaskDetailModal";
@@ -46,7 +33,7 @@ import { InboxPanel } from "./tasks/InboxPanel";
 import { PlannerPanel } from "./tasks/PlannerPanel";
 import { TaskCard } from "./tasks/TaskCard";
 
-const dropAnimation: DropAnimation = {
+const dropAnimation: any = {
 	sideEffects: defaultDropAnimationSideEffects({
 		styles: {
 			active: {
@@ -82,6 +69,7 @@ export function TasksArea() {
 		columnOrder: liveColumnOrder,
 		tasks: liveTasksMap,
 		isLoading: isLoadingTasks,
+		error,
 		createTask: createTaskApi,
 		moveTask,
 		updateTask: updateTaskApi,
@@ -123,7 +111,14 @@ export function TasksArea() {
 			};
 			initDefaults();
 		}
-	}, [selectedSpaceId, selectedSpace, spaces, isLoadingTasks, createStatus.isPending]);
+	}, [
+		selectedSpaceId,
+		selectedSpace,
+		spaces,
+		isLoadingTasks,
+		createStatus.isPending,
+		createStatus.mutateAsync,
+	]);
 
 	const {
 		inboxTasks,
@@ -131,6 +126,7 @@ export function TasksArea() {
 		refetch: refetchPersonalTasks,
 		addOptimisticTask: addOptimisticPersonalTask,
 		removeOptimisticTask,
+		updateOptimisticTask,
 	} = usePersonalTasks(activeWorkspaceId, token || undefined);
 
 	// Board vs Inbox Separation: Filter board data to exclude tasks already in Inbox
@@ -180,17 +176,19 @@ export function TasksArea() {
 	};
 
 	const toggleTaskCompletion = async (taskId: string) => {
-		const task = liveTasksMap[taskId] || inboxTasks.find((t) => t.id === taskId);
+		const task =
+			liveTasksMap[taskId] ||
+			inboxTasks.find((t) => t.id === taskId) ||
+			allPlannerTasks.find((t) => t.id === taskId);
+
 		if (!task) return;
 
-		if (!selectedSpace?.statuses) return;
-		const isDone = !task.status?.isDone;
-		const doneStatus = selectedSpace.statuses.find((s) => s.isDone === isDone);
+		const isCurrentlyCompleted = task.resolution === "DONE" || (task.status?.isDone ?? false);
+		const newResolution = isCurrentlyCompleted ? "UNRESOLVED" : "DONE";
 
-		if (doneStatus) {
-			updateTaskApi(taskId, { statusId: doneStatus.id });
-			refetchPersonalTasks();
-		}
+		updateOptimisticTask(taskId, { resolution: newResolution });
+		updateTaskApi(taskId, { resolution: newResolution });
+		refetchPersonalTasks();
 	};
 
 	const renameColumn = async (columnId: string, newName: string) => {
@@ -202,7 +200,7 @@ export function TasksArea() {
 				data: { name: newName },
 			});
 			refetchPersonalTasks();
-		} catch (err) {
+		} catch (_err) {
 			// Silent error
 		}
 	};
@@ -214,12 +212,12 @@ export function TasksArea() {
 				spaceId: selectedSpaceId,
 				data: {
 					name,
-					color: "#" + Math.floor(Math.random() * 16777215).toString(16),
+					color: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
 					position: liveColumnOrder.length,
 				},
 			});
 			refetchPersonalTasks();
-		} catch (err) {
+		} catch (_err) {
 			// Silent error
 		}
 	};
@@ -259,8 +257,11 @@ export function TasksArea() {
 				addOptimisticPersonalTask(tempTask, "inbox");
 				await createTaskApi(defaultStatusId, title, { assigneeId: user?.id });
 			} else if (containerId === "planner") {
-				addOptimisticPersonalTask(tempTask, "planner");
-				await createTaskApi(defaultStatusId, title);
+				const today = new Date();
+				today.setHours(12, 0, 0, 0);
+				const taskWithDate = { ...tempTask, dueDate: today.toISOString() };
+				addOptimisticPersonalTask(taskWithDate, "planner");
+				await createTaskApi(defaultStatusId, title, { dueDate: today.toISOString() });
 			} else if (liveColumns[containerId]) {
 				// Board creation is already optimistic via useRealtimeTasks
 				await createTaskApi(containerId, title);
@@ -268,7 +269,7 @@ export function TasksArea() {
 
 			// Background refetch to ensure everything is in sync
 			refetchPersonalTasks();
-		} catch (err) {
+		} catch (_err) {
 			refetchPersonalTasks(); // Rollback/Sync
 		}
 	};
@@ -438,7 +439,7 @@ export function TasksArea() {
 					// Calculate new position
 					const overCol = activeContainer === "inbox" ? null : liveColumns[activeContainer];
 					const taskIds =
-						activeContainer === "inbox" ? inboxTasks.map((t) => t.id) : overCol!.taskIds;
+						activeContainer === "inbox" ? inboxTasks.map((t) => t.id) : overCol?.taskIds;
 
 					let newPosition: number;
 					if (newIndex === 0) newPosition = (liveTasksMap[taskIds[0]]?.position ?? 0) / 2;
@@ -492,9 +493,9 @@ export function TasksArea() {
 						position: newPosition,
 					});
 				} else if (overContainer === "planner") {
-					// Moving TO Planner
-					addOptimisticPersonalTask(task, "planner");
-					updateTaskApi(id, { statusId: targetStatusId, position: newPosition });
+					// Dragging to planner is disabled as per user request
+					setActiveId(null);
+					return;
 				} else if (liveColumnOrder.includes(overContainer)) {
 					// Moving TO Board — also clear assigneeId so it leaves Inbox on reload
 					removeOptimisticTask(id);
@@ -522,6 +523,32 @@ export function TasksArea() {
 				);
 			})()
 		: null;
+
+	// ─── Error State ─────────────────────────────────────────────
+	if (!isLoadingSpaces && !isLoadingTasks && error) {
+		return (
+			<div className="flex-1 flex items-center justify-center bg-[#111111]">
+				<div className="flex flex-col items-center gap-5 max-w-md text-center px-6">
+					<div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+						<AlertCircle className="w-7 h-7 text-red-400" />
+					</div>
+					<div>
+						<p className="text-white font-bold text-[17px] mb-1">Something went wrong</p>
+						<p className="text-white/40 text-[14px]">
+							{error.message || "Failed to load tasks. Check your connection and try again."}
+						</p>
+					</div>
+					<button
+						type="button"
+						onClick={() => window.location.reload()}
+						className="px-5 py-2.5 bg-white/10 hover:bg-white/15 text-white font-bold text-[14px] rounded-xl border border-white/10 transition-colors"
+					>
+						Retry
+					</button>
+				</div>
+			</div>
+		);
+	}
 
 	if (isLoadingSpaces || (isLoadingTasks && Object.keys(liveTasksMap).length === 0)) {
 		return (
@@ -568,20 +595,7 @@ export function TasksArea() {
 											}}
 										/>
 									)}
-									{tabId === "planner" && (
-										<PlannerPanel
-											tasks={plannerTasks}
-											onToggleTask={toggleTaskCompletion}
-											onTaskClick={handleTaskClick}
-											onDeleteTask={(id) => {
-												const task = liveTasksMap[id] || plannerTasks.find((t) => t.id === id);
-												if (task) {
-													setTaskToDelete(task);
-													setShowDeleteConfirm(true);
-												}
-											}}
-										/>
-									)}
+									{tabId === "planner" && <PlannerPanel />}
 									{tabId === "board" && (
 										<BoardPanel
 											columnOrder={liveColumnOrder}
@@ -629,6 +643,8 @@ export function TasksArea() {
 				isOpen={isModalOpen}
 				onClose={() => setIsModalOpen(false)}
 				task={selectedTask}
+				onUpdateTask={updateTaskApi}
+				workspaceId={activeWorkspaceId}
 			/>
 
 			{/* Floating Switcher */}
@@ -711,11 +727,14 @@ export function TasksArea() {
 }
 
 function PanelContainer({ id, children }: { id: string; children: React.ReactNode }) {
-	const { setNodeRef } = useDroppable({ id });
+	const { setNodeRef } = useDroppable({ id, disabled: id === "planner" });
 	return (
 		<div
 			ref={setNodeRef}
-			className="flex-1 h-full overflow-hidden rounded-[24px] border border-white/5 shadow-2xl"
+			className={cn(
+				"flex-1 h-full overflow-hidden rounded-[24px] border border-white/5 shadow-2xl transition-colors",
+				id === "planner" ? "bg-[#0D0D0D]" : "bg-transparent",
+			)}
 		>
 			{children}
 		</div>

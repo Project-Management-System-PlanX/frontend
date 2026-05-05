@@ -87,6 +87,20 @@ export function useBoardSync({
 
 		for (const task of sortedTasks) {
 			tMap[task.id] = task;
+			// If a task belongs to a status we don't have yet (e.g., just created "Done"), dynamically add it.
+			if (!cols[task.statusId] && task.status) {
+				cols[task.statusId] = {
+					id: task.status.id,
+					name: task.status.name,
+					color: task.status.color,
+					position: task.status.position,
+					isDone: task.status.isDone,
+					taskIds: [],
+				};
+				order.push(task.statusId);
+				order.sort((a, b) => (cols[a]?.position ?? 0) - (cols[b]?.position ?? 0));
+			}
+
 			if (cols[task.statusId]) {
 				cols[task.statusId].taskIds.push(task.id);
 			}

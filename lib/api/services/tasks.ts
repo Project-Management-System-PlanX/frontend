@@ -122,6 +122,14 @@ export const taskService = {
 	removeLabel: async (taskId: string, labelId: string, token?: string) =>
 		apiClient.delete<{ deleted: boolean }>(`/tasks/${taskId}/labels/${labelId}`, { token }),
 
+	// ─── Members ───
+
+	addMember: async (taskId: string, userId: string, token?: string) =>
+		apiClient.post<any>(`/tasks/${taskId}/members`, { userId }, { token }),
+
+	removeMember: async (taskId: string, userId: string, token?: string) =>
+		apiClient.delete<any>(`/tasks/${taskId}/members/${userId}`, { token }),
+
 	// ─── Activities ───
 
 	getActivities: async (taskId: string, token?: string) =>

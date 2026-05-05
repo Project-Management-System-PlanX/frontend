@@ -209,7 +209,6 @@ export function BoardPanel({
 							{isAdding ? (
 								<div className="w-[320px] bg-black/20 rounded-2xl p-4 border border-white/10 shadow-2xl">
 									<input
-										autoFocus
 										className="w-full bg-black/20 border-none outline-none rounded-xl px-4 py-3 text-white font-bold text-[15px] placeholder:text-white/20 mb-4"
 										placeholder="List name"
 										value={newListName}

@@ -176,6 +176,7 @@ export function useRealtimeTasks({
 
 			try {
 				const updated = await taskService.update(id, data, token);
+				setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
 				return updated;
 			} catch (err) {
 				// Rollback
@@ -201,6 +202,7 @@ export function useRealtimeTasks({
 
 			try {
 				const moved = await taskService.move(id, { statusId, position, parentId }, token);
+				setTasks((prev) => prev.map((t) => (t.id === id ? moved : t)));
 				return moved;
 			} catch (err) {
 				// Rollback

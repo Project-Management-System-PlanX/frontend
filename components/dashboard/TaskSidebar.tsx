@@ -1,6 +1,6 @@
 "use client";
 
-import { Inbox, Menu, MoreHorizontal, Plus } from "lucide-react";
+import { Inbox, MoreHorizontal, Plus } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const UI = {
