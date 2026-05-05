@@ -257,8 +257,11 @@ export function TasksArea() {
 				addOptimisticPersonalTask(tempTask, "inbox");
 				await createTaskApi(defaultStatusId, title, { assigneeId: user?.id });
 			} else if (containerId === "planner") {
-				addOptimisticPersonalTask(tempTask, "planner");
-				await createTaskApi(defaultStatusId, title);
+				const today = new Date();
+				today.setHours(12, 0, 0, 0);
+				const taskWithDate = { ...tempTask, dueDate: today.toISOString() };
+				addOptimisticPersonalTask(taskWithDate, "planner");
+				await createTaskApi(defaultStatusId, title, { dueDate: today.toISOString() });
 			} else if (liveColumns[containerId]) {
 				// Board creation is already optimistic via useRealtimeTasks
 				await createTaskApi(containerId, title);
@@ -490,9 +493,9 @@ export function TasksArea() {
 						position: newPosition,
 					});
 				} else if (overContainer === "planner") {
-					// Moving TO Planner
-					addOptimisticPersonalTask(task, "planner");
-					updateTaskApi(id, { statusId: targetStatusId, position: newPosition });
+					// Dragging to planner is disabled as per user request
+					setActiveId(null);
+					return;
 				} else if (liveColumnOrder.includes(overContainer)) {
 					// Moving TO Board — also clear assigneeId so it leaves Inbox on reload
 					removeOptimisticTask(id);
@@ -592,20 +595,7 @@ export function TasksArea() {
 											}}
 										/>
 									)}
-									{tabId === "planner" && (
-										<PlannerPanel
-											tasks={plannerTasks}
-											onToggleTask={toggleTaskCompletion}
-											onTaskClick={handleTaskClick}
-											onDeleteTask={(id) => {
-												const task = liveTasksMap[id] || plannerTasks.find((t) => t.id === id);
-												if (task) {
-													setTaskToDelete(task);
-													setShowDeleteConfirm(true);
-												}
-											}}
-										/>
-									)}
+									{tabId === "planner" && <PlannerPanel />}
 									{tabId === "board" && (
 										<BoardPanel
 											columnOrder={liveColumnOrder}
@@ -737,11 +727,14 @@ export function TasksArea() {
 }
 
 function PanelContainer({ id, children }: { id: string; children: React.ReactNode }) {
-	const { setNodeRef } = useDroppable({ id });
+	const { setNodeRef } = useDroppable({ id, disabled: id === "planner" });
 	return (
 		<div
 			ref={setNodeRef}
-			className="flex-1 h-full overflow-hidden rounded-[24px] border border-white/5 shadow-2xl"
+			className={cn(
+				"flex-1 h-full overflow-hidden rounded-[24px] border border-white/5 shadow-2xl transition-colors",
+				id === "planner" ? "bg-[#0D0D0D]" : "bg-transparent",
+			)}
 		>
 			{children}
 		</div>

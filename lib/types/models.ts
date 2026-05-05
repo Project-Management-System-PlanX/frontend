@@ -145,6 +145,7 @@ export interface Task {
 	labels?: TaskLabel[];
 	comments?: TaskComment[];
 	attachments?: TaskAttachment[];
+	assignees?: { userId: string; user: UserProfile }[];
 	parent?: { id: string; title: string; taskNumber: number };
 	team?: { id: string; name: string };
 	children?: { id: string; title: string; taskNumber: number; statusId: string }[];
