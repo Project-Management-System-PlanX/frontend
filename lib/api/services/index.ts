@@ -6,3 +6,4 @@ export * from "./spaces";
 export * from "./teams";
 export * from "./users";
 export * from "./workspaces";
+export * from "./tasks";

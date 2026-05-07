@@ -43,7 +43,7 @@ interface TaskDetailModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	columnName?: string;
-	onUpdateTask?: (id: string, data: Partial<Task>) => void;
+	onUpdateTask?: (id: string, data: any) => void;
 	workspaceId?: string | null;
 	isInbox?: boolean;
 }
@@ -95,7 +95,7 @@ export default function TaskDetailModal({
 				console.error("Auto-cleanup failed", err),
 			);
 		}
-	}, [task?.assignees, task?.dueDate, task?.labels, task?.coverColor, isOpen, token, task.id]);
+	}, [task?.assignees, task?.dueDate, task?.labels, task?.coverColor, isOpen, token, task?.id]);
 
 	useEffect(() => {
 		if (task?.comments) {

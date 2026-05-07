@@ -453,7 +453,7 @@ export function TasksArea() {
 					// Calculate new position
 					const overCol = activeContainer === "inbox" ? null : liveColumns[activeContainer];
 					const taskIds =
-						activeContainer === "inbox" ? inboxTasks.map((t) => t.id) : overCol?.taskIds;
+						activeContainer === "inbox" ? inboxTasks.map((t) => t.id) : (overCol?.taskIds || []);
 
 					let newPosition: number;
 					if (newIndex === 0) newPosition = (liveTasksMap[taskIds[0]]?.position ?? 0) / 2;

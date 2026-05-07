@@ -6,21 +6,21 @@ export interface CreateTaskPayload {
 	spaceId: string;
 	statusId: string;
 	title: string;
-	description?: string;
+	description?: string | null;
 	priority?: string;
 	workType?: string;
-	assigneeId?: string;
-	dueDate?: string;
-	startDate?: string;
+	assigneeId?: string | null;
+	dueDate?: string | null;
+	startDate?: string | null;
 	position?: number;
-	parentId?: string;
-	teamId?: string;
+	parentId?: string | null;
+	teamId?: string | null;
 	flagged?: boolean;
 }
 
 export interface UpdateTaskPayload {
 	title?: string;
-	description?: string;
+	description?: string | null;
 	statusId?: string;
 	priority?: string;
 	workType?: string;
@@ -30,9 +30,9 @@ export interface UpdateTaskPayload {
 	resolution?: string;
 	position?: number;
 	parentId?: string | null;
-	teamId?: string;
+	teamId?: string | null;
 	flagged?: boolean;
-	restrictTo?: string;
+	restrictTo?: string | null;
 	coverColor?: string | null;
 }
 
