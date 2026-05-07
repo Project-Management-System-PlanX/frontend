@@ -152,7 +152,7 @@ export function TasksArea() {
 	}, [allPlannerTasks]);
 
 	const [activeTabs, setActiveTabs] = useState<string[]>(["inbox", "planner", "board"]);
-	const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+	const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -170,8 +170,17 @@ export function TasksArea() {
 		}),
 	);
 
+	const selectedTask = useMemo(() => {
+		if (!selectedTaskId) return null;
+		return (
+			liveTasksMap[selectedTaskId] ||
+			inboxTasks.find((t) => t.id === selectedTaskId) ||
+			allPlannerTasks.find((t) => t.id === selectedTaskId)
+		);
+	}, [selectedTaskId, liveTasksMap, inboxTasks, allPlannerTasks]);
+
 	const handleTaskClick = (task: Task) => {
-		setSelectedTask(task);
+		setSelectedTaskId(task.id);
 		setIsModalOpen(true);
 	};
 
@@ -253,18 +262,23 @@ export function TasksArea() {
 		} as unknown as Task;
 
 		try {
+			let newTask: Task | null = null;
 			if (containerId === "inbox") {
 				addOptimisticPersonalTask(tempTask, "inbox");
-				await createTaskApi(defaultStatusId, title, { assigneeId: user?.id });
+				newTask = await createTaskApi(defaultStatusId, title, { assigneeId: user?.id });
 			} else if (containerId === "planner") {
 				const today = new Date();
 				today.setHours(12, 0, 0, 0);
 				const taskWithDate = { ...tempTask, dueDate: today.toISOString() };
 				addOptimisticPersonalTask(taskWithDate, "planner");
-				await createTaskApi(defaultStatusId, title, { dueDate: today.toISOString() });
+				newTask = await createTaskApi(defaultStatusId, title, { dueDate: today.toISOString() });
 			} else if (liveColumns[containerId]) {
 				// Board creation is already optimistic via useRealtimeTasks
-				await createTaskApi(containerId, title);
+				newTask = await createTaskApi(containerId, title);
+			}
+
+			if (selectedTaskId === tempId && newTask) {
+				setSelectedTaskId(newTask.id);
 			}
 
 			// Background refetch to ensure everything is in sync
@@ -645,6 +659,7 @@ export function TasksArea() {
 				task={selectedTask}
 				onUpdateTask={updateTaskApi}
 				workspaceId={activeWorkspaceId}
+				isInbox={inboxTasks.some((t) => t.id === selectedTask?.id)}
 			/>
 
 			{/* Floating Switcher */}

@@ -50,9 +50,17 @@ export interface Group {
 export interface WorkspaceMember {
 	id: string;
 	workspaceId: string;
-	userId: string;
+	userId: string; // This is the supabaseId
 	role: Role;
 	joinedAt: string;
+	user?: {
+		supabaseId: string;
+		email: string;
+		firstName: string | null;
+		lastName: string | null;
+		username: string | null;
+		imageUrl?: string | null;
+	};
 }
 
 export interface ChannelMember {
@@ -134,6 +142,7 @@ export interface Task {
 	startDate?: string;
 	resolution: string; // "UNRESOLVED" | "DONE" | "WONT_DO" | "DUPLICATE"
 	position: number;
+	coverColor?: string | null;
 	parentId?: string;
 	teamId?: string;
 	flagged: boolean;

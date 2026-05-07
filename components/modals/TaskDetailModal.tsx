@@ -13,7 +13,6 @@ import {
 	Calendar as CalendarIcon,
 	CheckSquare,
 	ChevronDown,
-	Edit2,
 	Eye,
 	HelpCircle,
 	Image as ImageIcon,
@@ -36,7 +35,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { taskService } from "@/lib/api/services/tasks";
 import { supabase } from "@/lib/supabase/client";
-import type { Task, TaskComment, TaskLabel } from "@/lib/types/models";
+import type { Task, TaskComment, TaskLabel, UserProfile } from "@/lib/types/models";
 import { cn } from "@/lib/utils";
 
 interface TaskDetailModalProps {
@@ -46,6 +45,7 @@ interface TaskDetailModalProps {
 	columnName?: string;
 	onUpdateTask?: (id: string, data: Partial<Task>) => void;
 	workspaceId?: string | null;
+	isInbox?: boolean;
 }
 export default function TaskDetailModal({
 	task,
@@ -54,12 +54,13 @@ export default function TaskDetailModal({
 	columnName = "Today",
 	onUpdateTask,
 	workspaceId,
+	isInbox,
 }: TaskDetailModalProps) {
 	const { token, user } = useSupabaseAuth();
 	const [comment, setComment] = useState("");
 	const [localComments, setLocalComments] = useState<TaskComment[]>([]);
-	const [isSaving, setIsSaving] = useState(false);
-	const [isAddingComment, setIsAddingComment] = useState(false);
+	const [_isSaving, _setIsSaving] = useState(false);
+	const [_isAddingComment, _setIsAddingComment] = useState(false);
 	const [workspaceMembers, setWorkspaceMembers] = useState<any[]>([]);
 	const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 	const [isMetaDatePickerOpen, setIsMetaDatePickerOpen] = useState(false);
@@ -67,6 +68,7 @@ export default function TaskDetailModal({
 	const [isMetaMemberPickerOpen, setIsMetaMemberPickerOpen] = useState(false);
 	const [isLabelPickerOpen, setIsLabelPickerOpen] = useState(false);
 	const [isMetaLabelPickerOpen, setIsMetaLabelPickerOpen] = useState(false);
+	const [isCoverOpen, setIsCoverOpen] = useState(false);
 
 	const [localAssignees, setLocalAssignees] = useState<{ userId: string; user: UserProfile }[]>(
 		task?.assignees || [],
@@ -75,12 +77,25 @@ export default function TaskDetailModal({
 		task?.dueDate ? new Date(task.dueDate) : undefined,
 	);
 	const [localLabels, setLocalLabels] = useState<TaskLabel[]>(task?.labels || []);
+	const [coverColor, setCoverColor] = useState<string | null>(task?.coverColor ?? null);
+	const [coverSize, setCoverSize] = useState<"partial" | "full">("partial");
 
 	useEffect(() => {
 		setLocalAssignees(task?.assignees || []);
 		setLocalDueDate(task?.dueDate ? new Date(task.dueDate) : undefined);
 		setLocalLabels(task?.labels || []);
-	}, [task?.assignees, task?.dueDate, task?.labels]);
+		setCoverColor(task?.coverColor ?? null);
+
+		// Auto-cleanup legacy multiple labels
+		if (isOpen && task?.labels && task.labels.length > 1 && token) {
+			const keep = task.labels[0];
+			const toRemove = task.labels.slice(1);
+			setLocalLabels([keep]);
+			Promise.all(toRemove.map((l) => taskService.removeLabel(task.id, l.id, token))).catch((err) =>
+				console.error("Auto-cleanup failed", err),
+			);
+		}
+	}, [task?.assignees, task?.dueDate, task?.labels, task?.coverColor, isOpen, token, task.id]);
 
 	useEffect(() => {
 		if (task?.comments) {
@@ -203,30 +218,38 @@ export default function TaskDetailModal({
 
 	const handleSaveDescription = async () => {
 		if (!task || !editor || !token) return;
-		setIsSaving(true);
-		try {
-			const content = editor.getHTML();
-			await taskService.update(task.id, { description: content }, token);
-			onUpdateTask?.(task.id, { description: content });
-			onClose();
-		} catch (err) {
-			console.error("Failed to save description", err);
-		} finally {
-			setIsSaving(false);
-		}
+		const content = editor.getHTML();
+		// Optimistic: update parent state + close immediately
+		onUpdateTask?.(task.id, { description: content });
+		onClose();
+		// Fire-and-forget backend sync
+		taskService
+			.update(task.id, { description: content }, token)
+			.catch((err) => console.error("Failed to save description", err));
 	};
 
 	const handleAddComment = async () => {
 		if (!task || !comment.trim() || !token) return;
-		setIsAddingComment(true);
+		const commentText = comment.trim();
+		// Optimistic: show comment immediately
+		const tempComment: TaskComment = {
+			id: `temp-${Date.now()}`,
+			taskId: task.id,
+			userId: user?.id || "",
+			content: commentText,
+			createdAt: new Date().toISOString(),
+			updatedAt: new Date().toISOString(),
+		};
+		setLocalComments((prev) => [tempComment, ...prev]);
+		setComment("");
+		// Background sync
 		try {
-			const newComment = await taskService.addComment(task.id, comment, token);
-			setLocalComments((prev) => [...prev, newComment]);
-			setComment("");
+			const saved = await taskService.addComment(task.id, commentText, token);
+			setLocalComments((prev) => prev.map((c) => (c.id === tempComment.id ? saved : c)));
 		} catch (error) {
 			console.error("Failed to add comment", error);
-		} finally {
-			setIsAddingComment(false);
+			// Rollback on failure
+			setLocalComments((prev) => prev.filter((c) => c.id !== tempComment.id));
 		}
 	};
 
@@ -251,20 +274,53 @@ export default function TaskDetailModal({
 					exit={{ opacity: 0, scale: 0.95, y: 20 }}
 					className="relative w-full max-w-[1000px] h-[85vh] bg-[#121212] border border-white/10 rounded-xl overflow-hidden shadow-2xl flex flex-col text-white"
 				>
+					{/* Cover Bar */}
+					{coverColor && (
+						<div
+							className={cn(
+								"w-full shrink-0 transition-all duration-300",
+								coverSize === "full" ? "h-40" : "h-16",
+							)}
+							style={{ backgroundColor: coverColor }}
+						/>
+					)}
+
 					{/* Header */}
-					<div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
-						<div className="flex items-center gap-2"></div>
-						<div className="flex items-center gap-4 text-white/40">
-							<button className="hover:text-white transition-colors p-1">
-								<ImageIcon className="w-5 h-5" />
+					<div className="flex items-center justify-between px-6 py-4 border-b border-white/5 shrink-0">
+						{/* Top-left: column name pill + label pill */}
+						<div className="flex items-center gap-2">
+							<button className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#8B2323] hover:bg-[#A52A2A] transition-colors text-[13px] font-bold text-white shadow-sm group">
+								{isInbox ? "Inbox" : task.status?.name || columnName}
+								<ChevronDown className="w-3.5 h-3.5 text-white/70 group-hover:text-white transition-colors" />
 							</button>
+						</div>
+						{/* Top-right controls */}
+						<div className="flex items-center gap-1 text-white/40">
+							<CoverPopover
+								isOpen={isCoverOpen}
+								setIsOpen={setIsCoverOpen}
+								coverColor={coverColor}
+								coverSize={coverSize}
+								onCoverChange={(color, size) => {
+									// Optimistic: update UI immediately
+									setCoverColor(color);
+									if (size) setCoverSize(size);
+									onUpdateTask?.(task.id, { coverColor: color });
+									// Fire-and-forget backend sync
+									if (token) {
+										taskService
+											.update(task.id, { coverColor: color }, token)
+											.catch((err) => console.error("Failed to save cover color", err));
+									}
+								}}
+							/>
 							<button className="hover:text-white transition-colors p-1">
 								<Eye className="w-5 h-5" />
 							</button>
 							<button className="hover:text-white transition-colors p-1">
 								<MoreHorizontal className="w-5 h-5" />
 							</button>
-							<button onClick={onClose} className="hover:text-white transition-colors p-1 ml-2">
+							<button onClick={onClose} className="hover:text-white transition-colors p-1 ml-1">
 								<X className="w-6 h-6" />
 							</button>
 						</div>
@@ -293,16 +349,32 @@ export default function TaskDetailModal({
 									isOpen={isLabelPickerOpen}
 									setIsOpen={setIsLabelPickerOpen}
 									onUpdateLabels={setLocalLabels}
+									trigger={
+										<ActionButton
+											icon={<Tag className="w-4 h-4" />}
+											label={task.id.startsWith("temp-") ? "Syncing..." : "Labels"}
+											active={isLabelPickerOpen}
+											disabled={task.id.startsWith("temp-")}
+										/>
+									}
 								/>
-
-								<TaskMemberPopover
-									task={task}
-									workspaceMembers={workspaceMembers}
-									isOpen={isMemberPickerOpen}
-									setIsOpen={setIsMemberPickerOpen}
-									onUpdateAssignees={setLocalAssignees}
-								/>
-
+								{!isInbox && (
+									<TaskMemberPopover
+										task={task}
+										workspaceMembers={workspaceMembers}
+										isOpen={isMemberPickerOpen}
+										setIsOpen={setIsMemberPickerOpen}
+										onUpdateAssignees={setLocalAssignees}
+										trigger={
+											<ActionButton
+												icon={<Users className="w-4 h-4" />}
+												label={task.id.startsWith("temp-") ? "Syncing..." : "Members"}
+												active={isMemberPickerOpen}
+												disabled={task.id.startsWith("temp-")}
+											/>
+										}
+									/>
+								)}
 								<ActionButton icon={<CheckSquare className="w-4 h-4" />} label="Checklist" />
 							</div>
 
@@ -311,7 +383,7 @@ export default function TaskDetailModal({
 								localDueDate ||
 								(localLabels && localLabels.length > 0)) && (
 								<div className="flex flex-wrap gap-8 mb-6 ml-1">
-									{localAssignees && localAssignees.length > 0 && (
+									{localAssignees && localAssignees.length > 0 && !isInbox && (
 										<div className="flex flex-col gap-1.5">
 											<h3 className="text-[11px] font-bold text-white/50 tracking-wide uppercase">
 												Members
@@ -355,10 +427,10 @@ export default function TaskDetailModal({
 												onUpdateLabels={setLocalLabels}
 												trigger={
 													<div className="flex flex-wrap items-center gap-1.5 cursor-pointer group">
-														{localLabels.map((label) => (
+														{localLabels.slice(0, 1).map((label) => (
 															<div
 																key={label.id}
-																className="w-8 h-8 rounded shrink-0 hover:opacity-80 transition-opacity"
+																className="w-10 h-8 rounded shrink-0 hover:opacity-80 transition-opacity"
 																style={{ backgroundColor: label.color }}
 																title={label.name}
 															/>
@@ -454,10 +526,9 @@ export default function TaskDetailModal({
 									<div className="flex items-center gap-3">
 										<button
 											onClick={handleSaveDescription}
-											disabled={isSaving}
-											className="px-5 py-2 bg-[#5294E2] hover:bg-[#4A85CC] text-white rounded font-bold text-[14px] transition-colors disabled:opacity-50"
+											className="px-5 py-2 bg-[#5294E2] hover:bg-[#4A85CC] text-white rounded font-bold text-[14px] transition-colors active:scale-95"
 										>
-											{isSaving ? "Saving..." : "Save"}
+											Save
 										</button>
 										<button
 											onClick={() => editor?.commands.setContent(task.description || "")}
@@ -495,8 +566,7 @@ export default function TaskDetailModal({
 									onKeyDown={(e) => {
 										if (e.key === "Enter") handleAddComment();
 									}}
-									disabled={isAddingComment}
-									className="w-full bg-[#1A1A1A] border border-white/10 rounded-lg px-4 py-3 text-[14px] focus:outline-none focus:border-white/20 transition-colors disabled:opacity-50"
+									className="w-full bg-[#1A1A1A] border border-white/10 rounded-lg px-4 py-3 text-[14px] focus:outline-none focus:border-white/20 transition-colors"
 								/>
 							</div>
 
@@ -574,18 +644,21 @@ const ActionButton = forwardRef<
 		onClick?: React.MouseEventHandler<HTMLButtonElement>;
 		className?: string;
 		active?: boolean;
+		disabled?: boolean;
 	}
->(({ icon, label, onClick, className, active, ...props }, ref) => {
+>(({ icon, label, onClick, className, active, disabled, ...props }, ref) => {
 	return (
 		<button
 			ref={ref}
 			onClick={onClick}
 			type="button"
+			disabled={disabled}
 			className={cn(
 				"flex items-center gap-2 px-4 py-2 rounded-lg transition-colors border text-[14px] font-bold",
 				active
 					? "bg-white/20 text-white border-white/20 shadow-lg"
 					: "bg-white/5 hover:bg-white/10 border-white/5 text-white/80",
+				disabled && "opacity-50 cursor-not-allowed grayscale",
 				className,
 			)}
 			{...props}
@@ -647,7 +720,7 @@ function TaskDatePickerPopover({
 		task.dueDate ? new Date(task.dueDate) : undefined,
 	);
 	const [isStartEnabled, setIsStartEnabled] = useState(!!task.startDate);
-	const [isDueEnabled, setIsDueEnabled] = useState(!!task.dueDate || true);
+	const [isDueEnabled, setIsDueEnabled] = useState<boolean>(!!task.dueDate || true);
 
 	useEffect(() => {
 		if (isOpen) {
@@ -904,12 +977,17 @@ function TaskMemberPopover({
 		}
 	};
 
-	const filteredMembers = workspaceMembers.filter(
-		(m) =>
-			m.user?.firstName?.toLowerCase().includes(search.toLowerCase()) ||
-			m.user?.lastName?.toLowerCase().includes(search.toLowerCase()) ||
-			m.user?.email?.toLowerCase().includes(search.toLowerCase()),
-	);
+	const filteredMembers = workspaceMembers.filter((m) => {
+		const u = m.user;
+		if (!u) return false;
+		const q = search.toLowerCase();
+		return (
+			u.firstName?.toLowerCase().includes(q) ||
+			u.lastName?.toLowerCase().includes(q) ||
+			u.email?.toLowerCase().includes(q) ||
+			u.username?.toLowerCase().includes(q)
+		);
+	});
 
 	return (
 		<Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -950,22 +1028,30 @@ function TaskMemberPopover({
 							Workspace members
 						</div>
 						{filteredMembers.map((member) => {
-							const isSelected = localAssignees.some((a) => a.userId === member.userId);
+							const memberUserId = member.userId; // supabaseId
+							const memberUser = member.user;
+							const isSelected = localAssignees.some((a) => a.userId === memberUserId);
+							const initials =
+								memberUser?.firstName?.[0] || memberUser?.email?.[0]?.toUpperCase() || "U";
+							const displayName =
+								[memberUser?.firstName, memberUser?.lastName].filter(Boolean).join(" ") ||
+								memberUser?.email ||
+								"Unknown";
 							return (
 								<button
 									key={member.id}
-									onClick={() => handleToggleMember(member)}
+									onClick={() => handleToggleMember({ userId: memberUserId, user: memberUser })}
 									className="w-full flex items-center justify-between p-2 rounded hover:bg-white/5 transition-colors text-left group"
 								>
 									<div className="flex items-center gap-3">
 										<div className="w-8 h-8 rounded-full bg-[#F59E0B] flex items-center justify-center text-[12px] font-bold text-black uppercase">
-											{member.user?.firstName?.[0] || "U"}
+											{initials}
 										</div>
 										<div className="flex flex-col">
-											<span className="text-[13px] font-medium text-white/90">
-												{member.user?.firstName} {member.user?.lastName}
-											</span>
-											<span className="text-[11px] text-white/40">@{member.user?.username}</span>
+											<span className="text-[13px] font-medium text-white/90">{displayName}</span>
+											{memberUser?.username && (
+												<span className="text-[11px] text-white/40">@{memberUser.username}</span>
+											)}
 										</div>
 									</div>
 									{isSelected && <div className="w-2 h-2 rounded-full bg-blue-500" />}
@@ -989,6 +1075,162 @@ const LABEL_COLORS = [
 	{ name: "Teal", color: "#60C6D2" },
 ];
 
+const COVER_COLORS = [
+	"#61BD4F", // green
+	"#F2D600", // yellow
+	"#FF9F1A", // orange
+	"#EB5A46", // red
+	"#C377E0", // purple
+	"#0079BF", // blue
+	"#00C2E0", // teal
+	"#51E898", // mint
+	"#FF78CB", // pink
+	"#344563", // dark navy
+];
+
+function CoverPopover({
+	isOpen,
+	setIsOpen,
+	coverColor,
+	coverSize,
+	onCoverChange,
+}: {
+	isOpen: boolean;
+	setIsOpen: (v: boolean) => void;
+	coverColor: string | null;
+	coverSize: "partial" | "full";
+	onCoverChange: (color: string | null, size?: "partial" | "full") => void;
+}) {
+	return (
+		<Popover open={isOpen} onOpenChange={setIsOpen}>
+			<PopoverTrigger asChild>
+				<button
+					className={cn(
+						"hover:text-white transition-colors p-1 rounded",
+						isOpen ? "text-white bg-white/10" : "text-white/40",
+					)}
+					title="Cover"
+				>
+					<ImageIcon className="w-5 h-5" />
+				</button>
+			</PopoverTrigger>
+			<PopoverContent
+				className="w-[320px] p-0 border-white/10 bg-[#2A2B2E] text-white shadow-2xl rounded-xl z-[9999] overflow-hidden"
+				align="end"
+				sideOffset={8}
+			>
+				{/* Header */}
+				<div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+					<span className="text-[14px] font-bold">Cover</span>
+					<button
+						onClick={() => setIsOpen(false)}
+						className="text-white/50 hover:text-white transition-colors p-0.5"
+					>
+						<X className="w-4 h-4" />
+					</button>
+				</div>
+
+				<div className="p-4 space-y-4">
+					{/* Size picker */}
+					<div>
+						<p className="text-[11px] font-bold text-white/50 uppercase tracking-wide mb-2">Size</p>
+						<div className="flex gap-2">
+							{/* Partial size preview */}
+							<button
+								onClick={() => onCoverChange(coverColor, "partial")}
+								className={cn(
+									"flex-1 h-[70px] rounded-lg overflow-hidden border-2 transition-all relative",
+									coverSize === "partial" ? "border-white" : "border-white/20",
+								)}
+								style={{ backgroundColor: coverColor ?? "#2A2B2E" }}
+							>
+								{/* Mock card lines */}
+								<div className="absolute bottom-0 left-0 right-0 h-[42px] bg-[#1F2933] rounded-b-lg flex flex-col justify-center px-2 gap-1">
+									<div className="h-1.5 w-14 rounded-full bg-white/30" />
+									<div className="h-1 w-10 rounded-full bg-white/15" />
+									<div className="h-1 w-8 rounded-full bg-white/10" />
+								</div>
+								{coverSize === "partial" && (
+									<div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-white flex items-center justify-center">
+										<div className="w-2 h-2 rounded-full bg-[#2A2B2E]" />
+									</div>
+								)}
+							</button>
+							{/* Full size preview */}
+							<button
+								onClick={() => onCoverChange(coverColor, "full")}
+								className={cn(
+									"flex-1 h-[70px] rounded-lg overflow-hidden border-2 transition-all relative",
+									coverSize === "full" ? "border-white" : "border-white/20",
+								)}
+								style={{ backgroundColor: coverColor ?? "#2A2B2E" }}
+							>
+								{coverSize === "full" && (
+									<div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-white flex items-center justify-center">
+										<div className="w-2 h-2 rounded-full bg-[#2A2B2E]" />
+									</div>
+								)}
+							</button>
+						</div>
+					</div>
+
+					{/* Remove cover */}
+					{coverColor && (
+						<button
+							onClick={() => {
+								onCoverChange(null);
+								setIsOpen(false);
+							}}
+							className="w-full py-1.5 text-[13px] font-bold text-white/80 bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 transition-colors"
+						>
+							Remove cover
+						</button>
+					)}
+
+					{/* Color palette */}
+					<div>
+						<p className="text-[11px] font-bold text-white/50 uppercase tracking-wide mb-2">
+							Colors
+						</p>
+						<div className="grid grid-cols-5 gap-2">
+							{COVER_COLORS.map((c) => (
+								<button
+									key={c}
+									onClick={() => onCoverChange(c, coverSize)}
+									className="h-9 rounded-lg transition-all hover:scale-105 hover:shadow-lg relative border-2"
+									style={{
+										backgroundColor: c,
+										borderColor: coverColor === c ? "white" : "transparent",
+									}}
+								>
+									{coverColor === c && (
+										<span className="absolute inset-0 flex items-center justify-center">
+											<svg
+												className="w-4 h-4 text-white drop-shadow"
+												fill="none"
+												viewBox="0 0 24 24"
+												stroke="currentColor"
+												strokeWidth={3}
+											>
+												<path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+											</svg>
+										</span>
+									)}
+								</button>
+							))}
+						</div>
+					</div>
+
+					{/* Colorblind mode */}
+					<button className="w-full py-1.5 text-[13px] font-bold text-white/80 bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 transition-colors">
+						Enable colorblind friendly mode
+					</button>
+				</div>
+			</PopoverContent>
+		</Popover>
+	);
+}
+
 function TaskLabelPopover({
 	task,
 	isOpen,
@@ -1008,12 +1250,6 @@ function TaskLabelPopover({
 	const [localLabels, setLocalLabels] = useState<TaskLabel[]>(task.labels || []);
 	const [search, setSearch] = useState("");
 
-	useEffect(() => {
-		if (isOpen) {
-			setLocalLabels(task.labels || []);
-		}
-	}, [isOpen, task.labels]);
-
 	const handleToggleLabel = async (labelInfo: { name: string; color: string }) => {
 		if (!token) return;
 
@@ -1021,28 +1257,32 @@ function TaskLabelPopover({
 		const existing = localLabels.find((l) => l.color === labelInfo.color);
 
 		if (existing) {
-			// Remove the only label
+			// If clicking the existing label, remove it (toggle off)
 			setLocalLabels([]);
 			onUpdateLabels?.([]);
-			try {
-				await taskService.removeLabel(task.id, existing.id, token);
-			} catch (err) {
-				console.error("Failed to remove label", err);
-				setLocalLabels(previousLabels);
-				onUpdateLabels?.(previousLabels);
+			if (!existing.id.startsWith("temp-")) {
+				try {
+					await taskService.removeLabel(task.id, existing.id, token);
+				} catch (err) {
+					console.error("Failed to remove label", err);
+					setLocalLabels(previousLabels);
+					onUpdateLabels?.(previousLabels);
+				}
 			}
 		} else {
-			// Single-select: Remove all existing labels first
+			// Strictly single-select: Remove all existing labels first
 			setLocalLabels([]);
 			onUpdateLabels?.([]);
 
-			// Backend: Remove all existing labels
-			for (const l of previousLabels) {
-				try {
-					await taskService.removeLabel(task.id, l.id, token);
-				} catch (err) {
-					console.error("Failed to clear previous labels", err);
-				}
+			// Backend: Remove all existing labels in parallel
+			const removePromises = previousLabels
+				.filter((l) => !l.id.startsWith("temp-"))
+				.map((l) => taskService.removeLabel(task.id, l.id, token));
+
+			try {
+				await Promise.all(removePromises);
+			} catch (err) {
+				console.error("Failed to clear previous labels", err);
 			}
 
 			// Add the new label
@@ -1113,27 +1353,27 @@ function TaskLabelPopover({
 							{LABEL_COLORS.filter((lc) =>
 								lc.name.toLowerCase().includes(search.toLowerCase()),
 							).map((lc) => {
-								const isSelected = localLabels.some((l) => l.color === lc.color);
+								const isSelected = localLabels.length > 0 && localLabels[0].color === lc.color;
 								return (
-									<div key={lc.color} className="flex items-center gap-2 group">
-										<div className="w-5 h-5 flex items-center justify-center">
-											<Checkbox
-												checked={isSelected}
-												onCheckedChange={() => handleToggleLabel(lc)}
-												className="border-white/20 data-[state=checked]:bg-[#5294E2] data-[state=checked]:border-[#5294E2]"
-											/>
-										</div>
-										<button
-											onClick={() => handleToggleLabel(lc)}
-											className="flex-1 h-8 rounded flex items-center px-3 text-[13px] font-medium transition-all group-hover:brightness-110"
-											style={{ backgroundColor: lc.color, color: "rgba(0,0,0,0.7)" }}
-										>
-											{lc.name}
-										</button>
-										<button className="p-1.5 hover:bg-white/5 rounded opacity-0 group-hover:opacity-100 transition-all">
-											<Edit2 className="w-3.5 h-3.5 text-white/50" />
-										</button>
-									</div>
+									<button
+										key={lc.color}
+										onClick={() => handleToggleLabel(lc)}
+										className="w-full h-8 rounded flex items-center justify-between px-3 text-[13px] font-medium transition-all hover:brightness-110 relative group"
+										style={{ backgroundColor: lc.color, color: "rgba(0,0,0,0.8)" }}
+									>
+										<span>{lc.name}</span>
+										{isSelected && (
+											<svg
+												className="w-4 h-4 text-black/60"
+												fill="none"
+												viewBox="0 0 24 24"
+												stroke="currentColor"
+												strokeWidth={3}
+											>
+												<path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+											</svg>
+										)}
+									</button>
 								);
 							})}
 						</div>

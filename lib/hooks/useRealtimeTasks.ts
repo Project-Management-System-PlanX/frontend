@@ -151,8 +151,14 @@ export function useRealtimeTasks({
 
 			try {
 				const task = await taskService.create(data, token);
-				// Replace temp task with real task
-				setTasks((prev) => prev.map((t) => (t.id === tempId ? task : t)));
+				// Replace temp task with real task, but only if real-time event hasn't added it yet
+				setTasks((prev) => {
+					const alreadyAddedByRealtime = prev.some((t) => t.id === task.id);
+					if (alreadyAddedByRealtime) {
+						return prev.filter((t) => t.id !== tempId);
+					}
+					return prev.map((t) => (t.id === tempId ? task : t));
+				});
 				return task;
 			} catch (err) {
 				// Rollback

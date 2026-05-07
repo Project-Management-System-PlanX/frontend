@@ -33,6 +33,7 @@ export interface UpdateTaskPayload {
 	teamId?: string;
 	flagged?: boolean;
 	restrictTo?: string;
+	coverColor?: string | null;
 }
 
 export interface MoveTaskPayload {
