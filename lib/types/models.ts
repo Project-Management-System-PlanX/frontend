@@ -132,21 +132,21 @@ export interface Task {
 	spaceId: string;
 	statusId: string;
 	title: string;
-	description?: string;
+	description?: string | null;
 	taskNumber: number;
 	priority: string; // "NONE" | "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
 	workType: string; // "TASK" | "STORY" | "BUG" | "EPIC" | "SUBTASK"
-	assigneeId?: string;
+	assigneeId?: string | null;
 	reporterId: string;
-	dueDate?: string;
-	startDate?: string;
+	dueDate?: string | null;
+	startDate?: string | null;
 	resolution: string; // "UNRESOLVED" | "DONE" | "WONT_DO" | "DUPLICATE"
 	position: number;
 	coverColor?: string | null;
-	parentId?: string;
-	teamId?: string;
+	parentId?: string | null;
+	teamId?: string | null;
 	flagged: boolean;
-	restrictTo?: string;
+	restrictTo?: string | null;
 	createdAt: string;
 	updatedAt: string;
 	space?: Space;

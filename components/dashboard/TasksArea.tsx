@@ -251,7 +251,7 @@ export function TasksArea() {
 			title,
 			statusId: defaultStatusId,
 			spaceId: selectedSpaceId,
-			assigneeId: containerId === "inbox" ? user?.id : null,
+			assigneeId: containerId === "inbox" ? user?.id : undefined,
 			reporterId: user?.id || "",
 			priority: "NONE",
 			workType: "TASK",
