@@ -162,7 +162,7 @@ export function CalendarView({
 
 				{/* Calendar Grid Container with Scroll */}
 				<div className="flex-1 overflow-auto custom-scrollbar relative">
-					<div className="grid grid-cols-7 auto-rows-fr h-full min-h-[1800px]">
+					<div className="grid grid-cols-7 auto-rows-[350px] w-full border-l border-t border-white/10">
 						{days.map((day, idx) => {
 							const isCurrentMonth = isSameMonth(day, monthStart);
 							const isToday = isSameDay(day, new Date());
@@ -171,7 +171,7 @@ export function CalendarView({
 								<div
 									key={idx}
 									className={cn(
-										"border-r border-b border-white/5 p-4 transition-colors relative group min-h-[350px] hover:bg-white/[0.02] flex flex-col",
+										"border-r border-b border-white/10 p-4 transition-colors relative group hover:bg-white/[0.02] flex flex-col",
 										!isCurrentMonth && "bg-black/20",
 										isToday && "bg-blue-600/[0.08]",
 									)}
