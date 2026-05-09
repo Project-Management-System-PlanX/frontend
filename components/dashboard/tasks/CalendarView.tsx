@@ -51,7 +51,7 @@ export function CalendarView({
 
 	return (
 		<div className="flex-1 overflow-auto custom-scrollbar p-5 flex flex-col h-full">
-			<div className="flex-1 bg-[#141414] rounded-[24px] border border-white/5 shadow-2xl overflow-hidden flex flex-col min-w-[800px]">
+			<div className="flex-1 bg-[#141414] rounded-[24px] border border-white/5 shadow-2xl overflow-hidden flex flex-col min-w-[1800px]">
 				{/* Calendar Header */}
 				<div className="p-4 flex items-center justify-between border-b border-white/5 bg-black/20 shrink-0">
 					<div className="flex items-center gap-4">
@@ -153,7 +153,7 @@ export function CalendarView({
 					{weekDays.map((day) => (
 						<div
 							key={day}
-							className="py-2.5 text-center text-[10px] font-black text-white/30 uppercase tracking-[0.2em]"
+							className="py-3 text-center text-[12px] font-black text-white/30 uppercase tracking-[0.2em]"
 						>
 							{day}
 						</div>
@@ -162,7 +162,7 @@ export function CalendarView({
 
 				{/* Calendar Grid Container with Scroll */}
 				<div className="flex-1 overflow-auto custom-scrollbar relative">
-					<div className="grid grid-cols-7 auto-rows-fr h-full min-h-[600px]">
+					<div className="grid grid-cols-7 auto-rows-[350px] w-full border-l border-t border-white/10">
 						{days.map((day, idx) => {
 							const isCurrentMonth = isSameMonth(day, monthStart);
 							const isToday = isSameDay(day, new Date());
@@ -171,17 +171,17 @@ export function CalendarView({
 								<div
 									key={idx}
 									className={cn(
-										"border-r border-b border-white/5 p-2 transition-colors relative group min-h-[120px] hover:bg-white/[0.02]",
+										"border-r border-b border-white/10 p-4 transition-colors relative group hover:bg-white/[0.02] flex flex-col",
 										!isCurrentMonth && "bg-black/20",
 										isToday && "bg-blue-600/[0.08]",
 									)}
 								>
-									<div className="flex justify-between items-start mb-2">
+									<div className="flex justify-between items-start mb-3">
 										<span
 											className={cn(
-												"text-[12px] font-black tracking-tight",
+												"text-[14px] font-black tracking-tight",
 												isToday
-													? "text-blue-400 bg-blue-400/10 px-1.5 py-0.5 rounded-md"
+													? "text-blue-400 bg-blue-400/10 px-2 py-1 rounded-md"
 													: isCurrentMonth
 														? "text-white/60"
 														: "text-white/10",
@@ -191,20 +191,40 @@ export function CalendarView({
 										</span>
 									</div>
 
-									<div className="space-y-1">
+									<div className="flex-1 overflow-y-auto custom-scrollbar-thin pr-1 space-y-1.5">
 										{Object.values(tasks)
 											.filter((t) => t.dueDate && isSameDay(new Date(t.dueDate), day))
 											.map((task) => (
 												<div
 													key={task.id}
 													onClick={() => onTaskClick(task)}
-													className="px-2 py-1.5 bg-black/40 rounded-lg border border-white/5 text-[11px] font-bold text-white truncate cursor-pointer hover:bg-black/60 hover:border-white/20 transition-all flex items-center gap-2 group/task shadow-lg"
+													className="p-2.5 bg-[#1A1A1A] rounded-lg border border-white/5 text-white cursor-pointer hover:bg-[#252525] hover:border-white/10 transition-all flex flex-col gap-2 shadow-xl group/task shrink-0"
 												>
-													<div className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
-													<span className="truncate flex-1">{task.title}</span>
-													<div className="w-4 h-4 rounded-full border border-white/10 bg-orange-500 flex items-center justify-center text-[8px] font-black text-white">
-														R
+													<div className="flex items-start justify-between gap-2">
+														{/* Labels */}
+														<div className="flex flex-wrap gap-1 mt-1">
+															{task.labels && task.labels.length > 0 ? (
+																task.labels.map((l) => (
+																	<div
+																		key={l.id}
+																		className="h-1.5 w-6 rounded-full"
+																		style={{ backgroundColor: l.color }}
+																	/>
+																))
+															) : (
+																<div className="h-1.5 w-6 rounded-full bg-blue-500/50" />
+															)}
+														</div>
+														
+														{/* Assignee */}
+														<div className="w-6 h-6 rounded-full border border-white/10 bg-orange-500 flex items-center justify-center text-[10px] font-black text-white shrink-0 shadow-sm">
+															{task.assignees?.[0]?.user?.firstName?.[0] || "R"}
+														</div>
 													</div>
+
+													<span className="text-[14px] font-bold tracking-tight leading-tight line-clamp-2">
+														{task.title}
+													</span>
 												</div>
 											))}
 									</div>

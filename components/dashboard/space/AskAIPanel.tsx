@@ -17,6 +17,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useBulkCreateTasks } from "@/hooks/api/use-tasks";
+import { useSpaces } from "@/hooks/api/use-spaces";
+import { useWorkspaceStore } from "@/stores/workspace-store";
 import { useMemberLookup } from "@/hooks/use-member-lookup";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useWorkspaceMembers } from "@/hooks/use-workspace-members";
@@ -147,6 +149,11 @@ export function AskAIPanel({
 	const { members } = useWorkspaceMembers();
 	const { getMember } = useMemberLookup();
 	const { token } = useSupabaseAuth();
+	const { activeWorkspaceId } = useWorkspaceStore();
+	const { data: spaces } = useSpaces(activeWorkspaceId || "", token || undefined);
+	const space = spaces?.find((s) => s.id === spaceId);
+	const defaultStatusId = space?.statuses?.[0]?.id || "";
+	
 	const bulkCreate = useBulkCreateTasks(token || undefined);
 
 	const scrollToBottom = useCallback(() => {
@@ -214,9 +221,10 @@ export function AskAIPanel({
 			setCreatingMsgId(msgId);
 
 			try {
-				await bulkCreate.mutateAsync(
-					msg.tasks.map((task) => ({
+				await bulkCreate.mutateAsync({
+					tasks: msg.tasks.map((task) => ({
 						spaceId,
+						statusId: defaultStatusId, // Add statusId as well
 						title: task.title,
 						priority: task.priority,
 						workType: task.workType,
@@ -224,7 +232,7 @@ export function AskAIPanel({
 						startDate: task.startDate?.toISOString(),
 						dueDate: task.dueDate?.toISOString(),
 					})),
-				);
+				});
 			} catch (err) {
 				console.error("Failed to bulk create tasks:", err);
 			}

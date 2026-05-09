@@ -69,6 +69,7 @@ export function BoardPanel({
 	onAddTask,
 	onTaskClick,
 	onDeleteTask,
+	onUpdateTask,
 }: {
 	columnOrder: string[];
 	columns: Record<string, Column>;
@@ -79,6 +80,7 @@ export function BoardPanel({
 	onAddTask: (columnId: string, title: string) => void;
 	onTaskClick: (task: Task) => void;
 	onDeleteTask?: (id: string) => void;
+	onUpdateTask?: (id: string, data: Partial<Task>) => void;
 }) {
 	const [isAdding, setIsAdding] = useState(false);
 	const [newListName, setNewListName] = useState("");
@@ -252,6 +254,9 @@ export function BoardPanel({
 					tasks={tasks}
 					onToggleTask={onToggleTask}
 					onTaskClick={onTaskClick}
+					onUpdateTask={onUpdateTask}
+					onAddColumn={onAddColumn}
+					onAddTask={onAddTask}
 				/>
 			) : currentView === "calendar" ? (
 				<CalendarView tasks={tasks} onTaskClick={onTaskClick} />
