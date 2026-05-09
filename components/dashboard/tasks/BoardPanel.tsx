@@ -25,6 +25,7 @@ import { BoardColumn } from "./BoardColumn";
 import { CalendarView } from "./CalendarView";
 import { TableView } from "./TableView";
 import { TimelineView } from "./TimelineView";
+import { DashboardView } from "./DashboardView";
 import { type Column, UI } from "./types";
 
 function ViewItem({
@@ -84,7 +85,7 @@ export function BoardPanel({
 }) {
 	const [isAdding, setIsAdding] = useState(false);
 	const [newListName, setNewListName] = useState("");
-	const [currentView, setCurrentView] = useState<"board" | "table" | "calendar" | "timeline">(
+	const [currentView, setCurrentView] = useState<"board" | "table" | "calendar" | "timeline" | "dashboard">(
 		"board",
 	);
 	const [mounted, setMounted] = useState(false);
@@ -114,6 +115,7 @@ export function BoardPanel({
 									{currentView === "table" && <LayoutGrid className="w-5 h-5" />}
 									{currentView === "calendar" && <CalendarIcon className="w-5 h-5" />}
 									{currentView === "timeline" && <Rows3 className="w-5 h-5" />}
+									{currentView === "dashboard" && <Gauge className="w-5 h-5" />}
 									<ChevronDown className="w-4.5 h-4.5" />
 								</div>
 							</PopoverTrigger>
@@ -153,7 +155,12 @@ export function BoardPanel({
 										active={currentView === "timeline"}
 										onClick={() => setCurrentView("timeline")}
 									/>
-									<ViewItem icon={<Gauge className="w-4 h-4" />} label="Dashboard" />
+									<ViewItem
+										icon={<Gauge className="w-4 h-4" />}
+										label="Dashboard"
+										active={currentView === "dashboard"}
+										onClick={() => setCurrentView("dashboard")}
+									/>
 									<ViewItem icon={<MapPin className="w-4 h-4" />} label="Map" />
 								</div>
 							</PopoverContent>
@@ -260,12 +267,18 @@ export function BoardPanel({
 				/>
 			) : currentView === "calendar" ? (
 				<CalendarView tasks={tasks} onTaskClick={onTaskClick} />
-			) : (
+			) : currentView === "timeline" ? (
 				<TimelineView
 					columns={columns}
 					columnOrder={columnOrder}
 					tasks={tasks}
 					onTaskClick={onTaskClick}
+				/>
+			) : (
+				<DashboardView
+					columns={columns}
+					columnOrder={columnOrder}
+					tasks={tasks}
 				/>
 			)}
 		</div>
