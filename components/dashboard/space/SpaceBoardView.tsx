@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import type { DragEvent, KeyboardEvent } from "react";
 import { useEffect, useRef, useState } from "react";
-import { TaskDetailModal } from "@/components/modals/TaskDetailModal";
+import TaskDetailModal from "@/components/modals/TaskDetailModal";
 import { useSpace } from "@/hooks/api/use-spaces";
 import { useCreateTask, useMoveTask, useTasks } from "@/hooks/api/use-tasks";
 import { useMemberLookup } from "@/hooks/use-member-lookup";

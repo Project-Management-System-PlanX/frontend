@@ -135,4 +135,9 @@ export const taskService = {
 
 	getActivities: async (taskId: string, token?: string) =>
 		apiClient.get<ActivityLogEntry[]>(`/tasks/${taskId}/activities`, { token }),
+
+	// ─── Bulk ───
+
+	createBulk: async (data: { tasks: CreateTaskPayload[] }, token?: string) =>
+		apiClient.post<Task[]>("/tasks/bulk", data, { token }),
 };

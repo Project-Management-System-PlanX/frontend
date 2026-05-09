@@ -243,3 +243,17 @@ export const useDeleteTask = (token?: string) => {
 		},
 	});
 };
+export const useBulkCreateTasks = (token?: string) => {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: (data: { tasks: CreateTaskPayload[] }): Promise<Task[]> =>
+			taskService.createBulk(data, token),
+		onSuccess: (_, variables) => {
+			if (variables.tasks.length > 0) {
+				queryClient.invalidateQueries({ queryKey: taskKeys.bySpace(variables.tasks[0].spaceId) });
+			}
+			queryClient.invalidateQueries({ queryKey: taskKeys.all });
+		},
+	});
+};
