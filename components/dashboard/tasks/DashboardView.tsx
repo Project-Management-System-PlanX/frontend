@@ -39,7 +39,7 @@ export function DashboardView({ tasks, columns, columnOrder }: DashboardViewProp
 	const memberCounts: Record<string, number> = { Unassigned: 0 };
 	for (const task of allTasks) {
 		const member = task.assigneeId ? getMember(task.assigneeId) : null;
-		const name = member ? member.user.firstName || member.user.email : "Unassigned";
+		const name = member?.user?.firstName || member?.user?.email || "Unassigned";
 		memberCounts[name] = (memberCounts[name] || 0) + 1;
 	}
 	const cardsPerMemberData = Object.entries(memberCounts).map(([name, count]) => ({
