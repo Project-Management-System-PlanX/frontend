@@ -280,7 +280,7 @@ export function SpaceBoardView({ spaceId }: { spaceId: string }) {
 				task={selectedTask}
 				isOpen={!!selectedTask}
 				onClose={() => setSelectedTask(null)}
-				spaceName={space?.name}
+				columnName={space?.name}
 			/>
 		</>
 	);

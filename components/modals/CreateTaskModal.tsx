@@ -197,7 +197,7 @@ export function CreateTaskModal({
 			if (subtaskTitles.length > 0 && createdTask?.id) {
 				const subtaskStatusId = (createdTask.statusId ||
 					createdTask.status?.id ||
-					statusId) as string;
+					defaultStatusId) as string;
 				await Promise.all(
 					subtaskTitles.map((title) =>
 						createTask({

@@ -90,7 +90,7 @@ export function SpaceListView({ spaceId }: { spaceId: string }) {
 				task={selectedTask}
 				isOpen={!!selectedTaskId}
 				onClose={() => setSelectedTaskId(null)}
-				spaceName={space?.name}
+				columnName={space?.name}
 			/>
 		</div>
 	);
