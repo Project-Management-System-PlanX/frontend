@@ -80,7 +80,7 @@ export function TimelineView({
 							{columnOrder.map((colId) => {
 								const columnTasks = columns[colId].taskIds.map((tid) => tasks[tid]).filter(Boolean);
 								const scheduledCount = columnTasks.filter((t) => t.dueDate).length;
-								
+
 								return (
 									<div
 										key={colId}
@@ -151,10 +151,7 @@ export function TimelineView({
 									className="flex h-[120px] border-b border-white/10 relative group hover:bg-white/[0.01]"
 								>
 									{days.map((day, idx) => (
-										<div
-											key={idx}
-											className="w-[140px] border-r border-white/10 relative shrink-0"
-										>
+										<div key={idx} className="w-[140px] border-r border-white/10 relative shrink-0">
 											{/* Tasks for this day in this column */}
 											{columns[colId].taskIds
 												.map((tid) => tasks[tid])

@@ -8,7 +8,6 @@ import {
 	Gauge,
 	LayoutGrid,
 	ListFilter,
-	MapPin,
 	MoreHorizontal,
 	Plus,
 	Rows3,
@@ -23,9 +22,9 @@ import type { Task } from "@/lib/types/models";
 import { cn } from "@/lib/utils";
 import { BoardColumn } from "./BoardColumn";
 import { CalendarView } from "./CalendarView";
+import { DashboardView } from "./DashboardView";
 import { TableView } from "./TableView";
 import { TimelineView } from "./TimelineView";
-import { DashboardView } from "./DashboardView";
 import { type Column, UI } from "./types";
 
 function ViewItem({
@@ -85,9 +84,9 @@ export function BoardPanel({
 }) {
 	const [isAdding, setIsAdding] = useState(false);
 	const [newListName, setNewListName] = useState("");
-	const [currentView, setCurrentView] = useState<"board" | "table" | "calendar" | "timeline" | "dashboard">(
-		"board",
-	);
+	const [currentView, setCurrentView] = useState<
+		"board" | "table" | "calendar" | "timeline" | "dashboard"
+	>("board");
 	const [mounted, setMounted] = useState(false);
 
 	useEffect(() => {
@@ -161,7 +160,6 @@ export function BoardPanel({
 										active={currentView === "dashboard"}
 										onClick={() => setCurrentView("dashboard")}
 									/>
-									<ViewItem icon={<MapPin className="w-4 h-4" />} label="Map" />
 								</div>
 							</PopoverContent>
 						</Popover>
@@ -275,11 +273,7 @@ export function BoardPanel({
 					onTaskClick={onTaskClick}
 				/>
 			) : (
-				<DashboardView
-					columns={columns}
-					columnOrder={columnOrder}
-					tasks={tasks}
-				/>
+				<DashboardView columns={columns} columnOrder={columnOrder} tasks={tasks} />
 			)}
 		</div>
 	);

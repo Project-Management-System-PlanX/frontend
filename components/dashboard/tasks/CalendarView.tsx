@@ -215,7 +215,7 @@ export function CalendarView({
 																<div className="h-1.5 w-6 rounded-full bg-blue-500/50" />
 															)}
 														</div>
-														
+
 														{/* Assignee */}
 														<div className="w-6 h-6 rounded-full border border-white/10 bg-orange-500 flex items-center justify-center text-[10px] font-black text-white shrink-0 shadow-sm">
 															{task.assignees?.[0]?.user?.firstName?.[0] || "R"}

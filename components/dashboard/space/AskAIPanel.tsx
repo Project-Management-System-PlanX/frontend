@@ -16,12 +16,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useBulkCreateTasks } from "@/hooks/api/use-tasks";
 import { useSpaces } from "@/hooks/api/use-spaces";
-import { useWorkspaceStore } from "@/stores/workspace-store";
+import { useBulkCreateTasks } from "@/hooks/api/use-tasks";
 import { useMemberLookup } from "@/hooks/use-member-lookup";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useWorkspaceMembers } from "@/hooks/use-workspace-members";
+import { useWorkspaceStore } from "@/stores/workspace-store";
 
 // ─── Types ───
 interface SuggestedTask {
@@ -153,7 +153,7 @@ export function AskAIPanel({
 	const { data: spaces } = useSpaces(activeWorkspaceId || "", token || undefined);
 	const space = spaces?.find((s) => s.id === spaceId);
 	const defaultStatusId = space?.statuses?.[0]?.id || "";
-	
+
 	const bulkCreate = useBulkCreateTasks(token || undefined);
 
 	const scrollToBottom = useCallback(() => {
@@ -248,7 +248,7 @@ export function AskAIPanel({
 			setMessages((prev) => [...prev, successMsg]);
 			scrollToBottom();
 		},
-		[messages, spaceId, bulkCreate, scrollToBottom],
+		[messages, spaceId, bulkCreate, scrollToBottom, defaultStatusId],
 	);
 
 	if (!open) return null;

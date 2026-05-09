@@ -1,5 +1,6 @@
 "use client";
 
+import { MoreHorizontal } from "lucide-react";
 import {
 	Bar,
 	BarChart,
@@ -13,11 +14,10 @@ import {
 	XAxis,
 	YAxis,
 } from "recharts";
-import { MoreHorizontal } from "lucide-react";
-import type { Task } from "@/lib/types/models";
-import type { Column } from "./types";
 import { useMemberLookup } from "@/hooks/use-member-lookup";
+import type { Task } from "@/lib/types/models";
 import { cn } from "@/lib/utils";
+import type { Column } from "./types";
 
 interface DashboardViewProps {
 	tasks: Record<string, Task>;
@@ -116,10 +116,14 @@ export function DashboardView({ tasks, columns, columnOrder }: DashboardViewProp
 							<XAxis dataKey="name" stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
 							<YAxis stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
 							<Tooltip
-								contentStyle={{ backgroundColor: "#1A1A1A", border: "1px solid #333", borderRadius: "8px" }}
+								contentStyle={{
+									backgroundColor: "#1A1A1A",
+									border: "1px solid #333",
+									borderRadius: "8px",
+								}}
 								itemStyle={{ color: "#fff" }}
 							/>
-							<Bar dataKey="count" fill="#D1D5DB" radius={[4, 4, 0, 0]} barSize={60} />
+							<Bar dataKey="count" fill="#D1D5DB" radius={[4, 4, 0, 0]} />
 						</BarChart>
 					</ResponsiveContainer>
 				</ChartCard>
@@ -127,15 +131,19 @@ export function DashboardView({ tasks, columns, columnOrder }: DashboardViewProp
 				{/* Cards per Due Date */}
 				<ChartCard title="Cards per due date">
 					<ResponsiveContainer width="100%" height={300}>
-						<BarChart data={cardsPerDueDateData}>
+						<BarChart data={cardsPerDueDateData} barCategoryGap="20%">
 							<CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
-							<XAxis dataKey="name" stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
+							<XAxis dataKey="name" stroke="#666" fontSize={11} tickLine={false} axisLine={false} />
 							<YAxis stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
 							<Tooltip
-								contentStyle={{ backgroundColor: "#1A1A1A", border: "1px solid #333", borderRadius: "8px" }}
+								contentStyle={{
+									backgroundColor: "#1A1A1A",
+									border: "1px solid #333",
+									borderRadius: "8px",
+								}}
 								itemStyle={{ color: "#fff" }}
 							/>
-							<Bar dataKey="count" radius={[4, 4, 0, 0]} barSize={60}>
+							<Bar dataKey="count" radius={[4, 4, 0, 0]}>
 								{cardsPerDueDateData.map((entry, index) => (
 									<Cell
 										key={`cell-${index}`}
@@ -150,15 +158,19 @@ export function DashboardView({ tasks, columns, columnOrder }: DashboardViewProp
 				{/* Cards per Member */}
 				<ChartCard title="Cards per member">
 					<ResponsiveContainer width="100%" height={300}>
-						<BarChart data={cardsPerMemberData}>
+						<BarChart data={cardsPerMemberData} barCategoryGap="20%">
 							<CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
-							<XAxis dataKey="name" stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
+							<XAxis dataKey="name" stroke="#666" fontSize={11} tickLine={false} axisLine={false} />
 							<YAxis stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
 							<Tooltip
-								contentStyle={{ backgroundColor: "#1A1A1A", border: "1px solid #333", borderRadius: "8px" }}
+								contentStyle={{
+									backgroundColor: "#1A1A1A",
+									border: "1px solid #333",
+									borderRadius: "8px",
+								}}
 								itemStyle={{ color: "#fff" }}
 							/>
-							<Bar dataKey="count" fill="#D1D5DB" radius={[4, 4, 0, 0]} barSize={60} />
+							<Bar dataKey="count" fill="#D1D5DB" radius={[4, 4, 0, 0]} />
 						</BarChart>
 					</ResponsiveContainer>
 				</ChartCard>
@@ -166,17 +178,30 @@ export function DashboardView({ tasks, columns, columnOrder }: DashboardViewProp
 				{/* Cards per Label */}
 				<ChartCard title="Cards per label">
 					<ResponsiveContainer width="100%" height={300}>
-						<BarChart data={cardsPerLabelData}>
+						<BarChart data={cardsPerLabelData} barCategoryGap="20%">
 							<CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
-							<XAxis dataKey="name" stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
+							<XAxis dataKey="name" stroke="#666" fontSize={11} tickLine={false} axisLine={false} />
 							<YAxis stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
 							<Tooltip
-								contentStyle={{ backgroundColor: "#1A1A1A", border: "1px solid #333", borderRadius: "8px" }}
+								contentStyle={{
+									backgroundColor: "#1A1A1A",
+									border: "1px solid #333",
+									borderRadius: "8px",
+								}}
 								itemStyle={{ color: "#fff" }}
 							/>
-							<Bar dataKey="count" radius={[4, 4, 0, 0]} barSize={60}>
+							<Bar dataKey="count" radius={[4, 4, 0, 0]}>
 								{cardsPerLabelData.map((entry, index) => (
-									<Cell key={`cell-${index}`} fill={entry.name === "yellow" ? "#856404" : entry.name === "green" ? "#155724" : "#4B5563"} />
+									<Cell
+										key={`cell-${index}`}
+										fill={
+											entry.name === "yellow"
+												? "#856404"
+												: entry.name === "green"
+													? "#155724"
+													: "#4B5563"
+										}
+									/>
 								))}
 							</Bar>
 						</BarChart>
@@ -191,13 +216,38 @@ export function DashboardView({ tasks, columns, columnOrder }: DashboardViewProp
 							<XAxis dataKey="date" stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
 							<YAxis stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
 							<Tooltip
-								contentStyle={{ backgroundColor: "#1A1A1A", border: "1px solid #333", borderRadius: "8px" }}
+								contentStyle={{
+									backgroundColor: "#1A1A1A",
+									border: "1px solid #333",
+									borderRadius: "8px",
+								}}
 								itemStyle={{ color: "#fff" }}
 							/>
 							<Legend />
-							<Line type="monotone" dataKey="Today" stroke="#3B82F6" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-							<Line type="monotone" dataKey="This Week" stroke="#10B981" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-							<Line type="monotone" dataKey="Later" stroke="#F59E0B" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+							<Line
+								type="monotone"
+								dataKey="Today"
+								stroke="#3B82F6"
+								strokeWidth={3}
+								dot={{ r: 4 }}
+								activeDot={{ r: 6 }}
+							/>
+							<Line
+								type="monotone"
+								dataKey="This Week"
+								stroke="#10B981"
+								strokeWidth={3}
+								dot={{ r: 4 }}
+								activeDot={{ r: 6 }}
+							/>
+							<Line
+								type="monotone"
+								dataKey="Later"
+								stroke="#F59E0B"
+								strokeWidth={3}
+								dot={{ r: 4 }}
+								activeDot={{ r: 6 }}
+							/>
 						</LineChart>
 					</ResponsiveContainer>
 				</ChartCard>
@@ -206,7 +256,15 @@ export function DashboardView({ tasks, columns, columnOrder }: DashboardViewProp
 	);
 }
 
-function ChartCard({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) {
+function ChartCard({
+	title,
+	children,
+	className,
+}: {
+	title: string;
+	children: React.ReactNode;
+	className?: string;
+}) {
 	return (
 		<div className={cn("bg-[#1A1A1A] rounded-2xl p-6 border border-white/5 shadow-xl", className)}>
 			<div className="flex items-center justify-between mb-8">
