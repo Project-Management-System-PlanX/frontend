@@ -26,6 +26,7 @@ import { DashboardView } from "./DashboardView";
 import { TableView } from "./TableView";
 import { TimelineView } from "./TimelineView";
 import { type Column, UI } from "./types";
+import { ShareBoardModal } from "@/components/modals/ShareBoardModal";
 
 function ViewItem({
 	icon,
@@ -88,6 +89,7 @@ export function BoardPanel({
 		"board" | "table" | "calendar" | "timeline" | "dashboard"
 	>("board");
 	const [mounted, setMounted] = useState(false);
+	const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
 	useEffect(() => {
 		setMounted(true);
@@ -165,31 +167,27 @@ export function BoardPanel({
 						</Popover>
 					)}
 				</div>
-				<div className="flex items-center gap-3">
+				<div className="flex items-center gap-4">
 					<div className="flex items-center -space-x-2 mr-2">
-						{[1, 2].map((i) => (
-							<div
-								key={i}
-								className="w-8 h-8 rounded-full border-2 border-purple-600 bg-orange-400 flex items-center justify-center text-[10px] font-bold text-white"
-							>
-								R
+						{[0, 1, 2].map((i) => (
+							<div key={i} className="w-8 h-8 rounded-full border-2 border-[#1E1E1E] bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-[10px] font-bold text-white shadow-lg">
+								{i === 0 ? "R" : i === 1 ? "A" : "JS"}
 							</div>
 						))}
+						<div className="w-8 h-8 rounded-full border-2 border-[#1E1E1E] bg-white/5 flex items-center justify-center text-[10px] font-bold text-white/40">
+							+1
+						</div>
 					</div>
-					<div className="flex items-center gap-4 text-white/60 mr-2">
-						<Zap className="w-5.5 h-5.5 hover:text-white cursor-pointer" />
-						<ListFilter className="w-5.5 h-5.5 hover:text-white cursor-pointer" />
-						<Star className="w-5.5 h-5.5 hover:text-white cursor-pointer" />
-						<Users className="w-5.5 h-5.5 hover:text-white cursor-pointer" />
-					</div>
-					<button
-						type="button"
-						className="flex items-center gap-2 px-3.5 py-1.5 rounded-md bg-white/10 text-white text-[14px] font-medium hover:bg-white/20 transition-colors"
+					<button 
+						onClick={() => setIsShareModalOpen(true)}
+						className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white text-black font-bold text-[14px] hover:bg-white/90 transition-all active:scale-95 shadow-lg shadow-white/10"
 					>
-						<Users className="w-5 h-5" />
+						<Users className="w-4 h-4" />
 						Share
 					</button>
-					<MoreHorizontal className="w-5.5 h-5 text-white/60 hover:text-white cursor-pointer" />
+					<button className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white/40 hover:text-white">
+						<MoreHorizontal className="w-5 h-5" />
+					</button>
 				</div>
 			</div>
 
@@ -275,6 +273,12 @@ export function BoardPanel({
 			) : (
 				<DashboardView columns={columns} columnOrder={columnOrder} tasks={tasks} />
 			)}
+
+			<ShareBoardModal 
+				isOpen={isShareModalOpen} 
+				onClose={() => setIsShareModalOpen(false)} 
+				boardName="My Board"
+			/>
 		</div>
 	);
 }
