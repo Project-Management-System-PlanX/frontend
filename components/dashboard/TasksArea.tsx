@@ -16,7 +16,7 @@ import {
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertCircle, Calendar as CalendarIcon, Inbox as InboxIcon, Layout } from "lucide-react";
+import { AlertCircle, Calendar as CalendarIcon, Inbox as InboxIcon, Layout, LayoutDashboard } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import TaskDetailModal from "@/components/modals/TaskDetailModal";
@@ -37,6 +37,7 @@ import { BoardPanel } from "./tasks/BoardPanel";
 import { InboxPanel } from "./tasks/InboxPanel";
 import { PlannerPanel } from "./tasks/PlannerPanel";
 import { TaskCard } from "./tasks/TaskCard";
+import { SwitchBoardPanel } from "./tasks/SwitchBoardPanel";
 
 const dropAnimation: any = {
 	sideEffects: defaultDropAnimationSideEffects({
@@ -170,7 +171,7 @@ export function TasksArea() {
 		return allPlannerTasks.filter((t) => t.startDate || t.dueDate);
 	}, [allPlannerTasks]);
 
-	const [activeTabs, setActiveTabs] = useState<string[]>(["inbox", "planner", "board"]);
+	const [activeTabs, setActiveTabs] = useState<string[]>(["inbox", "planner", "board", "switch-board"]);
 	const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
@@ -339,7 +340,7 @@ export function TasksArea() {
 			prev.includes(tabId)
 				? prev.filter((t) => t !== tabId)
 				: [...prev, tabId].sort((a, b) => {
-						const order = ["inbox", "planner", "board"];
+						const order = ["inbox", "planner", "board", "switch-board"];
 						return order.indexOf(a) - order.indexOf(b);
 					}),
 		);
@@ -613,6 +614,22 @@ export function TasksArea() {
 						{activeTabs.map((tabId, index) => (
 							<div key={tabId} className="flex h-full" style={{ width: `${widths[tabId]}%` }}>
 								<PanelContainer id={tabId}>
+									{tabId === "switch-board" && (
+										<SwitchBoardPanel 
+											spaces={spaces || []}
+											selectedSpaceId={selectedSpaceId}
+											onSelect={setSelectedSpaceId}
+											onCreateNew={() => {
+												if (activeWorkspaceId) {
+													createSpace.mutate({
+														workspaceId: activeWorkspaceId,
+														name: "New Board",
+														prefix: "NEW"
+													});
+												}
+											}}
+										/>
+									)}
 									{tabId === "inbox" && (
 										<InboxPanel
 											tasks={inboxTasks}
@@ -709,6 +726,12 @@ export function TasksArea() {
 						label="Board"
 						active={activeTabs.includes("board")}
 						onClick={() => toggleTab("board")}
+					/>
+					<NavButton
+						icon={<LayoutDashboard className="w-5 h-5" />}
+						label="Switch Board"
+						active={activeTabs.includes("switch-board")}
+						onClick={() => toggleTab("switch-board")}
 					/>
 				</div>
 			</div>
