@@ -349,6 +349,7 @@ export default function TaskDetailModal({
 									isOpen={isLabelPickerOpen}
 									setIsOpen={setIsLabelPickerOpen}
 									onUpdateLabels={setLocalLabels}
+									onUpdateTask={onUpdateTask}
 									trigger={
 										<ActionButton
 											icon={<Tag className="w-4 h-4" />}
@@ -365,6 +366,7 @@ export default function TaskDetailModal({
 										isOpen={isMemberPickerOpen}
 										setIsOpen={setIsMemberPickerOpen}
 										onUpdateAssignees={setLocalAssignees}
+										onUpdateTask={onUpdateTask}
 										trigger={
 											<ActionButton
 												icon={<Users className="w-4 h-4" />}
@@ -394,6 +396,7 @@ export default function TaskDetailModal({
 												isOpen={isMetaMemberPickerOpen}
 												setIsOpen={setIsMetaMemberPickerOpen}
 												onUpdateAssignees={setLocalAssignees}
+												onUpdateTask={onUpdateTask}
 												trigger={
 													<div className="flex items-center gap-1.5 cursor-pointer group">
 														<div className="flex -space-x-2">
@@ -425,6 +428,7 @@ export default function TaskDetailModal({
 												isOpen={isMetaLabelPickerOpen}
 												setIsOpen={setIsMetaLabelPickerOpen}
 												onUpdateLabels={setLocalLabels}
+												onUpdateTask={onUpdateTask}
 												trigger={
 													<div className="flex flex-wrap items-center gap-1.5 cursor-pointer group">
 														{localLabels.slice(0, 1).map((label) => (
@@ -696,7 +700,7 @@ function ToolbarBtn({
 	);
 }
 
-function TaskDatePickerPopover({
+export function TaskDatePickerPopover({
 	task,
 	isOpen,
 	setIsOpen,
@@ -920,12 +924,13 @@ function TaskDatePickerPopover({
 	);
 }
 
-function TaskMemberPopover({
+export function TaskMemberPopover({
 	task,
 	workspaceMembers,
 	isOpen,
 	setIsOpen,
 	onUpdateAssignees,
+	onUpdateTask,
 	trigger,
 }: {
 	task: Task;
@@ -933,6 +938,7 @@ function TaskMemberPopover({
 	isOpen: boolean;
 	setIsOpen: (open: boolean) => void;
 	onUpdateAssignees?: (assignees: any[]) => void;
+	onUpdateTask?: (id: string, data: Partial<Task>) => void;
 	trigger?: React.ReactNode;
 }) {
 	const { token } = useSupabaseAuth();
@@ -955,24 +961,28 @@ function TaskMemberPopover({
 			const newAssignees = localAssignees.filter((a) => a.userId !== member.userId);
 			setLocalAssignees(newAssignees);
 			onUpdateAssignees?.(newAssignees);
+			onUpdateTask?.(task.id, { assignees: newAssignees });
 			try {
 				await taskService.removeMember(task.id, member.userId, token);
 			} catch (err) {
 				console.error("Failed to remove member", err);
 				setLocalAssignees(previousAssignees);
 				onUpdateAssignees?.(previousAssignees);
+				onUpdateTask?.(task.id, { assignees: previousAssignees });
 			}
 		} else {
 			const tempAssignee = { userId: member.userId, user: member.user };
 			const newAssignees = [...localAssignees, tempAssignee];
 			setLocalAssignees(newAssignees);
 			onUpdateAssignees?.(newAssignees);
+			onUpdateTask?.(task.id, { assignees: newAssignees });
 			try {
 				await taskService.addMember(task.id, member.userId, token);
 			} catch (err) {
 				console.error("Failed to add member", err);
 				setLocalAssignees(previousAssignees);
 				onUpdateAssignees?.(previousAssignees);
+				onUpdateTask?.(task.id, { assignees: previousAssignees });
 			}
 		}
 	};
@@ -1231,13 +1241,14 @@ function CoverPopover({
 	);
 }
 
-function TaskLabelPopover({
+export function TaskLabelPopover({
 	task,
 	isOpen,
 	setIsOpen,
 	onUpdateLabels,
 	onCloseModal,
 	trigger,
+	onUpdateTask,
 }: {
 	task: Task;
 	isOpen: boolean;
@@ -1245,6 +1256,7 @@ function TaskLabelPopover({
 	onUpdateLabels?: (labels: TaskLabel[]) => void;
 	onCloseModal?: () => void;
 	trigger?: React.ReactNode;
+	onUpdateTask?: (id: string, data: Partial<Task>) => void;
 }) {
 	const { token } = useSupabaseAuth();
 	const [localLabels, setLocalLabels] = useState<TaskLabel[]>(task.labels || []);
@@ -1263,28 +1275,14 @@ function TaskLabelPopover({
 			if (!existing.id.startsWith("temp-")) {
 				try {
 					await taskService.removeLabel(task.id, existing.id, token);
-				} catch (err) {
-					console.error("Failed to remove label", err);
+					onUpdateTask?.(task.id, { labels: [] });
+				} catch (_err) {
 					setLocalLabels(previousLabels);
 					onUpdateLabels?.(previousLabels);
+					onUpdateTask?.(task.id, { labels: previousLabels });
 				}
 			}
 		} else {
-			// Strictly single-select: Remove all existing labels first
-			setLocalLabels([]);
-			onUpdateLabels?.([]);
-
-			// Backend: Remove all existing labels in parallel
-			const removePromises = previousLabels
-				.filter((l) => !l.id.startsWith("temp-"))
-				.map((l) => taskService.removeLabel(task.id, l.id, token));
-
-			try {
-				await Promise.all(removePromises);
-			} catch (err) {
-				console.error("Failed to clear previous labels", err);
-			}
-
 			// Add the new label
 			const tempId = `temp-${Date.now()}`;
 			const newLabel: TaskLabel = {
@@ -1293,8 +1291,11 @@ function TaskLabelPopover({
 				name: labelInfo.name,
 				color: labelInfo.color,
 			};
-			setLocalLabels([newLabel]);
-			onUpdateLabels?.([newLabel]);
+
+			const newLabels = [...localLabels, newLabel];
+			setLocalLabels(newLabels);
+			onUpdateLabels?.(newLabels);
+			onUpdateTask?.(task.id, { labels: newLabels });
 			try {
 				const savedLabel = await taskService.addLabel(
 					task.id,
@@ -1302,13 +1303,16 @@ function TaskLabelPopover({
 					labelInfo.color,
 					token,
 				);
-				setLocalLabels([savedLabel]);
-				onUpdateLabels?.([savedLabel]);
-				onCloseModal?.(); // Auto-close after label selection
+				const savedLabels = [...previousLabels, savedLabel];
+				setLocalLabels(savedLabels);
+				onUpdateLabels?.(savedLabels);
+				onUpdateTask?.(task.id, { labels: savedLabels });
+				// Removed auto-close to allow selecting multiple labels
 			} catch (err) {
 				console.error("Failed to add label", err);
-				setLocalLabels([]);
-				onUpdateLabels?.([]);
+				setLocalLabels(previousLabels);
+				onUpdateLabels?.(previousLabels);
+				onUpdateTask?.(task.id, { labels: previousLabels });
 			}
 		}
 	};

@@ -15,7 +15,7 @@ let cachedMembersPromise: Promise<any[]> | null = null;
 let cachedWorkspaceId: string | null = null;
 let cachedToken: string | null = null;
 
-function useWorkspaceMembersCached() {
+export function useWorkspaceMembersCached() {
 	const { token } = useSupabaseAuth();
 	const { activeWorkspaceId } = useWorkspaceStore();
 	const [members, setMembers] = useState<any[]>([]);
@@ -172,9 +172,26 @@ export const TaskCard = memo(
 								)}
 							</div>
 
-							{task.assigneeId && !hideAssignee && (
-								<div className="w-6 h-6 rounded-full bg-[#F59E0B] flex items-center justify-center text-[11px] font-bold text-black shrink-0 shadow-sm border border-black/20 uppercase">
-									{assigneeInitial}
+							{!hideAssignee && (
+								<div className="flex -space-x-1.5">
+									{task.assignees && task.assignees.length > 0 ? (
+										task.assignees.map((a) => {
+											const initial = a.user?.firstName?.[0] || a.user?.email?.[0] || "U";
+											return (
+												<div
+													key={a.userId}
+													className="w-6 h-6 rounded-full bg-[#F59E0B] flex items-center justify-center text-[11px] font-bold text-black shrink-0 shadow-sm border border-[#1F2933] uppercase"
+													title={a.user?.firstName || a.user?.email || a.userId}
+												>
+													{initial}
+												</div>
+											);
+										})
+									) : task.assigneeId ? (
+										<div className="w-6 h-6 rounded-full bg-[#F59E0B] flex items-center justify-center text-[11px] font-bold text-black shrink-0 shadow-sm border border-[#1F2933] uppercase">
+											{assigneeInitial}
+										</div>
+									) : null}
 								</div>
 							)}
 						</div>
@@ -235,6 +252,7 @@ export const TaskCard = memo(
 		prev.task.title === next.task.title &&
 		prev.task.coverColor === next.task.coverColor &&
 		prev.task.labels?.length === next.task.labels?.length &&
+		prev.task.assignees?.length === next.task.assignees?.length &&
 		prev.isOverlay === next.isOverlay &&
 		prev.onToggle === next.onToggle &&
 		prev.onDelete === next.onDelete &&

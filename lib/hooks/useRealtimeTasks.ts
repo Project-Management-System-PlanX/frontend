@@ -181,9 +181,28 @@ export function useRealtimeTasks({
 			setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...data } : t)));
 
 			try {
-				const updated = await taskService.update(id, data, token);
-				setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
-				return updated;
+				// Strip relational fields that the backend doesn't accept in the update DTO
+				const { labels, assignees, comments, ...apiPayload } = data as any;
+
+				if (Object.keys(apiPayload).length > 0) {
+					const updated = await taskService.update(id, apiPayload, token);
+					// Merge backend response with our optimistically added relational fields
+					setTasks((prev) =>
+						prev.map((t) =>
+							t.id === id
+								? { ...updated, labels: t.labels, assignees: t.assignees, comments: t.comments }
+								: t,
+						),
+					);
+					return updated;
+				}
+
+				// If only relational fields were updated, just return the optimistic task
+				const optimisticTask = tasks.find((t) => t.id === id) || null;
+				if (optimisticTask) {
+					return { ...optimisticTask, ...data } as Task;
+				}
+				return null;
 			} catch (err) {
 				// Rollback
 				setTasks(previousStateRef.current);

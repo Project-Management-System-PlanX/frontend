@@ -39,7 +39,12 @@ interface UseBoardSyncReturn {
 		extraData?: Partial<Parameters<typeof taskService.create>[0]>,
 	) => Promise<Task | null>;
 	updateTask: (id: string, data: any) => Promise<Task | null>;
-	moveTask: (taskId: string, newStatusId: string, newPosition: number, parentId?: string | null) => Promise<Task | null>;
+	moveTask: (
+		taskId: string,
+		newStatusId: string,
+		newPosition: number,
+		parentId?: string | null,
+	) => Promise<Task | null>;
 	deleteTask: (id: string) => Promise<boolean>;
 	refetch: () => Promise<void>;
 }
@@ -138,7 +143,7 @@ export function useBoardSync({
 
 	const moveTask = useCallback(
 		async (taskId: string, newStatusId: string, newPosition: number, parentId?: string | null) => {
-			// @ts-ignore - bypassing persistent type mismatch between useRealtimeTasks and useBoardSync
+			// @ts-expect-error - bypassing persistent type mismatch between useRealtimeTasks and useBoardSync
 			return moveTaskRaw(taskId, newStatusId, newPosition, parentId);
 		},
 		[moveTaskRaw],

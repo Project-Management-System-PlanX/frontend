@@ -20,7 +20,12 @@ import { AlertCircle, Calendar as CalendarIcon, Inbox as InboxIcon, Layout } fro
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import TaskDetailModal from "@/components/modals/TaskDetailModal";
-import { useCreateTaskStatus, useSpaces, useUpdateTaskStatus } from "@/hooks/api/use-spaces";
+import {
+	useCreateSpace,
+	useCreateTaskStatus,
+	useSpaces,
+	useUpdateTaskStatus,
+} from "@/hooks/api/use-spaces";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useBoardSync } from "@/lib/hooks/useBoardSync";
 import { usePersonalTasks } from "@/lib/hooks/usePersonalTasks";
@@ -50,6 +55,7 @@ export function TasksArea() {
 
 	const createStatus = useCreateTaskStatus(token);
 	const updateStatus = useUpdateTaskStatus(token);
+	const createSpace = useCreateSpace(token);
 
 	// For the "Board" view, we need a space. We'll pick the first one by default.
 	const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
@@ -57,8 +63,21 @@ export function TasksArea() {
 	useEffect(() => {
 		if (spaces && spaces.length > 0 && !selectedSpaceId) {
 			setSelectedSpaceId(spaces[0].id);
+		} else if (
+			spaces &&
+			spaces.length === 0 &&
+			!isLoadingSpaces &&
+			activeWorkspaceId &&
+			!createSpace.isPending
+		) {
+			// Auto-create a default space if none exist
+			createSpace.mutate({
+				workspaceId: activeWorkspaceId,
+				name: "My Board",
+				prefix: "WS",
+			});
 		}
-	}, [spaces, selectedSpaceId]);
+	}, [spaces, selectedSpaceId, isLoadingSpaces, activeWorkspaceId, createSpace]);
 
 	const selectedSpace = useMemo(() => {
 		return spaces?.find((s) => s.id === selectedSpaceId);
@@ -453,7 +472,7 @@ export function TasksArea() {
 					// Calculate new position
 					const overCol = activeContainer === "inbox" ? null : liveColumns[activeContainer];
 					const taskIds =
-						activeContainer === "inbox" ? inboxTasks.map((t) => t.id) : (overCol?.taskIds || []);
+						activeContainer === "inbox" ? inboxTasks.map((t) => t.id) : overCol?.taskIds || [];
 
 					let newPosition: number;
 					if (newIndex === 0) newPosition = (liveTasksMap[taskIds[0]]?.position ?? 0) / 2;
@@ -627,6 +646,7 @@ export function TasksArea() {
 													setShowDeleteConfirm(true);
 												}
 											}}
+											onUpdateTask={updateTaskApi}
 										/>
 									)}
 								</PanelContainer>
@@ -657,7 +677,12 @@ export function TasksArea() {
 				isOpen={isModalOpen}
 				onClose={() => setIsModalOpen(false)}
 				task={selectedTask}
-				onUpdateTask={updateTaskApi}
+				onUpdateTask={(id, data) => {
+					if (inboxTasks.some((t) => t.id === id) || plannerTasks.some((t) => t.id === id)) {
+						updateOptimisticTask(id, data);
+					}
+					updateTaskApi(id, data);
+				}}
 				workspaceId={activeWorkspaceId}
 				isInbox={inboxTasks.some((t) => t.id === selectedTask?.id)}
 			/>
