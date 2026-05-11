@@ -1,39 +1,50 @@
 'use client'
-import { useRouter } from 'next/navigation'
+
+import Link from 'next/link'
 
 export default function PortfolioNavbar() {
-  const router = useRouter()
-
   const scrollTo = (id: string) => {
     const el = document.getElementById(id)
-    if (el) el.scrollIntoView({ behavior: 'smooth' })
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' })
+    }
   }
 
   return (
     <nav className="navbar">
       <div className="navbar-inner">
-        <a href="/" className="nav-logo">
+
+        <Link href="/" className="nav-logo">
           <div className="nav-logo-icon">T</div>
           TeamUp
-        </a>
+        </Link>
 
         <ul className="nav-links">
           <li>
-            <a onClick={() => scrollTo('features')}>Solutions</a>
+            <a onClick={() => scrollTo('features')}>
+              Solutions
+            </a>
           </li>
+
           <li>
-            <a onClick={() => scrollTo('services')}>Services</a>
+            <a onClick={() => scrollTo('services')}>
+              Services
+            </a>
           </li>
+
           <li>
-            <a onClick={() => router.push('/pricing')}>Pricing</a>
+            <Link href="/pricing">
+              Pricing
+            </Link>
           </li>
         </ul>
 
-        <a href="/onboarding" className="nav-links">
-          <button className="nav-cta" onClick={() => router.push('/onboarding')}>
+        <Link href="/onboarding">
+          <button className="nav-cta">
             Start Now →
           </button>
-        </a>
+        </Link>
+
       </div>
     </nav>
   )
