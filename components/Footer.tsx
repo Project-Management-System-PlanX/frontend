@@ -1,222 +1,67 @@
-"use client";
-import { motion } from "framer-motion";
-import { Github, Linkedin, Mail, Twitter } from "lucide-react";
+export default function Footer() {
+  return (
+    <footer className="footer">
+      <div className="container">
+        <div className="footer-top">
+          <div className="footer-brand">
+            <a href="/" className="nav-logo" style={{ marginBottom: '16px' }}>
+              <div className="nav-logo-icon">T</div>
+              TeamUp
+            </a>
+            <p>
+              TeamUp helps teams work faster, smarter and more efficiently,
+              delivering the visibility and data-driven insights to mitigate
+              risk and ensure compliance.
+            </p>
+            <div className="footer-contact">
+              <a href="mailto:hello@teamup.com">✉ hello@teamup.com</a>
+              <a href="tel:+621987654321">📞 +621 987 654 321</a>
+            </div>
+          </div>
 
-type FooterLink = {
-	label: string;
-	href: string;
-};
+          <div className="footer-col">
+            <h4>Solution</h4>
+            <ul>
+              <li><a href="#">Why TeamUp</a></li>
+              <li><a href="#">Features</a></li>
+              <li><a href="#">OpenAI</a></li>
+              <li><a href="#">Technology</a></li>
+              <li><a href="#">Security</a></li>
+            </ul>
+          </div>
 
-type FooterSection = {
-	title: string;
-	links: FooterLink[];
-};
+          <div className="footer-col">
+            <h4>Customers</h4>
+            <ul>
+              <li><a href="#">Procurement</a></li>
+              <li><a href="#">Sales</a></li>
+              <li><a href="#">Legal</a></li>
+              <li><a href="#">Medium</a></li>
+              <li><a href="#">Enterprise</a></li>
+            </ul>
+          </div>
 
-type FooterProps = {
-	companyName?: string;
-	tagline?: string;
-	sections?: FooterSection[];
-	socialLinks?: {
-		twitter?: string;
-		linkedin?: string;
-		github?: string;
-		email?: string;
-	};
-	copyrightText?: string;
-};
+          <div className="footer-col">
+            <h4>Resources</h4>
+            <ul>
+              <li><a href="/pricing">Pricing</a></li>
+              <li><a href="#">Contact Sales</a></li>
+              <li><a href="#">Changelog</a></li>
+              <li><a href="#">Blog</a></li>
+            </ul>
+          </div>
+        </div>
 
-const defaultSections: FooterSection[] = [
-	{
-		title: "Product",
-		links: [
-			{ label: "Features", href: "#features" },
-			{ label: "Integrations", href: "#integrations" },
-			{ label: "Pricing", href: "#pricing" },
-			{ label: "API Docs", href: "#api" },
-			{ label: "Changelog", href: "#changelog" },
-		],
-	},
-	{
-		title: "Company",
-		links: [
-			{ label: "About", href: "#about" },
-			{ label: "Careers", href: "#careers" },
-			{ label: "Blog", href: "#blog" },
-			{ label: "Press Kit", href: "#press" },
-			{ label: "Contact", href: "#contact" },
-		],
-	},
-	{
-		title: "Resources",
-		links: [
-			{ label: "Documentation", href: "#docs" },
-			{ label: "Help Center", href: "#help" },
-			{ label: "Community", href: "#community" },
-			{ label: "Case Studies", href: "#case-studies" },
-			{ label: "Webinars", href: "#webinars" },
-		],
-	},
-	{
-		title: "Legal",
-		links: [
-			{ label: "Privacy Policy", href: "#privacy" },
-			{ label: "Terms of Service", href: "#terms" },
-			{ label: "Security", href: "#security" },
-			{ label: "Compliance", href: "#compliance" },
-			{ label: "Cookie Policy", href: "#cookies" },
-		],
-	},
-];
-
-export const Footer = ({
-	companyName = "TeamUp",
-	tagline = "The Intelligence Layer for Modern Management",
-	sections = defaultSections,
-	socialLinks = {
-		twitter: "https://twitter.com",
-		linkedin: "https://linkedin.com",
-		github: "https://github.com",
-		email: "hello@TeamUp.com",
-	},
-	copyrightText,
-}: FooterProps) => {
-	const currentYear = new Date().getFullYear();
-	const copyright = copyrightText || `© ${currentYear} ${companyName}. All rights reserved.`;
-	return (
-		<footer className="w-full bg-[#fafafa] border-t border-[#e5e5e5]">
-			<div className="max-w-[1200px] mx-auto px-8 py-16">
-				{/* Main Footer Content */}
-				<div className="grid grid-cols-2 md:grid-cols-6 gap-8 mb-12">
-					{/* Brand Column */}
-					<motion.div
-						initial={{ opacity: 0, y: 20 }}
-						whileInView={{ opacity: 1, y: 0 }}
-						viewport={{ once: true, margin: "-50px" }}
-						transition={{ duration: 0.5, ease: "easeOut" }}
-						className="col-span-2"
-					>
-						<div className="mb-4">
-							<h3
-								className="text-2xl font-semibold text-[#202020] mb-2"
-								style={{ fontFamily: "Figtree", fontWeight: "500" }}
-							>
-								{companyName}
-							</h3>
-							<p
-								className="text-sm leading-5 text-[#666666] max-w-xs"
-								style={{ fontFamily: "Figtree" }}
-							>
-								{tagline}
-							</p>
-						</div>
-
-						{/* Social Links */}
-						<div className="flex items-center gap-3 mt-6">
-							{socialLinks.twitter && (
-								<a
-									href={socialLinks.twitter}
-									className="w-9 h-9 flex items-center justify-center rounded-full bg-white border border-[#e5e5e5] text-[#666666] hover:text-[#202020] hover:border-[#202020] transition-colors duration-150"
-									aria-label="Twitter"
-								>
-									<Twitter className="w-4 h-4" />
-								</a>
-							)}
-							{socialLinks.linkedin && (
-								<a
-									href={socialLinks.linkedin}
-									className="w-9 h-9 flex items-center justify-center rounded-full bg-white border border-[#e5e5e5] text-[#666666] hover:text-[#202020] hover:border-[#202020] transition-colors duration-150"
-									aria-label="LinkedIn"
-								>
-									<Linkedin className="w-4 h-4" />
-								</a>
-							)}
-							{socialLinks.github && (
-								<a
-									href={socialLinks.github}
-									className="w-9 h-9 flex items-center justify-center rounded-full bg-white border border-[#e5e5e5] text-[#666666] hover:text-[#202020] hover:border-[#202020] transition-colors duration-150"
-									aria-label="GitHub"
-								>
-									<Github className="w-4 h-4" />
-								</a>
-							)}
-							{socialLinks.email && (
-								<a
-									href={`mailto:${socialLinks.email}`}
-									className="w-9 h-9 flex items-center justify-center rounded-full bg-white border border-[#e5e5e5] text-[#666666] hover:text-[#202020] hover:border-[#202020] transition-colors duration-150"
-									aria-label="Email"
-								>
-									<Mail className="w-4 h-4" />
-								</a>
-							)}
-						</div>
-					</motion.div>
-
-					{/* Link Sections */}
-					{sections.map((section, index) => (
-						<motion.div
-							// biome-ignore lint/suspicious/noArrayIndexKey: fixed section list
-							key={index}
-							initial={{ opacity: 0, y: 20 }}
-							whileInView={{ opacity: 1, y: 0 }}
-							viewport={{ once: true, margin: "-50px" }}
-							transition={{ duration: 0.5, delay: index * 0.1, ease: "easeOut" }}
-							className="col-span-1"
-						>
-							<h4
-								className="text-sm font-medium text-[#202020] mb-4 uppercase tracking-wide"
-								style={{ fontFamily: "Figtree", fontWeight: "500" }}
-							>
-								{section.title}
-							</h4>
-							<ul className="space-y-3">
-								{section.links.map((link, linkIndex) => (
-									// biome-ignore lint/suspicious/noArrayIndexKey: fixed link list
-									<li key={linkIndex}>
-										<a
-											href={link.href}
-											className="text-sm text-[#666666] hover:text-[#202020] transition-colors duration-150"
-											style={{ fontFamily: "Figtree" }}
-										>
-											{link.label}
-										</a>
-									</li>
-								))}
-							</ul>
-						</motion.div>
-					))}
-				</div>
-
-				{/* Bottom Bar */}
-				<motion.div
-					initial={{ opacity: 0 }}
-					whileInView={{ opacity: 1 }}
-					viewport={{ once: true }}
-					transition={{ duration: 0.5, delay: 0.6 }}
-					className="pt-8 border-t border-[#e5e5e5]"
-				>
-					<div className="flex flex-col md:flex-row justify-between items-center gap-4">
-						<p className="text-sm text-[#666666]" style={{ fontFamily: "Figtree" }}>
-							{copyright}
-						</p>
-						<div className="flex items-center gap-6">
-							<a
-								href="#status"
-								className="text-sm text-[#666666] hover:text-[#202020] transition-colors duration-150"
-								style={{ fontFamily: "Figtree" }}
-							>
-								Status
-							</a>
-							<a
-								href="#sitemap"
-								className="text-sm text-[#666666] hover:text-[#202020] transition-colors duration-150"
-								style={{ fontFamily: "Figtree" }}
-							>
-								Sitemap
-							</a>
-						</div>
-					</div>
-				</motion.div>
-			</div>
-		</footer>
-	);
-};
+        <div className="footer-bottom">
+          <p>© Copyright 2024 TeamUp. All rights reserved.</p>
+          <div className="footer-socials">
+            <a href="#" className="footer-social-btn">𝕏</a>
+            <a href="#" className="footer-social-btn">in</a>
+            <a href="#" className="footer-social-btn">ig</a>
+            <a href="#" className="footer-social-btn">▶</a>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}

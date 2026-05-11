@@ -1,290 +1,117 @@
-"use client";
+'use client'
 
-import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
-import { useEffect, useState } from "react";
+// Each avatar uses a different region of the 2x2 sprite sheet
+// The sprite is 1024x1024, each face is in a ~512x512 quadrant
+const avatars = [
+  {
+    label: 'Team member 1',
+    arrowDir: 'right' as const,
+    style: { top: '22%', left: '7%' },
+    // top-left face: clip to top-left of sprite
+    clipStyle: { objectPosition: '25% 25%' },
+    animDelay: '0s',
+  },
+  {
+    label: 'Team member 2',
+    arrowDir: 'left' as const,
+    style: { top: '22%', right: '7%' },
+    clipStyle: { objectPosition: '75% 25%' },
+    animDelay: '0.75s',
+  },
+  {
+    label: 'Team member 3',
+    arrowDir: 'right' as const,
+    style: { top: '62%', left: '6%' },
+    clipStyle: { objectPosition: '25% 75%' },
+    animDelay: '1.5s',
+  },
+  {
+    label: 'Team member 4',
+    arrowDir: 'left' as const,
+    style: { top: '62%', right: '6%' },
+    clipStyle: { objectPosition: '75% 75%' },
+    animDelay: '2.25s',
+  },
+]
 
-type StatItem = {
-	value: string;
-	description: string;
-	delay: number;
-};
-type DataPoint = {
-	id: number;
-	left: number;
-	top: number;
-	height: number;
-	direction: "up" | "down";
-	delay: number;
-};
-const stats: StatItem[] = [
-	{
-		value: "1B+",
-		description: "Messages analyzed\ndaily",
-		delay: 0,
-	},
-	{
-		value: "99.9%",
-		description: "Accuracy in tone\ndetection",
-		delay: 0.2,
-	},
-	{
-		value: "50+",
-		description: "Languages supported\nworldwide",
-		delay: 0.4,
-	},
-	{
-		value: "1000+",
-		description: "Organizations using\nTeamUp",
-		delay: 0.6,
-	},
-];
-// Seeded pseudo-random number generator for consistent SSR/CSR values
-const seededRandom = (seed: number): number => {
-	const x = Math.sin(seed * 9999) * 10000;
-	return x - Math.floor(x);
-};
+const logos = ['HubSpot', 'Dropbox', 'Square', 'Intercom', 'Grammarly']
 
-const generateDataPoints = (): DataPoint[] => {
-	const points: DataPoint[] = [];
-	const baseLeft = 1;
-	const spacing = 32;
-	for (let i = 0; i < 50; i++) {
-		const direction = i % 2 === 0 ? "down" : "up";
-		// Use seeded random for deterministic values, rounded to integers for SSR consistency
-		const height = Math.floor(seededRandom(i * 3 + 1) * 120) + 88;
-		const top = Math.round(
-			direction === "down"
-				? seededRandom(i * 3 + 2) * 150 + 250
-				: seededRandom(i * 3 + 3) * 100 - 80,
-		);
-		points.push({
-			id: i,
-			left: baseLeft + i * spacing,
-			top,
-			height,
-			direction,
-			delay: i * 0.035,
-		});
-	}
-	return points;
-};
+export default function BankingScaleHero() {
+  return (
+    <>
+      <section className="hero" id="hero">
+        <div className="hero-bg-grid" />
 
-// Generate once at module level to ensure same values on server and client
-const staticDataPoints = generateDataPoints();
+        {/* Floating avatars — 4 corners */}
+        <div className="hero-avatars">
+          {avatars.map((a, i) => (
+            <div
+              key={i}
+              className="floating-avatar-wrap"
+              style={{
+                position: 'absolute',
+                ...a.style,
+                animationDelay: a.animDelay,
+                flexDirection: a.arrowDir === 'right' ? 'row' : 'row-reverse',
+              }}
+            >
+              {/* Arrow badge */}
+              <div className="avatar-arrow">
+                {a.arrowDir === 'right' ? (
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M3 7H11M11 7L7.5 3.5M11 7L7.5 10.5" stroke="#1a3d2b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                ) : (
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M11 7H3M3 7L6.5 3.5M3 7L6.5 10.5" stroke="#1a3d2b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </div>
+              {/* Circular avatar photo */}
+              <div className="floating-avatar">
+                <img
+                  src="/hero-avatars.png"
+                  alt={a.label}
+                  style={{
+                    width: '200%',
+                    height: '200%',
+                    objectFit: 'cover',
+                    position: 'absolute',
+                    objectPosition: a.clipStyle.objectPosition,
+                  }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
 
-// @component: BankingScaleHero
-export const BankingScaleHero = () => {
-	const [isVisible, setIsVisible] = useState(false);
-	const [typingComplete, setTypingComplete] = useState(false);
+        <div className="hero-content container">
+          <div className="hero-badge">Create for fast</div>
+          <h1>
+            One tool to manage contracts<br />and your team
+          </h1>
+          <p>
+            TeamUp helps teams work faster, smarter and more efficiently,
+            delivering the visibility and data-driven insights to mitigate
+            risk and ensure compliance.
+          </p>
+          <div className="hero-actions">
+            <a href="/onboarding" className="btn-primary">Start for Free</a>
+            <a href="#demo" className="btn-secondary">Get a Demo</a>
+          </div>
+        </div>
+      </section>
 
-	useEffect(() => {
-		setIsVisible(true);
-		const timer = setTimeout(() => setTypingComplete(true), 1000);
-		return () => clearTimeout(timer);
-	}, []);
-
-	// @return
-	return (
-		<div className="w-full overflow-hidden bg-white">
-			<div className="mx-auto max-w-7xl px-8 py-24 pt-16">
-				<div className="grid grid-cols-12 gap-5 gap-y-16">
-					<div className="col-span-12 md:col-span-6 relative z-10">
-						<div
-							className="relative h-6 inline-flex items-center font-mono uppercase text-xs text-[#167E6C] mb-12 px-2"
-							style={{
-								fontFamily: "var(--font-geist-mono), 'Geist Mono', ui-monospace, monospace",
-							}}
-						>
-							<div className="flex items-center gap-0.5 overflow-hidden">
-								<motion.span
-									initial={{
-										width: 0,
-									}}
-									animate={{
-										width: "auto",
-									}}
-									transition={{
-										duration: 0.8,
-										ease: "easeOut",
-									}}
-									className="block whitespace-nowrap overflow-hidden text-[#167E6C] relative z-10"
-									style={{
-										color: "#146e96",
-									}}
-								>
-									Trusted at scale
-								</motion.span>
-								<motion.span
-									initial={{
-										opacity: 0,
-									}}
-									animate={{
-										opacity: typingComplete ? [1, 0, 1, 0] : 0,
-									}}
-									transition={{
-										duration: 1,
-										repeat: Number.POSITIVE_INFINITY,
-										ease: "linear",
-									}}
-									className="block w-1.5 h-3 bg-[#167E6C] ml-0.5 relative z-10 rounded-sm"
-									style={{
-										color: "#146e96",
-									}}
-								/>
-							</div>
-						</div>
-
-						<h2
-							className="text-[40px] font-normal leading-tight tracking-tight text-[#111A4A] mb-6"
-							style={{
-								fontFamily: "var(--font-figtree), Figtree",
-								fontSize: "40px",
-								fontWeight: "400",
-							}}
-						>
-							Analyzing billions of conversations daily{" "}
-							<span
-								className="opacity-40"
-								style={{
-									fontWeight: "400",
-									fontSize: "40px",
-								}}
-							>
-								for the world's most sophisticated teams and enterprises.
-							</span>
-						</h2>
-
-						<p
-							className="text-lg leading-6 text-[#111A4A] opacity-60 mt-0 mb-6"
-							style={{
-								fontFamily: "var(--font-figtree), Figtree",
-							}}
-						>
-							As The Intelligence Layer for Modern Management, we provide real-time insights and
-							emotional detection through our advanced AI-powered platform.
-						</p>
-
-						<button
-							type="button"
-							className="relative inline-flex justify-center items-center leading-4 text-center cursor-pointer whitespace-nowrap outline-none font-medium h-9 text-[#232730] bg-white/50 backdrop-blur-sm shadow-[0_1px_1px_0_rgba(255,255,255,0),0_0_0_1px_rgba(87,90,100,0.12)] transition-all duration-200 ease-in-out rounded-lg px-4 mt-5 text-sm group hover:shadow-[0_1px_2px_0_rgba(0,0,0,0.05),0_0_0_1px_rgba(87,90,100,0.18)]"
-						>
-							<span className="relative z-10 flex items-center gap-1">
-								Learn about our platform
-								<ArrowRight className="w-4 h-4 -mr-1 transition-transform duration-150 group-hover:translate-x-1" />
-							</span>
-						</button>
-					</div>
-
-					<div className="col-span-12 md:col-span-6">
-						<div className="relative w-full h-[416px] -ml-[200px]">
-							<div className="absolute top-0 left-[302px] w-[680px] h-[416px] pointer-events-none">
-								<div className="relative w-full h-full">
-									{staticDataPoints.map((point) => (
-										<motion.div
-											key={point.id}
-											initial={{
-												opacity: 0,
-												height: 0,
-											}}
-											animate={
-												isVisible
-													? {
-															opacity: [0, 1, 1],
-															height: [0, point.height, point.height],
-														}
-													: {}
-											}
-											transition={{
-												duration: 2,
-												delay: point.delay,
-												ease: [0.5, 0, 0.01, 1],
-											}}
-											className="absolute w-1.5 rounded-[3px]"
-											style={{
-												left: `${point.left}px`,
-												top: `${point.top}px`,
-												background:
-													point.direction === "down"
-														? "linear-gradient(rgb(176, 200, 196) 0%, rgb(176, 200, 196) 10%, rgba(156, 217, 93, 0.1) 40%, rgba(113, 210, 240, 0) 75%)"
-														: "linear-gradient(to top, rgb(176, 200, 196) 0%, rgb(176, 200, 196) 10%, rgba(156, 217, 93, 0.1) 40%, rgba(113, 210, 240, 0) 75%)",
-												backgroundColor: "rgba(22, 126, 108, 0.01)",
-											}}
-										>
-											<motion.div
-												initial={{
-													opacity: 0,
-												}}
-												animate={
-													isVisible
-														? {
-																opacity: [0, 1],
-															}
-														: {}
-												}
-												transition={{
-													duration: 0.3,
-													delay: point.delay + 1.7,
-												}}
-												className="absolute -left-[1px] w-2 h-2 bg-[#167E6C] rounded-full"
-												style={{
-													top: point.direction === "down" ? "0px" : `${point.height - 8}px`,
-												}}
-											/>
-										</motion.div>
-									))}
-								</div>
-							</div>
-						</div>
-					</div>
-
-					<div className="col-span-12">
-						<div className="overflow-visible pb-5">
-							<div className="grid grid-cols-12 gap-5 relative z-10">
-								{stats.map((stat, index) => (
-									// biome-ignore lint/suspicious/noArrayIndexKey: using index for static list is fine
-									<div key={index} className="col-span-6 md:col-span-3">
-										<motion.div
-											initial={{
-												opacity: 0,
-												y: 20,
-												filter: "blur(4px)",
-											}}
-											animate={
-												isVisible
-													? {
-															opacity: [0, 1, 1],
-															y: [20, 0, 0],
-															filter: ["blur(4px)", "blur(0px)", "blur(0px)"],
-														}
-													: {}
-											}
-											transition={{
-												duration: 1.5,
-												delay: stat.delay,
-												ease: [0.1, 0, 0.1, 1],
-											}}
-											className="flex flex-col gap-2"
-										>
-											<span
-												className="text-2xl font-medium leading-[26.4px] tracking-tight text-[#167E6C]"
-												style={{
-													color: "#146e96",
-												}}
-											>
-												{stat.value}
-											</span>
-											<p className="text-xs leading-[13.2px] text-[#7C7F88] m-0 whitespace-pre-line">
-												{stat.description}
-											</p>
-										</motion.div>
-									</div>
-								))}
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-	);
-};
+      <section className="logos-section">
+        <div className="container">
+          <p className="logos-label">More than 100+ companies partner</p>
+          <div className="logos-row">
+            {logos.map((l) => (
+              <span className="logo-item" key={l}>{l}</span>
+            ))}
+          </div>
+        </div>
+      </section>
+    </>
+  )
+}

@@ -1,52 +1,47 @@
 import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
-import { Figtree, Geist_Mono, Inter } from "next/font/google";
+import { DM_Sans, DM_Serif_Display } from "next/font/google";
 import type React from "react";
+import { Toaster } from "sonner";
 import { QueryProvider } from "@/providers/query-provider";
 import "./globals.css";
 
-const figtree = Figtree({
-	subsets: ["latin"],
-	variable: "--font-figtree",
-	weight: ["400", "500", "600"],
+const dmSerifDisplay = DM_Serif_Display({
+    subsets: ["latin"],
+    variable: "--font-heading",
+    weight: ["400"],
+    style: ["normal", "italic"],
 });
 
-const inter = Inter({
-	subsets: ["latin"],
-	variable: "--font-inter",
-});
-
-const geistMono = Geist_Mono({
-	subsets: ["latin"],
-	variable: "--font-geist-mono",
-	weight: ["400", "500", "600"],
+const dmSans = DM_Sans({
+    subsets: ["latin"],
+    variable: "--font-body",
+    weight: ["300", "400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
-	title: "TeamUp - The Intelligence Layer for Modern Management",
-	description:
-		"Real-time insights, tone analysis, and team alignment across your favorite collaboration tools.",
-	icons: {
-		icon: "/icon.svg",
-	},
+    title: "TeamUp - The Intelligence Layer for Modern Management",
+    description:
+        "Real-time insights, tone analysis, and team alignment across your favorite collaboration tools.",
+    icons: {
+        icon: "/icon.svg",
+    },
 };
 
-import { Toaster } from "sonner";
-
 export default function RootLayout({
-	children,
+    children,
 }: Readonly<{
-	children: React.ReactNode;
+    children: React.ReactNode;
 }>) {
-	return (
-		<html lang="en">
-			<body
-				className={`${inter.variable} ${figtree.variable} ${geistMono.variable} font-sans antialiased`}
-			>
-				<QueryProvider>{children}</QueryProvider>
-				<Toaster position="bottom-right" richColors />
-				<Analytics />
-			</body>
-		</html>
-	);
+    return (
+        <html lang="en">
+            <body
+                className={`${dmSerifDisplay.variable} ${dmSans.variable} antialiased`}
+            >
+                <QueryProvider>{children}</QueryProvider>
+                <Toaster position="bottom-right" richColors />
+                <Analytics />
+            </body>
+        </html>
+    );
 }

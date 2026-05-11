@@ -1,290 +1,119 @@
-"use client";
+'use client'
 
-import { motion } from "framer-motion";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef } from 'react'
 
-type IntegrationApp = {
-	name: string;
-	logo: string;
-};
-type IntegrationCarouselProps = {
-	buttonText?: string;
-	buttonHref?: string;
-	title?: string;
-	subtitle?: string;
-	topRowApps?: IntegrationApp[];
-	bottomRowApps?: IntegrationApp[];
-};
-const defaultTopRowApps: IntegrationApp[] = [
-	{
-		name: "Integration 1",
-		logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-389-Hc8XBOUI8vkVmIwWQZs33kxMF353Xj.png",
-	},
-	{
-		name: "Integration 2",
-		logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-407-eyikTTM6ccO0f4I7ZmNk5LpFI4EKOG.png",
-	},
-	{
-		name: "Integration 3",
-		logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-379-5hDaxwIw4LzjwXzWuorEXi7ESrGYl1.png",
-	},
-	{
-		name: "Integration 4",
-		logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-374-bp0RaoVnQI1JMqR9fjessWI8v33kLV.png",
-	},
-	{
-		name: "Integration 5",
-		logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-381-eKw7vkCp2Wq9hivZJaN1ERJdjCqR0d.png",
-	},
-	{
-		name: "Integration 6",
-		logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-401-F6mjMLGEZt4HAohKA889Z8Gf5fMzIw.png",
-	},
-	{
-		name: "Integration 7",
-		logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-403-HnBAGFYWgxxMGrH2PI45UorQOsQHFo.png",
-	},
-	{
-		name: "Integration 1",
-		logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-389-Hc8XBOUI8vkVmIwWQZs33kxMF353Xj.png",
-	},
-	{
-		name: "Integration 2",
-		logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-407-eyikTTM6ccO0f4I7ZmNk5LpFI4EKOG.png",
-	},
-	{
-		name: "Integration 3",
-		logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-379-5hDaxwIw4LzjwXzWuorEXi7ESrGYl1.png",
-	},
-	{
-		name: "Integration 4",
-		logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-374-bp0RaoVnQI1JMqR9fjessWI8v33kLV.png",
-	},
-	{
-		name: "Integration 5",
-		logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-381-eKw7vkCp2Wq9hivZJaN1ERJdjCqR0d.png",
-	},
-];
-const defaultBottomRowApps: IntegrationApp[] = [
-	{
-		name: "Integration 6",
-		logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-401-F6mjMLGEZt4HAohKA889Z8Gf5fMzIw.png",
-	},
-	{
-		name: "Integration 7",
-		logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-403-HnBAGFYWgxxMGrH2PI45UorQOsQHFo.png",
-	},
-	{
-		name: "Integration 1",
-		logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-389-Hc8XBOUI8vkVmIwWQZs33kxMF353Xj.png",
-	},
-	{
-		name: "Integration 2",
-		logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-407-eyikTTM6ccO0f4I7ZmNk5LpFI4EKOG.png",
-	},
-	{
-		name: "Integration 3",
-		logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-379-5hDaxwIw4LzjwXzWuorEXi7ESrGYl1.png",
-	},
-	{
-		name: "Integration 4",
-		logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-374-bp0RaoVnQI1JMqR9fjessWI8v33kLV.png",
-	},
-	{
-		name: "Integration 5",
-		logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-381-eKw7vkCp2Wq9hivZJaN1ERJdjCqR0d.png",
-	},
-	{
-		name: "Integration 6",
-		logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-401-F6mjMLGEZt4HAohKA889Z8Gf5fMzIw.png",
-	},
-	{
-		name: "Integration 7",
-		logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-403-HnBAGFYWgxxMGrH2PI45UorQOsQHFo.png",
-	},
-	{
-		name: "Integration 1",
-		logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-389-Hc8XBOUI8vkVmIwWQZs33kxMF353Xj.png",
-	},
-	{
-		name: "Integration 2",
-		logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-407-eyikTTM6ccO0f4I7ZmNk5LpFI4EKOG.png",
-	},
-	{
-		name: "Integration 3",
-		logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logoipsum-379-5hDaxwIw4LzjwXzWuorEXi7ESrGYl1.png",
-	},
-];
+// Real app logos with brand colors
+const row1 = [
+  { name: 'Notion', icon: 'https://cdn.simpleicons.org/notion', color: '#000000' },
+  { name: 'HubSpot', icon: 'https://cdn.simpleicons.org/hubspot', color: '#FF7A59' },
+  { name: 'PayPal', icon: 'https://cdn.simpleicons.org/paypal', color: '#003087' },
+  { name: 'Google Maps', icon: 'https://cdn.simpleicons.org/googlemaps', color: '#4285F4' },
+  { name: 'Google Ads', icon: 'https://cdn.simpleicons.org/googleads', color: '#EA4335' },
+  { name: 'Stripe', icon: 'https://cdn.simpleicons.org/stripe', color: '#635BFF' },
+  { name: 'Webflow', icon: 'https://cdn.simpleicons.org/webflow', color: '#4353FF' },
+  { name: 'Airtable', icon: 'https://cdn.simpleicons.org/airtable', color: '#18BFFF' },
+  { name: 'Zoom', icon: 'https://cdn.simpleicons.org/zoom', color: '#2D8CFF' },
+  { name: 'Figma', icon: 'https://cdn.simpleicons.org/figma', color: '#F24E1E' },
+]
 
-// @component: IntegrationCarousel
-export const IntegrationCarousel = ({
-	buttonText = "Explore Integrations",
-	buttonHref = "#",
-	title = "Integrates with your entire collaboration stack.",
-	subtitle = "Connect TeamUp to Slack, Zoom, Notion, Google Meet, and dozens of others to analyze communication seamlessly.",
-	topRowApps = defaultTopRowApps,
-	bottomRowApps = defaultBottomRowApps,
-}: IntegrationCarouselProps) => {
-	const topRowRef = useRef<HTMLDivElement>(null);
-	const bottomRowRef = useRef<HTMLDivElement>(null);
-	useEffect(() => {
-		let topAnimationId: number;
-		let bottomAnimationId: number;
-		let topPosition = 0;
-		let bottomPosition = 0;
-		const animateTopRow = () => {
-			if (topRowRef.current) {
-				topPosition -= 0.5;
-				if (Math.abs(topPosition) >= topRowRef.current.scrollWidth / 2) {
-					topPosition = 0;
-				}
-				topRowRef.current.style.transform = `translateX(${topPosition}px)`;
-			}
-			topAnimationId = requestAnimationFrame(animateTopRow);
-		};
-		const animateBottomRow = () => {
-			if (bottomRowRef.current) {
-				bottomPosition -= 0.65;
-				if (Math.abs(bottomPosition) >= bottomRowRef.current.scrollWidth / 2) {
-					bottomPosition = 0;
-				}
-				bottomRowRef.current.style.transform = `translateX(${bottomPosition}px)`;
-			}
-			bottomAnimationId = requestAnimationFrame(animateBottomRow);
-		};
-		topAnimationId = requestAnimationFrame(animateTopRow);
-		bottomAnimationId = requestAnimationFrame(animateBottomRow);
-		return () => {
-			cancelAnimationFrame(topAnimationId);
-			cancelAnimationFrame(bottomAnimationId);
-		};
-	}, []);
+const row2 = [
+  { name: 'Dropbox', icon: 'https://cdn.simpleicons.org/dropbox', color: '#0061FF' },
+  { name: 'DaVinci', icon: 'https://cdn.simpleicons.org/davinciresolve', color: '#FFB800' },
+  { name: 'Asana', icon: 'https://cdn.simpleicons.org/asana', color: '#273347' },
+  { name: 'Jira', icon: 'https://cdn.simpleicons.org/jira', color: '#0052CC' },
+  { name: 'Zendesk', icon: 'https://cdn.simpleicons.org/zendesk', color: '#03363D' },
+  { name: 'Linear', icon: 'https://cdn.simpleicons.org/linear', color: '#5E6AD2' },
+  { name: 'GitHub', icon: 'https://cdn.simpleicons.org/github', color: '#181717' },
+  { name: 'Confluence', icon: 'https://cdn.simpleicons.org/confluence', color: '#172B4D' },
+  { name: 'Trello', icon: 'https://cdn.simpleicons.org/trello', color: '#04579B' },
+  { name: 'ClickUp', icon: 'https://cdn.simpleicons.org/clickup', color: '#7B68EE' },
+  { name: 'GitLab', icon: 'https://cdn.simpleicons.org/gitlab', color: '#FCA326' },
+  { name: 'Intercom', icon: 'https://cdn.simpleicons.org/intercom', color: '#2F9CFF' },
+]
 
-	// @return
-	return (
-		<div className="w-full py-24 bg-white">
-			<div className="max-w-[680px] mx-auto">
-				<motion.div
-					initial={{ opacity: 0, y: 30 }}
-					whileInView={{ opacity: 1, y: 0 }}
-					viewport={{ once: true, margin: "-100px" }}
-					transition={{ duration: 0.6, ease: "easeOut" }}
-					className="flex flex-col items-center mb-20"
-				>
-					<div className="flex flex-col items-center gap-4">
-						<h2
-							className="text-[40px] leading-tight font-normal text-[#222222] text-center tracking-tight mb-0"
-							style={{
-								fontFamily: "var(--font-figtree), Figtree",
-								fontWeight: "400",
-								fontSize: "40px",
-							}}
-						>
-							{title}
-						</h2>
-						<p
-							className="text-lg leading-7 text-[#666666] text-center max-w-[600px] mt-2"
-							style={{
-								fontFamily: "var(--font-figtree), Figtree",
-							}}
-						>
-							{subtitle}
-						</p>
-					</div>
-					<motion.div
-						initial={{ opacity: 0, scale: 0.95 }}
-						whileInView={{ opacity: 1, scale: 1 }}
-						viewport={{ once: true }}
-						transition={{ duration: 0.4, delay: 0.2, ease: "easeOut" }}
-						className="flex gap-3 mt-6"
-					>
-						<a
-							href={buttonHref}
-							className="inline-block px-5 py-2.5 rounded-full bg-white text-[#222222] text-[15px] font-medium leading-6 text-center whitespace-nowrap transition-all duration-75 ease-out w-[182px] cursor-pointer hover:shadow-lg"
-							style={{
-								boxShadow:
-									"0 -1px 0 0 rgb(181, 181, 181) inset, -1px 0 0 0 rgb(227, 227, 227) inset, 1px 0 0 0 rgb(227, 227, 227) inset, 0 1px 0 0 rgb(227, 227, 227) inset",
-								backgroundImage:
-									"linear-gradient(rgba(255, 255, 255, 0.06) 80%, rgba(255, 255, 255, 0.12))",
-							}}
-						>
-							{buttonText}
-						</a>
-					</motion.div>
-				</motion.div>
-			</div>
+function IconCard({ name, icon, color }: { name: string; icon: string; color: string }) {
+  return (
+    <div className="integration-icon-card" title={name} style={{ '--icon-color': color } as React.CSSProperties}>
+      <svg className="integration-card-bg" viewBox="0 0 72 72" fill="none">
+        <circle cx="36" cy="36" r="35" fill={color} opacity="0.08" stroke={color} strokeWidth="1.5"/>
+      </svg>
+      <img src={`${icon}?color=${color.replace('#', '')}`} alt={name} width={44} height={44} style={{ objectFit: 'contain', position: 'relative', zIndex: 2, filter: `drop-shadow(0 2px 6px rgba(0,0,0,0.15))` }} />
+    </div>
+  )
+}
 
-			<div className="h-[268px] -mt-6 mb-0 pb-0 relative overflow-hidden">
-				<div
-					ref={topRowRef}
-					className="flex items-start gap-6 absolute top-6 whitespace-nowrap"
-					style={{
-						willChange: "transform",
-					}}
-				>
-					{[...topRowApps, ...topRowApps].map((app, index) => (
-						<div
-							// biome-ignore lint/suspicious/noArrayIndexKey: animation duplicate list
-							key={`top-${index}`}
-							className="flex items-center justify-center w-24 h-24 rounded-3xl flex-shrink-0"
-							style={{
-								backgroundImage: "linear-gradient(rgb(255, 255, 255), rgb(252, 252, 252))",
-								boxShadow:
-									"rgba(0, 0, 0, 0.04) 0px 0px 0px 1px, rgba(0, 0, 0, 0.04) 0px 1px 1px 0px, rgba(0, 0, 0, 0.04) 0px 3px 3px -1.4px, rgba(0, 0, 0, 0.04) 0px 6px 6px -3px, rgba(0, 0, 0, 0.04) 0px 12px 12px -6px, rgba(0, 0, 0, 0.04) 0px 12px 12px -12px",
-							}}
-						>
-							{/* biome-ignore lint/performance/noImgElement: External images from CMS */}
-							<img
-								src={app.logo || "/placeholder.svg"}
-								alt={app.name}
-								className="w-9 h-9 block object-contain"
-							/>
-						</div>
-					))}
-				</div>
+function InfiniteRow({ items, reverse = false }: { items: typeof row1; reverse?: boolean }) {
+  const trackRef = useRef<HTMLDivElement>(null)
 
-				<div
-					className="absolute top-0 right-0 bottom-0 w-60 h-[268px] z-10 pointer-events-none"
-					style={{
-						backgroundImage: "linear-gradient(90deg, rgba(0, 0, 0, 0), rgb(255, 255, 255))",
-					}}
-				/>
+  useEffect(() => {
+    let pos = reverse ? -(trackRef.current?.scrollWidth ?? 0) / 2 : 0
+    const speed = reverse ? 0.6 : 0.5
+    let rafId: number
 
-				<div
-					className="absolute top-0 left-0 bottom-0 w-60 h-[268px] z-10 pointer-events-none"
-					style={{
-						backgroundImage: "linear-gradient(90deg, rgb(255, 255, 255), rgba(0, 0, 0, 0))",
-					}}
-				/>
+    const animate = () => {
+      if (!trackRef.current) return
+      const half = trackRef.current.scrollWidth / 2
+      if (reverse) {
+        pos += speed
+        if (pos >= 0) pos = -half
+      } else {
+        pos -= speed
+        if (Math.abs(pos) >= half) pos = 0
+      }
+      trackRef.current.style.transform = `translateX(${pos}px)`
+      rafId = requestAnimationFrame(animate)
+    }
+    rafId = requestAnimationFrame(animate)
+    return () => cancelAnimationFrame(rafId)
+  }, [reverse])
 
-				<div
-					ref={bottomRowRef}
-					className="flex items-start gap-6 absolute top-[148px] whitespace-nowrap"
-					style={{
-						willChange: "transform",
-					}}
-				>
-					{[...bottomRowApps, ...bottomRowApps].map((app, index) => (
-						<div
-							// biome-ignore lint/suspicious/noArrayIndexKey: animation duplicate list
-							key={`bottom-${index}`}
-							className="flex items-center justify-center w-24 h-24 rounded-3xl flex-shrink-0"
-							style={{
-								backgroundImage: "linear-gradient(rgb(255, 255, 255), rgb(252, 252, 252))",
-								boxShadow:
-									"rgba(0, 0, 0, 0.04) 0px 0px 0px 1px, rgba(0, 0, 0, 0.04) 0px 1px 1px 0px, rgba(0, 0, 0, 0.04) 0px 3px 3px -1.4px, rgba(0, 0, 0, 0.04) 0px 6px 6px -3px, rgba(0, 0, 0, 0.04) 0px 12px 12px -6px, rgba(0, 0, 0, 0.04) 0px 12px 12px -12px",
-							}}
-						>
-							{/* biome-ignore lint/performance/noImgElement: External images from CMS */}
-							<img
-								src={app.logo || "/placeholder.svg"}
-								alt={app.name}
-								className="w-9 h-9 block object-contain"
-							/>
-						</div>
-					))}
-				</div>
-			</div>
-		</div>
-	);
-};
+  const doubled = [...items, ...items]
+
+  return (
+    <div className="integration-row-wrap">
+      <div ref={trackRef} className="integration-row-track">
+        {doubled.map((app, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: duplicated for infinite scroll
+          <IconCard key={i} name={app.name} icon={app.icon} color={app.color} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export const IntegrationCarousel = () => {
+  return (
+    <section className="integrations-v2">
+      {/* Grid overlay */}
+      <div className="integrations-v2-grid" />
+
+      <div className="integrations-v2-header">
+        <span className="integrations-v2-badge">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ marginRight: 6 }}>
+            <path d="M6 0L7.5 4.5L12 6L7.5 7.5L6 12L4.5 7.5L0 6L4.5 4.5L6 0Z" fill="currentColor" />
+          </svg>
+          INTEGRATIONS
+        </span>
+        <h2 className="integrations-v2-title">Don't replace. Integrate.</h2>
+        <p className="integrations-v2-subtitle">
+          We understand the hassle of replacing the long used tools in your process.
+          <br />
+          That's why we integrate tools you use in your day-to-day work.
+        </p>
+        <a href="#" className="integrations-v2-link">All Integrations →</a>
+      </div>
+
+      {/* Two infinite-scroll rows */}
+      <div className="integrations-v2-rows">
+        {/* Fade edges */}
+        <div className="integrations-v2-fade-left" />
+        <div className="integrations-v2-fade-right" />
+
+        <InfiniteRow items={row1} />
+        <InfiniteRow items={row2} reverse />
+      </div>
+    </section>
+  )
+}
+
+export default IntegrationCarousel
