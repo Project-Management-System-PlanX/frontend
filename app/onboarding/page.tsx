@@ -87,7 +87,7 @@ const LeftPanel = memo(function LeftPanel({
 	const content = leftPanelContent[currentStep];
 
 	return (
-		<div className="hidden lg:flex lg:w-1/2 h-screen bg-[#D1F2EB] flex-col relative overflow-hidden">
+		<div className="hidden lg:flex lg:w-1/2 h-screen bg-[#d8f3dc] flex-col relative overflow-hidden">
 			<div className="relative z-10 flex flex-col px-12 pt-6 shrink-0">
 				<motion.div
 					initial={{ opacity: 0, y: -10 }}
@@ -96,15 +96,18 @@ const LeftPanel = memo(function LeftPanel({
 				>
 					<Link
 						href="/"
-						className="text-3xl font-bold text-[#013220] inline-flex items-center gap-2"
-						style={{ fontFamily: "Figtree", fontWeight: 800 }}
+						className="text-3xl font-bold text-[#1a3d2b] inline-flex items-center gap-2"
+						style={{
+							fontFamily: "var(--font-heading, 'DM Serif Display', serif)",
+							fontWeight: 800,
+						}}
 					>
 						<motion.div
-							className="w-10 h-10 rounded-xl bg-[#50C878] flex items-center justify-center"
+							className="w-10 h-10 rounded-xl bg-[#b7e4c7] flex items-center justify-center"
 							animate={{ rotate: [0, 5, -5, 0] }}
 							transition={{ duration: 4, repeat: Number.POSITIVE_INFINITY }}
 						>
-							<span className="text-white font-bold text-lg">T</span>
+							<span className="text-[#1a3d2b] font-bold text-lg">T</span>
 						</motion.div>
 						TeamUp
 					</Link>
@@ -122,15 +125,14 @@ const LeftPanel = memo(function LeftPanel({
 						>
 							<motion.div variants={staggerItem} className="flex items-center gap-2">
 								<span
-									className="text-[#0B6E4F] text-xs uppercase tracking-wider font-mono"
+									className="text-[var(--green-royal)] text-xs uppercase tracking-wider font-semibold"
 									style={{
-										fontFamily: "var(--font-geist-mono), 'Geist Mono', ui-monospace, monospace",
+										fontFamily: "var(--font-body), 'DM Sans', sans-serif",
 									}}
 								>
 									Step {currentStepIndex + 1} of {steps.length}
 								</span>
-							</motion.div>
-
+							</motion.div>{" "}
 							<motion.h1
 								variants={staggerItem}
 								className="text-4xl font-bold leading-snug text-[#013220] max-w-"
@@ -141,11 +143,10 @@ const LeftPanel = memo(function LeftPanel({
 							>
 								{content.headline}
 							</motion.h1>
-
 							<motion.p
 								variants={staggerItem}
-								className="text-lg leading-7 text-[#0B6E4F] mb-10"
-								style={{ fontFamily: "var(--font-figtree), Figtree" }}
+								className="text-lg leading-7 text-[#4a6552] mb-10"
+								style={{ fontFamily: "var(--font-body, 'DM Sans', sans-serif)" }}
 							>
 								{content.description}
 							</motion.p>
@@ -169,7 +170,7 @@ const LeftPanel = memo(function LeftPanel({
 						],
 					}}
 					transition={{ duration: 2.5, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
-					className="rounded-tl-2xl overflow-hidden shadow-2xl shadow-black/10 ring-2 ring-[#50C878] h-full w-full relative"
+					className="rounded-tl-2xl overflow-hidden shadow-2xl shadow-black/10 ring-2 ring-[#b7e4c7] h-full w-full relative"
 				>
 					<Image
 						src="/thumbnail.png"
@@ -252,25 +253,31 @@ export default function OnboardingPage() {
 	const StepIcon = stepInfo[currentStep].icon;
 
 	return (
-		<div className="h-screen overflow-hidden bg-gradient-to-br from-gray-50 via-white to-gray-100 flex">
+		<div className="h-screen overflow-hidden bg-white flex">
 			<LeftPanel currentStep={currentStep} currentStepIndex={currentStepIndex} />
 
-			<div className="flex-1 flex flex-col">
+			<div className="flex-1 flex flex-col bg-white">
 				<motion.div
-					className="p-6 flex items-center justify-between"
+					className="p-6 flex items-center justify-between border-b border-gray-200"
 					initial={{ opacity: 0, y: -20 }}
 					animate={{ opacity: 1, y: 0 }}
 				>
 					<Link
 						href="/"
-						className="lg:hidden text-2xl font-bold text-[#013220]"
-						style={{ fontFamily: "Figtree", fontWeight: 800 }}
+						className="lg:hidden text-2xl font-bold text-[#1a3d2b]"
+						style={{
+							fontFamily: "var(--font-heading, 'DM Serif Display', serif)",
+							fontWeight: 800,
+						}}
 					>
 						TeamUp
 					</Link>
 					<div className="flex-1" />
 					{currentStep !== "complete" && (
-						<span className="text-sm text-gray-500" style={{ fontFamily: "Figtree" }}>
+						<span
+							className="text-sm text-[#4a6552]"
+							style={{ fontFamily: "var(--font-body, 'DM Sans', sans-serif)" }}
+						>
 							{isSignUp ? "Sign Up" : "Sign In"}
 						</span>
 					)}
@@ -280,7 +287,7 @@ export default function OnboardingPage() {
 					<div className="px-6">
 						<div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
 							<motion.div
-								className="h-full bg-[#0B6E4F] rounded-full"
+								className="h-full bg-[#2d6a4f] rounded-full"
 								initial={{ width: 0 }}
 								animate={{ width: `${progress}%` }}
 								transition={{ duration: 0.5, ease: "easeOut" }}
@@ -305,18 +312,21 @@ export default function OnboardingPage() {
 									<>
 										<motion.div className="text-center space-y-3" variants={scaleIn}>
 											<motion.div
-												className="w-16 h-16 mx-auto bg-[#D1F2EB] rounded-2xl flex items-center justify-center"
+												className="w-16 h-16 mx-auto bg-[var(--green-neon)] rounded-2xl flex items-center justify-center"
 												whileHover={{ scale: 1.1, rotate: 5 }}
 											>
-												<StepIcon className="w-7 h-7 text-[#50C878]" />
+												<StepIcon className="w-7 h-7 text-[var(--green-lime)]" />
 											</motion.div>
 											<h2
-												className="text-2xl font-bold text-[#013220]"
-												style={{ fontFamily: "Figtree" }}
+												className="text-2xl font-bold text-[var(--green-royal)]"
+												style={{ fontFamily: "var(--font-heading), 'DM Serif Display', serif" }}
 											>
 												{isSignUp ? "Create your account" : "Welcome back"}
 											</h2>
-											<p className="text-gray-600" style={{ fontFamily: "Figtree" }}>
+											<p
+												className="text-[var(--text-muted)]"
+												style={{ fontFamily: "var(--font-body), 'DM Sans', sans-serif" }}
+											>
 												{isSignUp
 													? "Start your journey with TeamUp"
 													: "Sign in to continue to TeamUp"}
@@ -333,12 +343,11 @@ export default function OnboardingPage() {
 													{error}
 												</motion.div>
 											)}
-
 											<div className="space-y-4">
 												<div className="space-y-2">
 													<p
-														className="text-sm font-medium text-[#013220]"
-														style={{ fontFamily: "Figtree" }}
+														className="text-sm font-medium text-[var(--green-royal)]"
+														style={{ fontFamily: "var(--font-body), 'DM Sans', sans-serif" }}
 													>
 														Email address
 													</p>
@@ -347,14 +356,14 @@ export default function OnboardingPage() {
 														value={data.email}
 														onChange={(e) => setData({ ...data, email: e.target.value })}
 														placeholder="you@company.com"
-														className="w-full px-4 py-3.5 rounded-xl border border-gray-200 focus:border-[#50C878] focus:ring-2 focus:ring-[#50C878]/20 outline-none transition-all text-[#013220]"
-														style={{ fontFamily: "Figtree" }}
+														className="w-full px-4 py-3.5 rounded-xl border border-[var(--border)] focus:border-[var(--green-accent)] focus:ring-2 focus:ring-[var(--green-accent)]/20 outline-none transition-all text-[var(--text-dark)]"
+														style={{ fontFamily: "var(--font-body), 'DM Sans', sans-serif" }}
 													/>
 												</div>
 												<div className="space-y-2">
 													<p
-														className="text-sm font-medium text-[#013220]"
-														style={{ fontFamily: "Figtree" }}
+														className="text-sm font-medium text-[var(--green-royal)]"
+														style={{ fontFamily: "var(--font-body), 'DM Sans', sans-serif" }}
 													>
 														Password
 													</p>
@@ -363,24 +372,23 @@ export default function OnboardingPage() {
 														value={data.password}
 														onChange={(e) => setData({ ...data, password: e.target.value })}
 														placeholder="••••••••"
-														className="w-full px-4 py-3.5 rounded-xl border border-gray-200 focus:border-[#50C878] focus:ring-2 focus:ring-[#50C878]/20 outline-none transition-all text-[#013220]"
-														style={{ fontFamily: "Figtree" }}
+														className="w-full px-4 py-3.5 rounded-xl border border-[var(--border)] focus:border-[var(--green-accent)] focus:ring-2 focus:ring-[var(--green-accent)]/20 outline-none transition-all text-[var(--text-dark)]"
+														style={{ fontFamily: "var(--font-body), 'DM Sans', sans-serif" }}
 														onKeyDown={(e) => {
 															if (e.key === "Enter" && canProceed) handleEmailAuth();
 														}}
 													/>
 													{isSignUp && (
-														<p className="text-xs text-gray-400">Minimum 6 characters</p>
+														<p className="text-xs text-[var(--text-muted)]">Minimum 6 characters</p>
 													)}
 												</div>
 											</div>
-
 											<motion.button
 												type="button"
 												onClick={handleEmailAuth}
 												disabled={!canProceed || isLoading}
-												className="w-full flex items-center justify-center gap-2 bg-[#0B6E4F] text-white px-6 py-4 rounded-xl font-medium hover:bg-[#013220] hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
-												style={{ fontFamily: "Figtree" }}
+												className="w-full flex items-center justify-center gap-2 bg-[#0b6e4f] text-white px-6 py-4 rounded-xl font-medium hover:bg-[#1a3d2b] hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+												style={{ fontFamily: "var(--font-body, 'DM Sans', sans-serif)" }}
 												whileHover={canProceed ? { scale: 1.01 } : {}}
 												whileTap={canProceed ? { scale: 0.99 } : {}}
 											>
@@ -392,22 +400,20 @@ export default function OnboardingPage() {
 														<ArrowRight className="w-4 h-4" />
 													</>
 												)}
-											</motion.button>
-
+											</motion.button>{" "}
 											<div className="relative">
 												<div className="absolute inset-0 flex items-center">
-													<div className="w-full border-t border-gray-200" />
+													<div className="w-full border-t border-[var(--border)]" />
 												</div>
 												<div className="relative flex justify-center text-sm">
 													<span
-														className="px-4 bg-white text-gray-500"
-														style={{ fontFamily: "Figtree" }}
+														className="px-4 bg-white text-[var(--text-muted)]"
+														style={{ fontFamily: "var(--font-body), 'DM Sans', sans-serif" }}
 													>
 														or continue with
 													</span>
 												</div>
 											</div>
-
 											<motion.button
 												type="button"
 												onClick={handleGoogleAuth}
@@ -440,13 +446,12 @@ export default function OnboardingPage() {
 													/>
 												</svg>
 												<span
-													className="text-[#013220] font-medium"
-													style={{ fontFamily: "Figtree" }}
+													className="text-[var(--text-dark)] font-medium"
+													style={{ fontFamily: "var(--font-body), 'DM Sans', sans-serif" }}
 												>
 													Continue with Google
 												</span>
-											</motion.button>
-
+											</motion.button>{" "}
 											<p
 												className="text-center text-sm text-gray-500"
 												style={{ fontFamily: "Figtree" }}
@@ -475,21 +480,24 @@ export default function OnboardingPage() {
 										animate="animate"
 									>
 										<motion.div
-											className="w-24 h-24 mx-auto bg-[#50C878] rounded-full flex items-center justify-center shadow-lg"
+											className="w-24 h-24 mx-auto bg-[var(--green-lime)] rounded-full flex items-center justify-center shadow-lg"
 											initial={{ scale: 0 }}
 											animate={{ scale: 1 }}
 											transition={{ type: "spring", delay: 0.2 }}
 										>
-											<Check className="w-12 h-12 text-white" />
+											<Check className="w-12 h-12 text-[var(--green-royal)]" />
 										</motion.div>
 										<div>
 											<h3
-												className="text-2xl font-bold text-[#013220] mb-2"
-												style={{ fontFamily: "Figtree" }}
+												className="text-2xl font-bold text-[var(--green-royal)] mb-2"
+												style={{ fontFamily: "var(--font-heading), 'DM Serif Display', serif" }}
 											>
 												Account Created!
 											</h3>
-											<p className="text-gray-600" style={{ fontFamily: "Figtree" }}>
+											<p
+												className="text-[var(--text-muted)]"
+												style={{ fontFamily: "var(--font-body), 'DM Sans', sans-serif" }}
+											>
 												Check your email to verify your account, then sign in.
 											</p>
 										</div>
@@ -500,8 +508,8 @@ export default function OnboardingPage() {
 													setCurrentStep("signup");
 													setIsSignUp(false);
 												}}
-												className="inline-flex items-center justify-center gap-2 w-full bg-[#0B6E4F] text-white px-6 py-4 rounded-xl font-medium hover:shadow-lg transition-all"
-												style={{ fontFamily: "Figtree" }}
+												className="inline-flex items-center justify-center gap-2 w-full bg-[#0b6e4f] text-white px-6 py-4 rounded-xl font-medium hover:shadow-lg transition-all hover:bg-[#1a3d2b]"
+												style={{ fontFamily: "var(--font-body, 'DM Sans', sans-serif)" }}
 											>
 												Go to Sign In
 												<ArrowRight className="w-4 h-4" />
