@@ -25,7 +25,7 @@ import { useChannelStore } from "@/stores/channel-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 
 const CARD =
-	"bg-white/60 backdrop-blur-3xl rounded-[24px] border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)]";
+	"bg-white/95 backdrop-blur-3xl rounded-[24px] border border-[#d8f3dc] shadow-[0_8px_30px_rgb(45,106,79,0.08)]";
 
 const WORKSPACE_GRADIENTS = [
 	"from-[#007AFF] to-[#5856D6]",

@@ -1,7 +1,7 @@
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { ForYouView } from "@/components/dashboard/ForYouView";
 import { taskKeys } from "@/hooks/api/use-tasks";
-import { tasksService } from "@/lib/api/services";
+import { taskService } from "@/lib/api/services";
 import { getQueryClient } from "@/lib/query-client";
 import { createClient } from "@/lib/supabase/server";
 
@@ -16,8 +16,8 @@ export default async function ForYouPage() {
 
 	if (token) {
 		await queryClient.prefetchQuery({
-			queryKey: taskKeys.assignedToMe(),
-			queryFn: () => tasksService.listAssignedToMe(token),
+			queryKey: taskKeys.assigned(),
+			queryFn: () => taskService.getAssignedToMe("", token),
 		});
 	}
 

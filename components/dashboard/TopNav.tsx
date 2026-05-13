@@ -21,11 +21,11 @@ import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { cn } from "@/lib/utils";
 
 const UI = {
-	primary: "#4F46E5",
-	bg: "#1E293B",
-	border: "rgba(255,255,255,0.1)",
-	textPrimary: "#F1F5F9",
-	textSecondary: "#94A3B8",
+	primary: "#2d6a4f",
+	bg: "#f8f9f4",
+	border: "rgba(45, 106, 79, 0.1)",
+	textPrimary: "#0f2318",
+	textSecondary: "#4a6552",
 };
 
 export function TopNav() {
@@ -64,14 +64,22 @@ export function TopNav() {
 				<button
 					type="button"
 					onClick={() => setIsMenuOpen(!isMenuOpen)}
-					className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/10 transition-colors group"
+					className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-black/5 transition-colors group"
 				>
-					<div className="w-8 h-8 rounded-lg bg-[#007AFF] flex items-center justify-center text-white shadow-lg">
+					<div className="w-8 h-8 rounded-lg bg-[#2d6a4f] flex items-center justify-center text-white shadow-lg">
 						<Zap className="w-5 h-5 fill-white/20" />
 					</div>
-					<span className="font-bold text-white text-[14px] hidden sm:block">TeamUp</span>
+					<span
+						className="font-bold text-[#0f2318] text-[14px] hidden sm:block"
+						style={{ fontFamily: "var(--font-heading)" }}
+					>
+						TeamUp
+					</span>
 					<ChevronDown
-						className={cn("w-4 h-4 text-white/60 transition-transform", isMenuOpen && "rotate-180")}
+						className={cn(
+							"w-4 h-4 text-[#4a6552] transition-transform",
+							isMenuOpen && "rotate-180",
+						)}
 					/>
 				</button>
 
@@ -82,10 +90,10 @@ export function TopNav() {
 							animate={{ opacity: 1, y: 0, scale: 1 }}
 							exit={{ opacity: 0, y: 10, scale: 0.95 }}
 							className="absolute top-full left-0 mt-2 w-64 rounded-xl border shadow-2xl overflow-hidden py-2"
-							style={{ backgroundColor: "#15181C", borderColor: UI.border }}
+							style={{ backgroundColor: "#f0f4ee", borderColor: UI.border }}
 						>
-							<div className="px-3 py-2 border-b border-white/5 mb-2">
-								<p className="text-[11px] font-bold text-white/40 uppercase tracking-wider">
+							<div className="px-3 py-2 border-b mb-2" style={{ borderColor: UI.border }}>
+								<p className="text-[11px] font-bold text-[#4a6552] uppercase tracking-wider">
 									Navigate to
 								</p>
 							</div>
@@ -97,8 +105,8 @@ export function TopNav() {
 									className={cn(
 										"flex items-center gap-3 px-4 py-3 transition-colors",
 										pathname === item.href
-											? "bg-white/10 text-white"
-											: "text-white/60 hover:bg-white/5 hover:text-white",
+											? "bg-[#d8f3dc] text-[#0f2318]"
+											: "text-[#4a6552] hover:bg-[#f0f4ee] hover:text-[#0f2318]",
 									)}
 								>
 									<item.icon className="w-5 h-5" />
@@ -118,11 +126,14 @@ export function TopNav() {
 
 			{/* Search */}
 			<div className="hidden md:flex flex-1 max-w-[520px] ml-4">
-				<div className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-white/5 border border-white/10 w-full focus-within:border-white/20 transition-colors">
-					<Search className="w-4 h-4 text-white/40" />
+				<div
+					className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-[#f0f4ee] border w-full focus-within:border-[#2d6a4f] transition-colors"
+					style={{ borderColor: UI.border }}
+				>
+					<Search className="w-4 h-4 text-[#4a6552]" />
 					<input
 						placeholder="Search cards, tasks, files..."
-						className="bg-transparent text-[13px] text-white placeholder:text-white/40 outline-none w-full"
+						className="bg-transparent text-[13px] text-[#0f2318] placeholder:text-[#4a6552] outline-none w-full"
 					/>
 				</div>
 			</div>

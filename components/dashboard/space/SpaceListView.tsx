@@ -10,7 +10,7 @@ import {
 	User,
 } from "lucide-react";
 import { useState } from "react";
-import { TaskDetailModal } from "@/components/modals/TaskDetailModal";
+import TaskDetailModal from "@/components/modals/TaskDetailModal";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSpace } from "@/hooks/api/use-spaces";

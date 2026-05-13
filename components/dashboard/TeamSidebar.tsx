@@ -120,21 +120,24 @@ export function TeamSidebar(_props: TeamSidebarProps) {
 	};
 
 	return (
-		<div className="flex h-full" style={{ fontFamily: "var(--font-figtree), Figtree" }}>
+		<div className="flex h-full" style={{ fontFamily: "var(--font-body), 'DM Sans', sans-serif" }}>
 			{/* Shared Icon Rail */}
 			<IconRail />
 
 			{/* Channel List */}
-			<div className="w-56 bg-white flex flex-col border-r border-slate-200">
+			<div className="w-56 bg-white flex flex-col border-r border-[#d8f3dc]">
 				{/* Team Header */}
-				<div className="p-4 flex items-center justify-between border-b border-slate-200">
-					<span className="font-semibold text-slate-900 text-base">
+				<div className="p-4 flex items-center justify-between border-b border-[#d8f3dc]">
+					<span
+						className="font-semibold text-[#0f2318] text-base"
+						style={{ fontFamily: "var(--font-heading)" }}
+					>
 						{activeWorkspaceName || "Team UP"}
 					</span>
 					<Button
 						variant="ghost"
 						size="icon"
-						className="w-7 h-7 text-slate-500 hover:text-slate-900"
+						className="w-7 h-7 text-[#4a6552] hover:text-[#0f2318]"
 					>
 						<ExternalLink className="w-4 h-4" />
 					</Button>

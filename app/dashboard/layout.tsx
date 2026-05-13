@@ -31,7 +31,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 		<MeetingProvider>
 			<div
 				className="h-screen w-full flex flex-col overflow-hidden"
-				style={{ backgroundColor: "#0F172A" }}
+				style={{ backgroundColor: "#f8f9f4" }}
 			>
 				<TopNav />
 
