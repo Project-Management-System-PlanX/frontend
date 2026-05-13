@@ -71,8 +71,7 @@ function getCalendarDays(year: number, month: number): (Date | null)[] {
 export function SpaceCalendarView({ spaceId }: { spaceId: string }) {
 	const { token } = useSupabaseAuth();
 	const { data: space } = useSpace(spaceId, token || undefined);
-	const { data: tasks, isLoading } = useTasks(spaceId, undefined, token || undefined);
-
+	const { data: tasks, isLoading } = useTasks(spaceId, token || undefined);
 	const [currentDate, setCurrentDate] = useState(new Date());
 	const year = currentDate.getFullYear();
 	const month = currentDate.getMonth();

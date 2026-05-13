@@ -88,9 +88,7 @@ function taskColor(task: Task): { bar: string; dot: string } {
 export function SpaceTimelineView({ spaceId }: { spaceId: string }) {
 	const { token } = useSupabaseAuth();
 	const { data: space } = useSpace(spaceId, token || undefined);
-	const { data: tasks, isLoading } = useTasks(spaceId, undefined, token || undefined);
-
-	/* rows */
+	const { data: tasks, isLoading } = useTasks(spaceId, token || undefined); /* rows */
 	const rows = useMemo(() => {
 		if (!tasks) return [];
 		return tasks
