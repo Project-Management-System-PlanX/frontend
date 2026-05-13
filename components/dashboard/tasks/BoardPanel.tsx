@@ -7,16 +7,14 @@ import {
 	Columns3,
 	Gauge,
 	LayoutGrid,
-	ListFilter,
 	MoreHorizontal,
 	Plus,
 	Rows3,
-	Star,
 	Users,
 	X,
-	Zap,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { ShareBoardModal } from "@/components/modals/ShareBoardModal";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Task } from "@/lib/types/models";
 import { cn } from "@/lib/utils";
@@ -26,7 +24,6 @@ import { DashboardView } from "./DashboardView";
 import { TableView } from "./TableView";
 import { TimelineView } from "./TimelineView";
 import { type Column, UI } from "./types";
-import { ShareBoardModal } from "@/components/modals/ShareBoardModal";
 
 function ViewItem({
 	icon,
@@ -71,6 +68,8 @@ export function BoardPanel({
 	onTaskClick,
 	onDeleteTask,
 	onUpdateTask,
+	boardName = "My Board",
+	onRenameBoard,
 }: {
 	columnOrder: string[];
 	columns: Record<string, Column>;
@@ -82,18 +81,35 @@ export function BoardPanel({
 	onTaskClick: (task: Task) => void;
 	onDeleteTask?: (id: string) => void;
 	onUpdateTask?: (id: string, data: Partial<Task>) => void;
+	boardName?: string;
+	onRenameBoard?: (newName: string) => void;
 }) {
 	const [isAdding, setIsAdding] = useState(false);
 	const [newListName, setNewListName] = useState("");
+	const [isEditingName, setIsEditingName] = useState(false);
+	const [editedName, setEditedName] = useState(boardName);
 	const [currentView, setCurrentView] = useState<
 		"board" | "table" | "calendar" | "timeline" | "dashboard"
 	>("board");
 	const [mounted, setMounted] = useState(false);
 	const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
+	const [isViewsOpen, setIsViewsOpen] = useState(false);
+
 	useEffect(() => {
 		setMounted(true);
 	}, []);
+
+	useEffect(() => {
+		setEditedName(boardName);
+	}, [boardName]);
+
+	const handleRename = () => {
+		if (editedName.trim() && editedName !== boardName) {
+			onRenameBoard?.(editedName.trim());
+		}
+		setIsEditingName(false);
+	};
 
 	const handleAdd = () => {
 		if (newListName.trim()) {
@@ -107,9 +123,24 @@ export function BoardPanel({
 		<div className="h-full flex flex-col overflow-hidden" style={{ background: UI.board.bg }}>
 			<div className="px-5 py-4 flex items-center justify-between border-b border-white/5 bg-black/20">
 				<div className="flex items-center gap-4">
-					<span className="text-[19px] font-bold text-white tracking-tight">My Board</span>
+					{isEditingName ? (
+						<input
+							value={editedName}
+							onChange={(e) => setEditedName(e.target.value)}
+							onBlur={handleRename}
+							onKeyDown={(e) => e.key === "Enter" && handleRename()}
+							className="bg-white/10 border-none outline-none rounded px-2 py-0.5 text-[19px] font-bold text-white tracking-tight w-48"
+						/>
+					) : (
+						<span
+							onClick={() => setIsEditingName(true)}
+							className="text-[19px] font-bold text-white tracking-tight cursor-text hover:bg-white/5 px-2 py-0.5 rounded transition-colors"
+						>
+							{boardName}
+						</span>
+					)}
 					{mounted && (
-						<Popover>
+						<Popover open={isViewsOpen} onOpenChange={setIsViewsOpen}>
 							<PopoverTrigger asChild>
 								<div className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-white/10 cursor-pointer transition-colors text-white/80">
 									{currentView === "board" && <Columns3 className="w-5 h-5" />}
@@ -128,7 +159,10 @@ export function BoardPanel({
 									<span className="text-[14px] font-bold text-white/60 uppercase tracking-wider">
 										Views
 									</span>
-									<X className="w-4 h-4 text-white/40 cursor-pointer hover:text-white" />
+									<X
+										className="w-4 h-4 text-white/40 cursor-pointer hover:text-white"
+										onClick={() => setIsViewsOpen(false)}
+									/>
 								</div>
 
 								<div className="space-y-1">
@@ -136,31 +170,46 @@ export function BoardPanel({
 										icon={<Columns3 className="w-4 h-4" />}
 										label="Board"
 										active={currentView === "board"}
-										onClick={() => setCurrentView("board")}
+										onClick={() => {
+											setCurrentView("board");
+											setIsViewsOpen(false);
+										}}
 									/>
 									<ViewItem
 										icon={<LayoutGrid className="w-4 h-4" />}
 										label="Table"
 										active={currentView === "table"}
-										onClick={() => setCurrentView("table")}
+										onClick={() => {
+											setCurrentView("table");
+											setIsViewsOpen(false);
+										}}
 									/>
 									<ViewItem
 										icon={<CalendarIcon className="w-4 h-4" />}
 										label="Calendar"
 										active={currentView === "calendar"}
-										onClick={() => setCurrentView("calendar")}
+										onClick={() => {
+											setCurrentView("calendar");
+											setIsViewsOpen(false);
+										}}
 									/>
 									<ViewItem
 										icon={<Rows3 className="w-4 h-4" />}
 										label="Timeline"
 										active={currentView === "timeline"}
-										onClick={() => setCurrentView("timeline")}
+										onClick={() => {
+											setCurrentView("timeline");
+											setIsViewsOpen(false);
+										}}
 									/>
 									<ViewItem
 										icon={<Gauge className="w-4 h-4" />}
 										label="Dashboard"
 										active={currentView === "dashboard"}
-										onClick={() => setCurrentView("dashboard")}
+										onClick={() => {
+											setCurrentView("dashboard");
+											setIsViewsOpen(false);
+										}}
 									/>
 								</div>
 							</PopoverContent>
@@ -170,7 +219,10 @@ export function BoardPanel({
 				<div className="flex items-center gap-4">
 					<div className="flex items-center -space-x-2 mr-2">
 						{[0, 1, 2].map((i) => (
-							<div key={i} className="w-8 h-8 rounded-full border-2 border-[#1E1E1E] bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-[10px] font-bold text-white shadow-lg">
+							<div
+								key={i}
+								className="w-8 h-8 rounded-full border-2 border-[#1E1E1E] bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-[10px] font-bold text-white shadow-lg"
+							>
 								{i === 0 ? "R" : i === 1 ? "A" : "JS"}
 							</div>
 						))}
@@ -178,7 +230,7 @@ export function BoardPanel({
 							+1
 						</div>
 					</div>
-					<button 
+					<button
 						onClick={() => setIsShareModalOpen(true)}
 						className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white text-black font-bold text-[14px] hover:bg-white/90 transition-all active:scale-95 shadow-lg shadow-white/10"
 					>
@@ -274,10 +326,10 @@ export function BoardPanel({
 				<DashboardView columns={columns} columnOrder={columnOrder} tasks={tasks} />
 			)}
 
-			<ShareBoardModal 
-				isOpen={isShareModalOpen} 
-				onClose={() => setIsShareModalOpen(false)} 
-				boardName="My Board"
+			<ShareBoardModal
+				isOpen={isShareModalOpen}
+				onClose={() => setIsShareModalOpen(false)}
+				boardName={boardName}
 			/>
 		</div>
 	);

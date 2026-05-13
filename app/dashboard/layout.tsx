@@ -4,7 +4,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import type React from "react";
-import { TaskSidebar } from "@/components/dashboard/TaskSidebar";
 import { TopNav } from "@/components/dashboard/TopNav";
 import { MeetingProvider } from "@/components/meeting/MeetingProvider";
 import { useAppStore } from "@/stores/app-store";
@@ -22,16 +21,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
 	// Tiered visibility logic
 	const isChat = pathname.startsWith("/dashboard/chat");
-	const isTask = pathname.startsWith("/dashboard/task");
+	const _isTask = pathname.startsWith("/dashboard/task");
+	const isFiles = pathname.startsWith("/dashboard/files");
+	const isDashboardHome = pathname === "/dashboard";
 
-	// Show the secondary sidebar when on Chat routing pages
-	const hasSecondary = isChat && sidebarOpen;
+	// Show the secondary sidebar when on Chat or Files routing pages
+	const hasSecondary = (isChat || isFiles) && sidebarOpen;
 
 	return (
 		<MeetingProvider>
 			<div
 				className="h-screen w-full flex flex-col overflow-hidden"
-				style={{ backgroundColor: "#0F172A" }}
+				style={{ backgroundColor: isDashboardHome ? "#F2F4F7" : "#0F172A" }}
 			>
 				<TopNav />
 
@@ -55,8 +56,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 								}}
 								className="h-full shrink-0 overflow-hidden border-r border-white/5"
 							>
-								<aside className="h-full w-[400px] bg-transparent overflow-hidden flex flex-col">
-									{isTask ? <TaskSidebar /> : <SynapseSidebar />}
+								<aside className="h-full w-[400px] bg-[#0F172A]/50 backdrop-blur-xl overflow-hidden flex flex-col">
+									<SynapseSidebar />
 								</aside>
 							</motion.div>
 						)}

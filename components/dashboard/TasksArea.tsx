@@ -16,14 +16,23 @@ import {
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertCircle, Calendar as CalendarIcon, Inbox as InboxIcon, Layout, LayoutDashboard } from "lucide-react";
+import {
+	AlertCircle,
+	Calendar as CalendarIcon,
+	Inbox as InboxIcon,
+	Layout,
+	LayoutDashboard,
+	Trash2,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import TaskDetailModal from "@/components/modals/TaskDetailModal";
 import {
 	useCreateSpace,
 	useCreateTaskStatus,
+	useDeleteSpace,
 	useSpaces,
+	useUpdateSpace,
 	useUpdateTaskStatus,
 } from "@/hooks/api/use-spaces";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
@@ -36,8 +45,8 @@ import { BoardPanel } from "./tasks/BoardPanel";
 // Modular Components
 import { InboxPanel } from "./tasks/InboxPanel";
 import { PlannerPanel } from "./tasks/PlannerPanel";
-import { TaskCard } from "./tasks/TaskCard";
 import { SwitchBoardPanel } from "./tasks/SwitchBoardPanel";
+import { TaskCard } from "./tasks/TaskCard";
 
 const dropAnimation: any = {
 	sideEffects: defaultDropAnimationSideEffects({
@@ -57,6 +66,8 @@ export function TasksArea() {
 	const createStatus = useCreateTaskStatus(token);
 	const updateStatus = useUpdateTaskStatus(token);
 	const createSpace = useCreateSpace(token);
+	const updateSpace = useUpdateSpace(token);
+	const deleteSpace = useDeleteSpace(token);
 
 	// For the "Board" view, we need a space. We'll pick the first one by default.
 	const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
@@ -171,11 +182,14 @@ export function TasksArea() {
 		return allPlannerTasks.filter((t) => t.startDate || t.dueDate);
 	}, [allPlannerTasks]);
 
-	const [activeTabs, setActiveTabs] = useState<string[]>(["inbox", "planner", "board", "switch-board"]);
+	const [activeTabs, setActiveTabs] = useState<string[]>(["inbox", "planner", "board"]);
+	const [isSwitchBoardModalOpen, setIsSwitchBoardModalOpen] = useState(false);
 	const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+	const [boardToDelete, setBoardToDelete] = useState<string | null>(null);
+	const [showBoardDeleteConfirm, setShowBoardDeleteConfirm] = useState(false);
 	const [widths, setWidths] = useState<Record<string, number>>({});
 	const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -336,11 +350,15 @@ export function TasksArea() {
 	}, [activeTabs]);
 
 	const toggleTab = (tabId: string) => {
+		if (tabId === "switch-board") {
+			setIsSwitchBoardModalOpen(true);
+			return;
+		}
 		setActiveTabs((prev) =>
 			prev.includes(tabId)
 				? prev.filter((t) => t !== tabId)
 				: [...prev, tabId].sort((a, b) => {
-						const order = ["inbox", "planner", "board", "switch-board"];
+						const order = ["inbox", "planner", "board"];
 						return order.indexOf(a) - order.indexOf(b);
 					}),
 		);
@@ -614,22 +632,6 @@ export function TasksArea() {
 						{activeTabs.map((tabId, index) => (
 							<div key={tabId} className="flex h-full" style={{ width: `${widths[tabId]}%` }}>
 								<PanelContainer id={tabId}>
-									{tabId === "switch-board" && (
-										<SwitchBoardPanel 
-											spaces={spaces || []}
-											selectedSpaceId={selectedSpaceId}
-											onSelect={setSelectedSpaceId}
-											onCreateNew={() => {
-												if (activeWorkspaceId) {
-													createSpace.mutate({
-														workspaceId: activeWorkspaceId,
-														name: "New Board",
-														prefix: "NEW"
-													});
-												}
-											}}
-										/>
-									)}
 									{tabId === "inbox" && (
 										<InboxPanel
 											tasks={inboxTasks}
@@ -664,6 +666,15 @@ export function TasksArea() {
 												}
 											}}
 											onUpdateTask={updateTaskApi}
+											boardName={selectedSpace?.name}
+											onRenameBoard={(newName) => {
+												if (selectedSpaceId) {
+													updateSpace.mutate({
+														id: selectedSpaceId,
+														data: { name: newName },
+													});
+												}
+											}}
 										/>
 									)}
 								</PanelContainer>
@@ -730,13 +741,67 @@ export function TasksArea() {
 					<NavButton
 						icon={<LayoutDashboard className="w-5 h-5" />}
 						label="Switch Board"
-						active={activeTabs.includes("switch-board")}
-						onClick={() => toggleTab("switch-board")}
+						active={isSwitchBoardModalOpen}
+						onClick={() => setIsSwitchBoardModalOpen(true)}
 					/>
 				</div>
 			</div>
 
-			{/* Deletion Confirmation Modal */}
+			{/* Switch Board Modal */}
+			<AnimatePresence>
+				{isSwitchBoardModalOpen && (
+					<div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+						<motion.div
+							initial={{ opacity: 0 }}
+							animate={{ opacity: 1 }}
+							exit={{ opacity: 0 }}
+							onClick={() => setIsSwitchBoardModalOpen(false)}
+							className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+						/>
+						<motion.div
+							initial={{ opacity: 0, scale: 0.95, y: 20 }}
+							animate={{ opacity: 1, scale: 1, y: 0 }}
+							exit={{ opacity: 0, scale: 0.95, y: 20 }}
+							className="relative w-full max-w-4xl h-[80vh] flex flex-col"
+						>
+							<SwitchBoardPanel
+								spaces={spaces || []}
+								selectedSpaceId={selectedSpaceId}
+								onSelect={(id) => {
+									setSelectedSpaceId(id);
+									setIsSwitchBoardModalOpen(false);
+								}}
+								onClose={() => setIsSwitchBoardModalOpen(false)}
+								onDelete={(id) => {
+									setBoardToDelete(id);
+									setShowBoardDeleteConfirm(true);
+								}}
+								onCreateNew={() => {
+									if (activeWorkspaceId && spaces) {
+										const myBoardSpaces = spaces.filter((s) => s.name.startsWith("My Board"));
+										let nextNum = 1;
+										if (myBoardSpaces.length > 0) {
+											const nums = myBoardSpaces.map((s) => {
+												const match = s.name.match(/My Board (\d+)/);
+												return match ? parseInt(match[1], 10) : 0;
+											});
+											nextNum = Math.max(...nums, 0) + 1;
+										}
+
+										createSpace.mutate({
+											workspaceId: activeWorkspaceId,
+											name: `My Board ${nextNum}`,
+											prefix: `MB${nextNum}`,
+										});
+									}
+								}}
+							/>
+						</motion.div>
+					</div>
+				)}
+			</AnimatePresence>
+
+			{/* Task Deletion Confirmation Modal */}
 			<AnimatePresence>
 				{showDeleteConfirm && taskToDelete && (
 					<div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -778,6 +843,57 @@ export function TasksArea() {
 										className="flex-1 px-6 py-4 rounded-2xl bg-red-500 hover:bg-red-600 text-white font-bold shadow-lg shadow-red-500/20 transition-all active:scale-95"
 									>
 										Delete Now
+									</button>
+								</div>
+							</div>
+						</motion.div>
+					</div>
+				)}
+			</AnimatePresence>
+
+			{/* Board Deletion Confirmation Modal */}
+			<AnimatePresence>
+				{showBoardDeleteConfirm && boardToDelete && (
+					<div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+						<motion.div
+							initial={{ scale: 0.9, opacity: 0 }}
+							animate={{ scale: 1, opacity: 1 }}
+							exit={{ scale: 0.9, opacity: 0 }}
+							className="w-full max-w-md bg-[#1A1C1E] border border-white/10 rounded-[32px] overflow-hidden shadow-2xl"
+						>
+							<div className="p-8">
+								<div className="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center mb-6">
+									<Trash2 className="w-8 h-8 text-red-500" />
+								</div>
+								<h2 className="text-[24px] font-black text-white mb-3 tracking-tight">
+									Delete Board?
+								</h2>
+								<p className="text-white/40 leading-relaxed mb-8">
+									Are you sure you want to delete this board? This will remove all tasks and
+									statuses associated with it. This action cannot be undone.
+								</p>
+								<div className="flex items-center gap-4">
+									<button
+										onClick={() => setShowBoardDeleteConfirm(false)}
+										className="flex-1 px-6 py-4 rounded-2xl bg-white/5 hover:bg-white/10 text-white font-bold transition-all active:scale-95"
+									>
+										Cancel
+									</button>
+									<button
+										onClick={async () => {
+											if (boardToDelete) {
+												await deleteSpace.mutateAsync(boardToDelete);
+												toast.success("Board deleted");
+												setShowBoardDeleteConfirm(false);
+												setBoardToDelete(null);
+												if (selectedSpaceId === boardToDelete) {
+													setSelectedSpaceId(null);
+												}
+											}
+										}}
+										className="flex-1 px-6 py-4 rounded-2xl bg-red-500 hover:bg-red-600 text-white font-bold shadow-lg shadow-red-500/20 transition-all active:scale-95"
+									>
+										Delete Board
 									</button>
 								</div>
 							</div>

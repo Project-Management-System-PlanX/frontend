@@ -1,14 +1,16 @@
 "use client";
 
-import { Layout, Check, Plus, Search, MoreHorizontal, Star } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Check, Layout, MoreHorizontal, Plus, Search, Star, Trash2, X } from "lucide-react";
 import type { Space } from "@/lib/types/models";
+import { cn } from "@/lib/utils";
 
 interface SwitchBoardPanelProps {
 	spaces: Space[];
 	selectedSpaceId: string | null;
 	onSelect: (id: string) => void;
 	onCreateNew?: () => void;
+	onClose?: () => void;
+	onDelete?: (id: string) => void;
 }
 
 export function SwitchBoardPanel({
@@ -16,9 +18,11 @@ export function SwitchBoardPanel({
 	selectedSpaceId,
 	onSelect,
 	onCreateNew,
+	onClose,
+	onDelete,
 }: SwitchBoardPanelProps) {
 	return (
-		<div className="h-full flex flex-col bg-[#0D0D0D]">
+		<div className="h-full flex flex-col bg-[#0D0D0D] rounded-3xl overflow-hidden border border-white/10 shadow-2xl">
 			<div className="px-6 py-5 flex items-center justify-between border-b border-white/5">
 				<div className="flex items-center gap-3">
 					<div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
@@ -34,18 +38,26 @@ export function SwitchBoardPanel({
 				<div className="flex items-center gap-2">
 					<div className="relative group">
 						<Search className="w-4 h-4 text-white/20 absolute left-3 top-1/2 -translate-y-1/2 group-focus-within:text-white/60 transition-colors" />
-						<input 
-							type="text" 
+						<input
+							type="text"
 							placeholder="Search boards..."
 							className="bg-white/5 border border-white/5 rounded-xl py-2 pl-9 pr-4 text-[13px] text-white outline-none focus:border-white/10 w-48 transition-all"
 						/>
 					</div>
-					<button 
+					<button
 						onClick={onCreateNew}
 						className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-white/60 hover:text-white transition-all"
 					>
 						<Plus className="w-5 h-5" />
 					</button>
+					{onClose && (
+						<button
+							onClick={onClose}
+							className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-white/60 hover:text-white transition-all ml-1"
+						>
+							<X className="w-5 h-5" />
+						</button>
+					)}
 				</div>
 			</div>
 
@@ -59,25 +71,31 @@ export function SwitchBoardPanel({
 								"group relative p-5 rounded-[24px] border transition-all cursor-pointer overflow-hidden",
 								selectedSpaceId === space.id
 									? "bg-white/[0.03] border-white/20 shadow-[0_0_40px_-10px_rgba(255,255,255,0.05)]"
-									: "bg-white/[0.01] border-white/5 hover:border-white/10 hover:bg-white/[0.02]"
+									: "bg-white/[0.01] border-white/5 hover:border-white/10 hover:bg-white/[0.02]",
 							)}
 						>
 							<div className="flex items-start justify-between relative z-10">
 								<div className="flex items-center gap-4">
-									<div className={cn(
-										"w-12 h-12 rounded-2xl flex items-center justify-center text-[20px] font-black border transition-all",
-										selectedSpaceId === space.id
-											? "bg-white text-black border-white shadow-lg"
-											: "bg-black border-white/10 text-white/40 group-hover:border-white/20 group-hover:text-white"
-									)}>
+									<div
+										className={cn(
+											"w-12 h-12 rounded-2xl flex items-center justify-center text-[20px] font-black border transition-all",
+											selectedSpaceId === space.id
+												? "bg-white text-black border-white shadow-lg"
+												: "bg-black border-white/10 text-white/40 group-hover:border-white/20 group-hover:text-white",
+										)}
+									>
 										{space.name.charAt(0).toUpperCase()}
 									</div>
 									<div>
 										<div className="flex items-center gap-2 mb-1">
-											<h3 className={cn(
-												"text-[16px] font-bold transition-colors",
-												selectedSpaceId === space.id ? "text-white" : "text-white/60 group-hover:text-white"
-											)}>
+											<h3
+												className={cn(
+													"text-[16px] font-bold transition-colors",
+													selectedSpaceId === space.id
+														? "text-white"
+														: "text-white/60 group-hover:text-white",
+												)}
+											>
 												{space.name}
 											</h3>
 											{selectedSpaceId === space.id && (
@@ -93,22 +111,35 @@ export function SwitchBoardPanel({
 										</div>
 									</div>
 								</div>
-								<button className="p-1.5 text-white/10 hover:text-white/40 transition-colors">
-									<Star className="w-4 h-4" />
-								</button>
+								<div className="flex items-center gap-1.5">
+									{onDelete && (
+										<button
+											onClick={(e) => {
+												e.stopPropagation();
+												onDelete(space.id);
+											}}
+											className="p-1.5 text-white/5 hover:text-red-500/60 transition-colors"
+										>
+											<Trash2 className="w-4 h-4" />
+										</button>
+									)}
+									<button className="p-1.5 text-white/10 hover:text-white/40 transition-colors">
+										<Star className="w-4 h-4" />
+									</button>
+								</div>
 							</div>
 
 							{/* Subtle background glow for active board */}
 							{selectedSpaceId === space.id && (
 								<div className="absolute top-0 right-0 w-32 h-32 bg-white/5 blur-[40px] -mr-16 -mt-16 pointer-events-none" />
 							)}
-							
+
 							<div className="mt-6 flex items-center gap-1.5 opacity-40 group-hover:opacity-100 transition-opacity">
-								{space.statuses?.slice(0, 4).map((status, i) => (
-									<div 
+								{space.statuses?.slice(0, 4).map((status, _i) => (
+									<div
 										key={status.id}
 										className="h-1 rounded-full flex-1"
-										style={{ backgroundColor: status.color || '#333' }}
+										style={{ backgroundColor: status.color || "#333" }}
 									/>
 								))}
 							</div>
@@ -116,7 +147,7 @@ export function SwitchBoardPanel({
 					))}
 
 					{/* Create New Card */}
-					<div 
+					<div
 						onClick={onCreateNew}
 						className="p-5 rounded-[24px] border border-dashed border-white/10 hover:border-white/20 bg-transparent hover:bg-white/[0.02] transition-all cursor-pointer flex flex-col items-center justify-center gap-3 group min-h-[140px]"
 					>

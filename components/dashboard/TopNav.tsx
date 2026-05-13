@@ -33,6 +33,10 @@ export function TopNav() {
 	const { user } = useSupabaseAuth();
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
 	const menuRef = useRef<HTMLDivElement>(null);
+	const isDashboardHome = pathname === "/dashboard";
+
+	const navBg = isDashboardHome ? "#FFFFFF" : UI.bg;
+	const navBorder = isDashboardHome ? "rgba(0,0,0,0.08)" : UI.border;
 
 	const initials = user?.email?.substring(0, 2).toUpperCase() || "?";
 	const imageUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.picture;
@@ -56,8 +60,8 @@ export function TopNav() {
 
 	return (
 		<nav
-			className="h-14 w-full border-b flex items-center px-4 gap-4 z-[100] relative shrink-0"
-			style={{ backgroundColor: UI.bg, borderColor: UI.border }}
+			className="h-14 w-full border-b flex items-center px-4 gap-4 z-[100] relative shrink-0 transition-colors duration-300"
+			style={{ backgroundColor: navBg, borderColor: navBorder }}
 		>
 			{/* Logo + Dropdown Trigger */}
 			<div className="relative" ref={menuRef}>
@@ -69,9 +73,20 @@ export function TopNav() {
 					<div className="w-8 h-8 rounded-lg bg-[#007AFF] flex items-center justify-center text-white shadow-lg">
 						<Zap className="w-5 h-5 fill-white/20" />
 					</div>
-					<span className="font-bold text-white text-[14px] hidden sm:block">TeamUp</span>
+					<span
+						className={cn(
+							"font-bold text-[14px] hidden sm:block",
+							isDashboardHome ? "text-gray-900" : "text-white",
+						)}
+					>
+						TeamUp
+					</span>
 					<ChevronDown
-						className={cn("w-4 h-4 text-white/60 transition-transform", isMenuOpen && "rotate-180")}
+						className={cn(
+							"w-4 h-4 transition-transform",
+							isDashboardHome ? "text-gray-400" : "text-white/60",
+							isMenuOpen && "rotate-180",
+						)}
 					/>
 				</button>
 
@@ -118,11 +133,21 @@ export function TopNav() {
 
 			{/* Search */}
 			<div className="hidden md:flex flex-1 max-w-[520px] ml-4">
-				<div className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-white/5 border border-white/10 w-full focus-within:border-white/20 transition-colors">
-					<Search className="w-4 h-4 text-white/40" />
+				<div
+					className={cn(
+						"flex items-center gap-2.5 px-3 py-2 rounded-lg border w-full transition-colors focus-within:ring-2 focus-within:ring-blue-500/20",
+						isDashboardHome ? "bg-gray-100 border-gray-200" : "bg-white/5 border-white/10",
+					)}
+				>
+					<Search className={cn("w-4 h-4", isDashboardHome ? "text-gray-400" : "text-white/40")} />
 					<input
 						placeholder="Search cards, tasks, files..."
-						className="bg-transparent text-[13px] text-white placeholder:text-white/40 outline-none w-full"
+						className={cn(
+							"bg-transparent text-[13px] outline-none w-full",
+							isDashboardHome
+								? "text-gray-900 placeholder:text-gray-400"
+								: "text-white placeholder:text-white/40",
+						)}
 					/>
 				</div>
 			</div>
@@ -137,10 +162,20 @@ export function TopNav() {
 					<Plus className="w-4 h-4" />
 					Create
 				</button>
-				<div className="w-[1px] h-6 bg-white/10 mx-2 hidden sm:block" />
+				<div
+					className={cn(
+						"w-[1px] h-6 mx-2 hidden sm:block",
+						isDashboardHome ? "bg-gray-200" : "bg-white/10",
+					)}
+				/>
 				<button
 					type="button"
-					className="p-2 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors relative"
+					className={cn(
+						"p-2 rounded-lg transition-colors relative",
+						isDashboardHome
+							? "hover:bg-gray-100 text-gray-500 hover:text-gray-900"
+							: "hover:bg-white/10 text-white/60 hover:text-white",
+					)}
 				>
 					<Bell className="w-5 h-5" />
 					<div
@@ -150,7 +185,12 @@ export function TopNav() {
 				</button>
 				<button
 					type="button"
-					className="p-2 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+					className={cn(
+						"p-2 rounded-lg transition-colors",
+						isDashboardHome
+							? "hover:bg-gray-100 text-gray-500 hover:text-gray-900"
+							: "hover:bg-white/10 text-white/60 hover:text-white",
+					)}
 				>
 					<HelpCircle className="w-5 h-5" />
 				</button>

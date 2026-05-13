@@ -2,6 +2,7 @@
 
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { type FileMessage, useDeleteFile, useFilesByWorkspace } from "@/hooks/api/use-files";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
@@ -56,6 +57,8 @@ export function FilesArea() {
 	const [viewMode, setViewMode] = useState<"list" | "grid">("list");
 	const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
 	const [searchQuery, setSearchQuery] = useState("");
+	const searchParams = useSearchParams();
+	const currentDir = searchParams.get("dir") || "all";
 
 	const { token, user } = useSupabaseAuth();
 	const { activeWorkspaceId } = useWorkspaceStore();
@@ -68,9 +71,23 @@ export function FilesArea() {
 
 	const filteredFiles = useMemo(() => {
 		if (!files) return [];
-		if (!searchQuery.trim()) return files;
-		return files.filter((file) => file.fileName.toLowerCase().includes(searchQuery.toLowerCase()));
-	}, [files, searchQuery]);
+
+		let result = [...files];
+
+		// Directory filtering
+		if (currentDir === "recent") {
+			result = result
+				.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+				.slice(0, 10);
+		} else if (currentDir === "trash") {
+			return []; // Placeholder for trash
+		} else if (currentDir === "shared") {
+			result = result.filter((f) => f.user.supabaseId !== user?.id);
+		}
+
+		if (!searchQuery.trim()) return result;
+		return result.filter((file) => file.fileName.toLowerCase().includes(searchQuery.toLowerCase()));
+	}, [files, searchQuery, currentDir, user?.id]);
 
 	const toggleSelection = (fileId: string) => {
 		const newSelected = new Set(selectedFiles);
@@ -154,7 +171,17 @@ export function FilesArea() {
 					</svg>
 					<span>Docs</span>
 					<span className="text-[#ccc] text-[12px]">›</span>
-					<span className="text-[#1a1a1a] font-medium">Documents</span>
+					<span className="text-[#1a1a1a] font-medium">
+						{currentDir === "all"
+							? "All Files"
+							: currentDir === "recent"
+								? "Recent"
+								: currentDir === "shared"
+									? "Shared with me"
+									: currentDir === "trash"
+										? "Trash"
+										: "Documents"}
+					</span>
 				</div>
 				<div className="flex items-center gap-2">
 					<div className="flex items-center gap-[6px] bg-[#efefef] border border-[#e2e2e2] rounded-[8px] px-[4px] py-[3px] text-[12.5px] text-[#999] min-w-[170px] tracking-[-0.01em] transition-colors focus-within:bg-white focus-within:border-[#ccc]">
@@ -190,7 +217,17 @@ export function FilesArea() {
 			<div className="flex-1 px-[22px] py-[20px] pb-[80px] overflow-y-auto relative bg-white">
 				<div className="flex items-center justify-between mb-[18px]">
 					<div className="flex items-center gap-[12px]">
-						<span className="text-[16px] font-bold text-[#111] tracking-[-0.02em]">Documents</span>
+						<span className="text-[16px] font-bold text-[#111] tracking-[-0.02em]">
+							{currentDir === "all"
+								? "All Files"
+								: currentDir === "recent"
+									? "Recent Files"
+									: currentDir === "shared"
+										? "Shared Files"
+										: currentDir === "trash"
+											? "Trash"
+											: "Documents"}
+						</span>
 						<div className="w-[1px] h-[16px] bg-[#ddd]" />
 						<div className="flex bg-[#ececec] rounded-[7px] p-[2px] gap-[1px]">
 							<button
