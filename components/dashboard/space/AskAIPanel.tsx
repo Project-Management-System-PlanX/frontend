@@ -18,6 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useBulkCreateTasks } from "@/hooks/api/use-tasks";
 import { useMemberLookup } from "@/hooks/use-member-lookup";
+import { useSpace } from "@/hooks/use-space";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useWorkspaceMembers } from "@/hooks/use-workspace-members";
 
@@ -147,7 +148,9 @@ export function AskAIPanel({
 	const { members } = useWorkspaceMembers();
 	const { getMember } = useMemberLookup();
 	const { token } = useSupabaseAuth();
+	const { data: space } = useSpace(spaceId, token || undefined);
 	const bulkCreate = useBulkCreateTasks(token || undefined);
+	const defaultStatusId = space?.statuses?.[0]?.id;
 
 	const scrollToBottom = useCallback(() => {
 		setTimeout(() => {
@@ -217,6 +220,7 @@ export function AskAIPanel({
 				await bulkCreate.mutateAsync(
 					msg.tasks.map((task) => ({
 						spaceId,
+						statusId: defaultStatusId || "",
 						title: task.title,
 						priority: task.priority,
 						workType: task.workType,
@@ -240,7 +244,7 @@ export function AskAIPanel({
 			setMessages((prev) => [...prev, successMsg]);
 			scrollToBottom();
 		},
-		[messages, spaceId, bulkCreate, scrollToBottom],
+		[messages, spaceId, bulkCreate, scrollToBottom, defaultStatusId],
 	);
 
 	if (!open) return null;

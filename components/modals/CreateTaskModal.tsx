@@ -175,6 +175,7 @@ export function CreateTaskModal({
 
 			const createdTask = await createTask({
 				spaceId,
+				statusId: _selectedSpace?.statuses?.[0]?.id || "",
 				title: summary.trim(),
 				description: description.trim() || undefined,
 				workType,
@@ -193,10 +194,16 @@ export function CreateTaskModal({
 			// Create subtasks after main task
 			if (subtaskTitles.length > 0 && createdTask?.id) {
 				await Promise.all(
-					subtaskTitles.map((title) => createTask({ spaceId, title, parentId: createdTask.id })),
+					subtaskTitles.map((title) =>
+						createTask({
+							spaceId,
+							statusId: _selectedSpace?.statuses?.[0]?.id || "",
+							title,
+							parentId: createdTask.id,
+						}),
+					),
 				);
 			}
-
 			if (createAnother) {
 				resetForm();
 			} else {

@@ -436,7 +436,7 @@ export function TasksArea() {
 					// Calculate new position
 					const overCol = activeContainer === "inbox" ? null : liveColumns[activeContainer];
 					const taskIds =
-						activeContainer === "inbox" ? inboxTasks.map((t) => t.id) : overCol?.taskIds;
+						activeContainer === "inbox" ? inboxTasks.map((t) => t.id) : overCol?.taskIds || [];
 
 					let newPosition: number;
 					if (newIndex === 0) newPosition = (liveTasksMap[taskIds[0]]?.position ?? 0) / 2;
@@ -446,9 +446,7 @@ export function TasksArea() {
 						const prevPos = liveTasksMap[taskIds[newIndex - 1]]?.position ?? 0;
 						const nextPos = liveTasksMap[taskIds[newIndex]]?.position ?? 0;
 						newPosition = (prevPos + nextPos) / 2;
-					}
-
-					// Optimistic update for same-container move
+					} // Optimistic update for same-container move
 					if (activeContainer === "inbox") {
 						// For inbox, we just let the API handle it or could add optimistic reorder if we had a dedicated hook
 						moveTask(id, liveTasksMap[id]?.statusId || "", newPosition);

@@ -6,10 +6,15 @@ import { useTasksWorkedOn } from "@/hooks/api/use-tasks";
 import { useMemberLookup } from "@/hooks/use-member-lookup";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import type { Task } from "@/lib/types/models";
+import { useWorkspaceStore } from "@/stores/workspace-store";
 
 export function WorkedOnTab() {
 	const { token } = useSupabaseAuth();
-	const { data: serverTasks, isLoading } = useTasksWorkedOn(token || undefined);
+	const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
+	const { data: serverTasks, isLoading } = useTasksWorkedOn(
+		activeWorkspaceId || "",
+		token || undefined,
+	);
 	const { getMember } = useMemberLookup();
 	const tasks = serverTasks || [];
 
