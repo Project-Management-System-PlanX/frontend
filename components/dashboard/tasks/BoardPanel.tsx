@@ -7,22 +7,20 @@ import {
 	Columns3,
 	Gauge,
 	LayoutGrid,
-	ListFilter,
-	MapPin,
 	MoreHorizontal,
 	Plus,
 	Rows3,
-	Star,
 	Users,
 	X,
-	Zap,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { ShareBoardModal } from "@/components/modals/ShareBoardModal";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Task } from "@/lib/types/models";
 import { cn } from "@/lib/utils";
 import { BoardColumn } from "./BoardColumn";
 import { CalendarView } from "./CalendarView";
+import { DashboardView } from "./DashboardView";
 import { TableView } from "./TableView";
 import { TimelineView } from "./TimelineView";
 import { type Column, UI } from "./types";
@@ -69,6 +67,9 @@ export function BoardPanel({
 	onAddTask,
 	onTaskClick,
 	onDeleteTask,
+	onUpdateTask,
+	boardName = "My Board",
+	onRenameBoard,
 }: {
 	columnOrder: string[];
 	columns: Record<string, Column>;
@@ -79,17 +80,36 @@ export function BoardPanel({
 	onAddTask: (columnId: string, title: string) => void;
 	onTaskClick: (task: Task) => void;
 	onDeleteTask?: (id: string) => void;
+	onUpdateTask?: (id: string, data: Partial<Task>) => void;
+	boardName?: string;
+	onRenameBoard?: (newName: string) => void;
 }) {
 	const [isAdding, setIsAdding] = useState(false);
 	const [newListName, setNewListName] = useState("");
-	const [currentView, setCurrentView] = useState<"board" | "table" | "calendar" | "timeline">(
-		"board",
-	);
+	const [isEditingName, setIsEditingName] = useState(false);
+	const [editedName, setEditedName] = useState(boardName);
+	const [currentView, setCurrentView] = useState<
+		"board" | "table" | "calendar" | "timeline" | "dashboard"
+	>("board");
 	const [mounted, setMounted] = useState(false);
+	const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+
+	const [isViewsOpen, setIsViewsOpen] = useState(false);
 
 	useEffect(() => {
 		setMounted(true);
 	}, []);
+
+	useEffect(() => {
+		setEditedName(boardName);
+	}, [boardName]);
+
+	const handleRename = () => {
+		if (editedName.trim() && editedName !== boardName) {
+			onRenameBoard?.(editedName.trim());
+		}
+		setIsEditingName(false);
+	};
 
 	const handleAdd = () => {
 		if (newListName.trim()) {
@@ -103,15 +123,31 @@ export function BoardPanel({
 		<div className="h-full flex flex-col overflow-hidden" style={{ background: UI.board.bg }}>
 			<div className="px-5 py-4 flex items-center justify-between border-b border-white/5 bg-black/20">
 				<div className="flex items-center gap-4">
-					<span className="text-[19px] font-bold text-white tracking-tight">My Board</span>
+					{isEditingName ? (
+						<input
+							value={editedName}
+							onChange={(e) => setEditedName(e.target.value)}
+							onBlur={handleRename}
+							onKeyDown={(e) => e.key === "Enter" && handleRename()}
+							className="bg-white/10 border-none outline-none rounded px-2 py-0.5 text-[19px] font-bold text-white tracking-tight w-48"
+						/>
+					) : (
+						<span
+							onClick={() => setIsEditingName(true)}
+							className="text-[19px] font-bold text-white tracking-tight cursor-text hover:bg-white/5 px-2 py-0.5 rounded transition-colors"
+						>
+							{boardName}
+						</span>
+					)}
 					{mounted && (
-						<Popover>
+						<Popover open={isViewsOpen} onOpenChange={setIsViewsOpen}>
 							<PopoverTrigger asChild>
 								<div className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-white/10 cursor-pointer transition-colors text-white/80">
 									{currentView === "board" && <Columns3 className="w-5 h-5" />}
 									{currentView === "table" && <LayoutGrid className="w-5 h-5" />}
 									{currentView === "calendar" && <CalendarIcon className="w-5 h-5" />}
 									{currentView === "timeline" && <Rows3 className="w-5 h-5" />}
+									{currentView === "dashboard" && <Gauge className="w-5 h-5" />}
 									<ChevronDown className="w-4.5 h-4.5" />
 								</div>
 							</PopoverTrigger>
@@ -123,7 +159,10 @@ export function BoardPanel({
 									<span className="text-[14px] font-bold text-white/60 uppercase tracking-wider">
 										Views
 									</span>
-									<X className="w-4 h-4 text-white/40 cursor-pointer hover:text-white" />
+									<X
+										className="w-4 h-4 text-white/40 cursor-pointer hover:text-white"
+										onClick={() => setIsViewsOpen(false)}
+									/>
 								</div>
 
 								<div className="space-y-1">
@@ -131,58 +170,76 @@ export function BoardPanel({
 										icon={<Columns3 className="w-4 h-4" />}
 										label="Board"
 										active={currentView === "board"}
-										onClick={() => setCurrentView("board")}
+										onClick={() => {
+											setCurrentView("board");
+											setIsViewsOpen(false);
+										}}
 									/>
 									<ViewItem
 										icon={<LayoutGrid className="w-4 h-4" />}
 										label="Table"
 										active={currentView === "table"}
-										onClick={() => setCurrentView("table")}
+										onClick={() => {
+											setCurrentView("table");
+											setIsViewsOpen(false);
+										}}
 									/>
 									<ViewItem
 										icon={<CalendarIcon className="w-4 h-4" />}
 										label="Calendar"
 										active={currentView === "calendar"}
-										onClick={() => setCurrentView("calendar")}
+										onClick={() => {
+											setCurrentView("calendar");
+											setIsViewsOpen(false);
+										}}
 									/>
 									<ViewItem
 										icon={<Rows3 className="w-4 h-4" />}
 										label="Timeline"
 										active={currentView === "timeline"}
-										onClick={() => setCurrentView("timeline")}
+										onClick={() => {
+											setCurrentView("timeline");
+											setIsViewsOpen(false);
+										}}
 									/>
-									<ViewItem icon={<Gauge className="w-4 h-4" />} label="Dashboard" />
-									<ViewItem icon={<MapPin className="w-4 h-4" />} label="Map" />
+									<ViewItem
+										icon={<Gauge className="w-4 h-4" />}
+										label="Dashboard"
+										active={currentView === "dashboard"}
+										onClick={() => {
+											setCurrentView("dashboard");
+											setIsViewsOpen(false);
+										}}
+									/>
 								</div>
 							</PopoverContent>
 						</Popover>
 					)}
 				</div>
-				<div className="flex items-center gap-3">
+				<div className="flex items-center gap-4">
 					<div className="flex items-center -space-x-2 mr-2">
-						{[1, 2].map((i) => (
+						{[0, 1, 2].map((i) => (
 							<div
 								key={i}
-								className="w-8 h-8 rounded-full border-2 border-purple-600 bg-orange-400 flex items-center justify-center text-[10px] font-bold text-white"
+								className="w-8 h-8 rounded-full border-2 border-[#1E1E1E] bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-[10px] font-bold text-white shadow-lg"
 							>
-								R
+								{i === 0 ? "R" : i === 1 ? "A" : "JS"}
 							</div>
 						))}
-					</div>
-					<div className="flex items-center gap-4 text-white/60 mr-2">
-						<Zap className="w-5.5 h-5.5 hover:text-white cursor-pointer" />
-						<ListFilter className="w-5.5 h-5.5 hover:text-white cursor-pointer" />
-						<Star className="w-5.5 h-5.5 hover:text-white cursor-pointer" />
-						<Users className="w-5.5 h-5.5 hover:text-white cursor-pointer" />
+						<div className="w-8 h-8 rounded-full border-2 border-[#1E1E1E] bg-white/5 flex items-center justify-center text-[10px] font-bold text-white/40">
+							+1
+						</div>
 					</div>
 					<button
-						type="button"
-						className="flex items-center gap-2 px-3.5 py-1.5 rounded-md bg-white/10 text-white text-[14px] font-medium hover:bg-white/20 transition-colors"
+						onClick={() => setIsShareModalOpen(true)}
+						className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white text-black font-bold text-[14px] hover:bg-white/90 transition-all active:scale-95 shadow-lg shadow-white/10"
 					>
-						<Users className="w-5 h-5" />
+						<Users className="w-4 h-4" />
 						Share
 					</button>
-					<MoreHorizontal className="w-5.5 h-5 text-white/60 hover:text-white cursor-pointer" />
+					<button className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white/40 hover:text-white">
+						<MoreHorizontal className="w-5 h-5" />
+					</button>
 				</div>
 			</div>
 
@@ -252,17 +309,28 @@ export function BoardPanel({
 					tasks={tasks}
 					onToggleTask={onToggleTask}
 					onTaskClick={onTaskClick}
+					onUpdateTask={onUpdateTask}
+					onAddColumn={onAddColumn}
+					onAddTask={onAddTask}
 				/>
 			) : currentView === "calendar" ? (
 				<CalendarView tasks={tasks} onTaskClick={onTaskClick} />
-			) : (
+			) : currentView === "timeline" ? (
 				<TimelineView
 					columns={columns}
 					columnOrder={columnOrder}
 					tasks={tasks}
 					onTaskClick={onTaskClick}
 				/>
+			) : (
+				<DashboardView columns={columns} columnOrder={columnOrder} tasks={tasks} />
 			)}
+
+			<ShareBoardModal
+				isOpen={isShareModalOpen}
+				onClose={() => setIsShareModalOpen(false)}
+				boardName={boardName}
+			/>
 		</div>
 	);
 }

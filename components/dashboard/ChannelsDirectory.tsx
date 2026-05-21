@@ -76,8 +76,8 @@ export function ChannelsDirectory(_props: ChannelsDirectoryProps) {
 	return (
 		<div className="flex-1 flex flex-col bg-white min-w-0 overflow-hidden">
 			{/* Header */}
-			<div className="h-16 px-6 flex items-center justify-between border-b border-[#d8f3dc] bg-white shrink-0">
-				<h1 className="text-2xl font-semibold text-[#0f2318]">Channels</h1>
+			<div className="h-16 px-6 flex items-center justify-between border-b border-slate-200 bg-white shrink-0">
+				<h1 className="text-2xl font-semibold text-slate-900">Channels</h1>
 				<Button
 					onClick={() => setCreateChannelOpen(true)}
 					className="gap-2 bg-[#0B6E4F] hover:bg-[#0B6E4F]/90 text-white"
@@ -86,33 +86,35 @@ export function ChannelsDirectory(_props: ChannelsDirectoryProps) {
 					Create Channel
 				</Button>
 			</div>
+
 			{/* Banner */}
 			{showBanner && (
-				<div className="relative bg-[#f0f4ee] px-8 py-10 shrink-0">
+				<div className="relative bg-slate-900 px-8 py-10 shrink-0">
 					<button
 						type="button"
 						onClick={() => setShowBanner(false)}
-						className="absolute top-4 right-4 text-[#4a6552] hover:text-[#0f2318] hover:bg-[#d8f3dc] p-1 rounded-lg transition-colors"
+						className="absolute top-4 right-4 text-slate-400 hover:text-white hover:bg-white/10 p-1 rounded-lg transition-colors"
 					>
 						<X className="w-5 h-5" />
 					</button>
 					<div className="max-w-5xl mx-auto">
-						<h2 className="text-2xl font-bold text-[#0f2318] mb-2">
+						<h2 className="text-2xl font-bold text-white mb-2">
 							Organize your team&apos;s conversations
 						</h2>
-						<p className="text-[#4a6552] text-sm mb-6 max-w-2xl">
+						<p className="text-slate-400 text-sm mb-6 max-w-2xl">
 							Channels are spaces for gathering all the right people, messages, files and tools.
 							Organize them by any project, group, initiative or topic of your choosing.
 						</p>
 						<Button
 							onClick={() => setCreateChannelOpen(true)}
-							className="bg-[#2d6a4f] hover:bg-[#1a3d2b] text-white font-medium border border-[#2d6a4f]"
+							className="bg-slate-800 hover:bg-slate-700 text-white font-medium border border-slate-700"
 						>
 							Create a channel
 						</Button>
 					</div>
 				</div>
-			)}{" "}
+			)}
+
 			{/* Search Bar */}
 			<div className="px-8 py-4 flex items-center gap-4 bg-white shrink-0 max-w-5xl mx-auto w-full">
 				<div className="flex-1 relative">
@@ -127,6 +129,7 @@ export function ChannelsDirectory(_props: ChannelsDirectoryProps) {
 					</div>
 				</div>
 			</div>
+
 			{/* Filters and Sort */}
 			<div className="px-8 py-2 flex items-center justify-between gap-4 bg-white shrink-0 max-w-5xl mx-auto w-full mb-2">
 				<div className="flex items-center gap-2">
@@ -174,6 +177,7 @@ export function ChannelsDirectory(_props: ChannelsDirectoryProps) {
 					Most recommended <ChevronDown className="w-3 h-3 ml-1 opacity-50" />
 				</Button>
 			</div>
+
 			{/* Channels List */}
 			<div className="flex-1 overflow-y-auto">
 				<div className="px-8 pb-8 max-w-5xl mx-auto">
@@ -203,6 +207,7 @@ export function ChannelsDirectory(_props: ChannelsDirectoryProps) {
 					)}
 				</div>
 			</div>
+
 			{/* Create Channel Dialog */}
 			<CreateChannelDialog
 				open={createChannelOpen}
@@ -210,6 +215,7 @@ export function ChannelsDirectory(_props: ChannelsDirectoryProps) {
 				onChannelCreated={handleCreateChannel}
 				workspaceName={activeWorkspaceName || "Team UP"}
 			/>
+
 			<style jsx global>{`
 				@keyframes fadeInUp {
 					from { opacity: 0; transform: translateY(10px); }

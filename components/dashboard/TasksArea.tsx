@@ -16,11 +16,25 @@ import {
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertCircle, Calendar as CalendarIcon, Inbox as InboxIcon, Layout } from "lucide-react";
+import {
+	AlertCircle,
+	Calendar as CalendarIcon,
+	Inbox as InboxIcon,
+	Layout,
+	LayoutDashboard,
+	Trash2,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import TaskDetailModal from "@/components/modals/TaskDetailModal";
-import { useCreateTaskStatus, useSpaces, useUpdateTaskStatus } from "@/hooks/api/use-spaces";
+import {
+	useCreateSpace,
+	useCreateTaskStatus,
+	useDeleteSpace,
+	useSpaces,
+	useUpdateSpace,
+	useUpdateTaskStatus,
+} from "@/hooks/api/use-spaces";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useBoardSync } from "@/lib/hooks/useBoardSync";
 import { usePersonalTasks } from "@/lib/hooks/usePersonalTasks";
@@ -31,6 +45,7 @@ import { BoardPanel } from "./tasks/BoardPanel";
 // Modular Components
 import { InboxPanel } from "./tasks/InboxPanel";
 import { PlannerPanel } from "./tasks/PlannerPanel";
+import { SwitchBoardPanel } from "./tasks/SwitchBoardPanel";
 import { TaskCard } from "./tasks/TaskCard";
 
 const dropAnimation: any = {
@@ -50,6 +65,9 @@ export function TasksArea() {
 
 	const createStatus = useCreateTaskStatus(token);
 	const updateStatus = useUpdateTaskStatus(token);
+	const createSpace = useCreateSpace(token);
+	const updateSpace = useUpdateSpace(token);
+	const deleteSpace = useDeleteSpace(token);
 
 	// For the "Board" view, we need a space. We'll pick the first one by default.
 	const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
@@ -57,8 +75,21 @@ export function TasksArea() {
 	useEffect(() => {
 		if (spaces && spaces.length > 0 && !selectedSpaceId) {
 			setSelectedSpaceId(spaces[0].id);
+		} else if (
+			spaces &&
+			spaces.length === 0 &&
+			!isLoadingSpaces &&
+			activeWorkspaceId &&
+			!createSpace.isPending
+		) {
+			// Auto-create a default space if none exist
+			createSpace.mutate({
+				workspaceId: activeWorkspaceId,
+				name: "My Board",
+				prefix: "WS",
+			});
 		}
-	}, [spaces, selectedSpaceId]);
+	}, [spaces, selectedSpaceId, isLoadingSpaces, activeWorkspaceId, createSpace]);
 
 	const selectedSpace = useMemo(() => {
 		return spaces?.find((s) => s.id === selectedSpaceId);
@@ -152,10 +183,13 @@ export function TasksArea() {
 	}, [allPlannerTasks]);
 
 	const [activeTabs, setActiveTabs] = useState<string[]>(["inbox", "planner", "board"]);
-	const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+	const [isSwitchBoardModalOpen, setIsSwitchBoardModalOpen] = useState(false);
+	const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+	const [boardToDelete, setBoardToDelete] = useState<string | null>(null);
+	const [showBoardDeleteConfirm, setShowBoardDeleteConfirm] = useState(false);
 	const [widths, setWidths] = useState<Record<string, number>>({});
 	const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -170,8 +204,17 @@ export function TasksArea() {
 		}),
 	);
 
+	const selectedTask = useMemo(() => {
+		if (!selectedTaskId) return null;
+		return (
+			liveTasksMap[selectedTaskId] ||
+			inboxTasks.find((t) => t.id === selectedTaskId) ||
+			allPlannerTasks.find((t) => t.id === selectedTaskId)
+		);
+	}, [selectedTaskId, liveTasksMap, inboxTasks, allPlannerTasks]);
+
 	const handleTaskClick = (task: Task) => {
-		setSelectedTask(task);
+		setSelectedTaskId(task.id);
 		setIsModalOpen(true);
 	};
 
@@ -242,7 +285,7 @@ export function TasksArea() {
 			title,
 			statusId: defaultStatusId,
 			spaceId: selectedSpaceId,
-			assigneeId: containerId === "inbox" ? user?.id : null,
+			assigneeId: containerId === "inbox" ? user?.id : undefined,
 			reporterId: user?.id || "",
 			priority: "NONE",
 			workType: "TASK",
@@ -253,15 +296,23 @@ export function TasksArea() {
 		} as unknown as Task;
 
 		try {
+			let newTask: Task | null = null;
 			if (containerId === "inbox") {
 				addOptimisticPersonalTask(tempTask, "inbox");
-				await createTaskApi(defaultStatusId, title, { assigneeId: user?.id });
+				newTask = await createTaskApi(defaultStatusId, title, { assigneeId: user?.id });
 			} else if (containerId === "planner") {
-				addOptimisticPersonalTask(tempTask, "planner");
-				await createTaskApi(defaultStatusId, title);
+				const today = new Date();
+				today.setHours(12, 0, 0, 0);
+				const taskWithDate = { ...tempTask, dueDate: today.toISOString() };
+				addOptimisticPersonalTask(taskWithDate, "planner");
+				newTask = await createTaskApi(defaultStatusId, title, { dueDate: today.toISOString() });
 			} else if (liveColumns[containerId]) {
 				// Board creation is already optimistic via useRealtimeTasks
-				await createTaskApi(containerId, title);
+				newTask = await createTaskApi(containerId, title);
+			}
+
+			if (selectedTaskId === tempId && newTask) {
+				setSelectedTaskId(newTask.id);
 			}
 
 			// Background refetch to ensure everything is in sync
@@ -299,6 +350,10 @@ export function TasksArea() {
 	}, [activeTabs]);
 
 	const toggleTab = (tabId: string) => {
+		if (tabId === "switch-board") {
+			setIsSwitchBoardModalOpen(true);
+			return;
+		}
 		setActiveTabs((prev) =>
 			prev.includes(tabId)
 				? prev.filter((t) => t !== tabId)
@@ -446,7 +501,9 @@ export function TasksArea() {
 						const prevPos = liveTasksMap[taskIds[newIndex - 1]]?.position ?? 0;
 						const nextPos = liveTasksMap[taskIds[newIndex]]?.position ?? 0;
 						newPosition = (prevPos + nextPos) / 2;
-					} // Optimistic update for same-container move
+					}
+
+					// Optimistic update for same-container move
 					if (activeContainer === "inbox") {
 						// For inbox, we just let the API handle it or could add optimistic reorder if we had a dedicated hook
 						moveTask(id, liveTasksMap[id]?.statusId || "", newPosition);
@@ -488,9 +545,9 @@ export function TasksArea() {
 						position: newPosition,
 					});
 				} else if (overContainer === "planner") {
-					// Moving TO Planner
-					addOptimisticPersonalTask(task, "planner");
-					updateTaskApi(id, { statusId: targetStatusId, position: newPosition });
+					// Dragging to planner is disabled as per user request
+					setActiveId(null);
+					return;
 				} else if (liveColumnOrder.includes(overContainer)) {
 					// Moving TO Board — also clear assigneeId so it leaves Inbox on reload
 					removeOptimisticTask(id);
@@ -590,20 +647,7 @@ export function TasksArea() {
 											}}
 										/>
 									)}
-									{tabId === "planner" && (
-										<PlannerPanel
-											tasks={plannerTasks}
-											onToggleTask={toggleTaskCompletion}
-											onTaskClick={handleTaskClick}
-											onDeleteTask={(id) => {
-												const task = liveTasksMap[id] || plannerTasks.find((t) => t.id === id);
-												if (task) {
-													setTaskToDelete(task);
-													setShowDeleteConfirm(true);
-												}
-											}}
-										/>
-									)}
+									{tabId === "planner" && <PlannerPanel />}
 									{tabId === "board" && (
 										<BoardPanel
 											columnOrder={liveColumnOrder}
@@ -619,6 +663,16 @@ export function TasksArea() {
 												if (task) {
 													setTaskToDelete(task);
 													setShowDeleteConfirm(true);
+												}
+											}}
+											onUpdateTask={updateTaskApi}
+											boardName={selectedSpace?.name}
+											onRenameBoard={(newName) => {
+												if (selectedSpaceId) {
+													updateSpace.mutate({
+														id: selectedSpaceId,
+														data: { name: newName },
+													});
 												}
 											}}
 										/>
@@ -651,8 +705,14 @@ export function TasksArea() {
 				isOpen={isModalOpen}
 				onClose={() => setIsModalOpen(false)}
 				task={selectedTask}
-				onUpdateTask={updateTaskApi}
+				onUpdateTask={(id, data) => {
+					if (inboxTasks.some((t) => t.id === id) || plannerTasks.some((t) => t.id === id)) {
+						updateOptimisticTask(id, data);
+					}
+					updateTaskApi(id, data);
+				}}
 				workspaceId={activeWorkspaceId}
+				isInbox={inboxTasks.some((t) => t.id === selectedTask?.id)}
 			/>
 
 			{/* Floating Switcher */}
@@ -678,10 +738,70 @@ export function TasksArea() {
 						active={activeTabs.includes("board")}
 						onClick={() => toggleTab("board")}
 					/>
+					<NavButton
+						icon={<LayoutDashboard className="w-5 h-5" />}
+						label="Switch Board"
+						active={isSwitchBoardModalOpen}
+						onClick={() => setIsSwitchBoardModalOpen(true)}
+					/>
 				</div>
 			</div>
 
-			{/* Deletion Confirmation Modal */}
+			{/* Switch Board Modal */}
+			<AnimatePresence>
+				{isSwitchBoardModalOpen && (
+					<div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+						<motion.div
+							initial={{ opacity: 0 }}
+							animate={{ opacity: 1 }}
+							exit={{ opacity: 0 }}
+							onClick={() => setIsSwitchBoardModalOpen(false)}
+							className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+						/>
+						<motion.div
+							initial={{ opacity: 0, scale: 0.95, y: 20 }}
+							animate={{ opacity: 1, scale: 1, y: 0 }}
+							exit={{ opacity: 0, scale: 0.95, y: 20 }}
+							className="relative w-full max-w-4xl h-[80vh] flex flex-col"
+						>
+							<SwitchBoardPanel
+								spaces={spaces || []}
+								selectedSpaceId={selectedSpaceId}
+								onSelect={(id) => {
+									setSelectedSpaceId(id);
+									setIsSwitchBoardModalOpen(false);
+								}}
+								onClose={() => setIsSwitchBoardModalOpen(false)}
+								onDelete={(id) => {
+									setBoardToDelete(id);
+									setShowBoardDeleteConfirm(true);
+								}}
+								onCreateNew={() => {
+									if (activeWorkspaceId && spaces) {
+										const myBoardSpaces = spaces.filter((s) => s.name.startsWith("My Board"));
+										let nextNum = 1;
+										if (myBoardSpaces.length > 0) {
+											const nums = myBoardSpaces.map((s) => {
+												const match = s.name.match(/My Board (\d+)/);
+												return match ? parseInt(match[1], 10) : 0;
+											});
+											nextNum = Math.max(...nums, 0) + 1;
+										}
+
+										createSpace.mutate({
+											workspaceId: activeWorkspaceId,
+											name: `My Board ${nextNum}`,
+											prefix: `MB${nextNum}`,
+										});
+									}
+								}}
+							/>
+						</motion.div>
+					</div>
+				)}
+			</AnimatePresence>
+
+			{/* Task Deletion Confirmation Modal */}
 			<AnimatePresence>
 				{showDeleteConfirm && taskToDelete && (
 					<div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -730,16 +850,70 @@ export function TasksArea() {
 					</div>
 				)}
 			</AnimatePresence>
+
+			{/* Board Deletion Confirmation Modal */}
+			<AnimatePresence>
+				{showBoardDeleteConfirm && boardToDelete && (
+					<div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+						<motion.div
+							initial={{ scale: 0.9, opacity: 0 }}
+							animate={{ scale: 1, opacity: 1 }}
+							exit={{ scale: 0.9, opacity: 0 }}
+							className="w-full max-w-md bg-[#1A1C1E] border border-white/10 rounded-[32px] overflow-hidden shadow-2xl"
+						>
+							<div className="p-8">
+								<div className="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center mb-6">
+									<Trash2 className="w-8 h-8 text-red-500" />
+								</div>
+								<h2 className="text-[24px] font-black text-white mb-3 tracking-tight">
+									Delete Board?
+								</h2>
+								<p className="text-white/40 leading-relaxed mb-8">
+									Are you sure you want to delete this board? This will remove all tasks and
+									statuses associated with it. This action cannot be undone.
+								</p>
+								<div className="flex items-center gap-4">
+									<button
+										onClick={() => setShowBoardDeleteConfirm(false)}
+										className="flex-1 px-6 py-4 rounded-2xl bg-white/5 hover:bg-white/10 text-white font-bold transition-all active:scale-95"
+									>
+										Cancel
+									</button>
+									<button
+										onClick={async () => {
+											if (boardToDelete) {
+												await deleteSpace.mutateAsync(boardToDelete);
+												toast.success("Board deleted");
+												setShowBoardDeleteConfirm(false);
+												setBoardToDelete(null);
+												if (selectedSpaceId === boardToDelete) {
+													setSelectedSpaceId(null);
+												}
+											}
+										}}
+										className="flex-1 px-6 py-4 rounded-2xl bg-red-500 hover:bg-red-600 text-white font-bold shadow-lg shadow-red-500/20 transition-all active:scale-95"
+									>
+										Delete Board
+									</button>
+								</div>
+							</div>
+						</motion.div>
+					</div>
+				)}
+			</AnimatePresence>
 		</div>
 	);
 }
 
 function PanelContainer({ id, children }: { id: string; children: React.ReactNode }) {
-	const { setNodeRef } = useDroppable({ id });
+	const { setNodeRef } = useDroppable({ id, disabled: id === "planner" });
 	return (
 		<div
 			ref={setNodeRef}
-			className="flex-1 h-full overflow-hidden rounded-[24px] border border-white/5 shadow-2xl"
+			className={cn(
+				"flex-1 h-full overflow-hidden rounded-[24px] border border-white/5 shadow-2xl transition-colors",
+				id === "planner" ? "bg-[#0D0D0D]" : "bg-transparent",
+			)}
 		>
 			{children}
 		</div>

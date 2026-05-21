@@ -16,11 +16,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useSpace } from "@/hooks/api/use-spaces";
+import { useSpaces } from "@/hooks/api/use-spaces";
 import { useBulkCreateTasks } from "@/hooks/api/use-tasks";
 import { useMemberLookup } from "@/hooks/use-member-lookup";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useWorkspaceMembers } from "@/hooks/use-workspace-members";
+import { useWorkspaceStore } from "@/stores/workspace-store";
 
 // ─── Types ───
 interface SuggestedTask {
@@ -148,9 +149,12 @@ export function AskAIPanel({
 	const { members } = useWorkspaceMembers();
 	const { getMember } = useMemberLookup();
 	const { token } = useSupabaseAuth();
-	const { data: space } = useSpace(spaceId, token || undefined);
+	const { activeWorkspaceId } = useWorkspaceStore();
+	const { data: spaces } = useSpaces(activeWorkspaceId || "", token || undefined);
+	const space = spaces?.find((s) => s.id === spaceId);
+	const defaultStatusId = space?.statuses?.[0]?.id || "";
+
 	const bulkCreate = useBulkCreateTasks(token || undefined);
-	const defaultStatusId = space?.statuses?.[0]?.id;
 
 	const scrollToBottom = useCallback(() => {
 		setTimeout(() => {
@@ -217,10 +221,10 @@ export function AskAIPanel({
 			setCreatingMsgId(msgId);
 
 			try {
-				await bulkCreate.mutateAsync(
-					msg.tasks.map((task) => ({
+				await bulkCreate.mutateAsync({
+					tasks: msg.tasks.map((task) => ({
 						spaceId,
-						statusId: defaultStatusId || "",
+						statusId: defaultStatusId, // Add statusId as well
 						title: task.title,
 						priority: task.priority,
 						workType: task.workType,
@@ -228,7 +232,7 @@ export function AskAIPanel({
 						startDate: task.startDate?.toISOString(),
 						dueDate: task.dueDate?.toISOString(),
 					})),
-				);
+				});
 			} catch (err) {
 				console.error("Failed to bulk create tasks:", err);
 			}

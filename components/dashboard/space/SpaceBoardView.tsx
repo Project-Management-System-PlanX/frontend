@@ -31,22 +31,14 @@ export function SpaceBoardView({ spaceId }: { spaceId: string }) {
 	const { token } = useSupabaseAuth();
 
 	const { data: space, isLoading: isSpaceLoading } = useSpace(spaceId, token || undefined);
-	const { data: serverTasks } = useTasks(spaceId, token || undefined);
+	const { data: tasks = [] } = useTasks(spaceId, undefined, token || undefined);
 	const { mutateAsync: createTask } = useCreateTask(token || undefined);
 	const { mutateAsync: moveTask } = useMoveTask(token || undefined);
 
-	const [tasks, setTasks] = useState<Task[]>([]);
 	const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 	const [isCreating, setIsCreating] = useState<string | null>(null);
 	const [newTitle, setNewTitle] = useState("");
 	const inputRef = useRef<HTMLTextAreaElement>(null);
-
-	// Sync local tasks with server
-	useEffect(() => {
-		if (serverTasks) {
-			setTasks(serverTasks);
-		}
-	}, [serverTasks]);
 
 	useEffect(() => {
 		if (isCreating && inputRef.current) {
@@ -66,25 +58,6 @@ export function SpaceBoardView({ spaceId }: { spaceId: string }) {
 		setNewTitle("");
 		setIsCreating(null);
 
-		// Optimistic update
-		const tempId = `temp-${Date.now()}`;
-		const newTask: Task = {
-			id: tempId,
-			spaceId,
-			statusId,
-			title,
-			priority: "NONE",
-			workType: "TASK",
-			taskNumber: 0,
-			reporterId: "me", // Placeholder
-			resolution: "UNRESOLVED",
-			position: 0,
-			flagged: false,
-			createdAt: new Date().toISOString(),
-			updatedAt: new Date().toISOString(),
-		};
-		setTasks((prev) => [...prev, newTask]);
-
 		try {
 			await createTask({
 				spaceId,
@@ -93,8 +66,6 @@ export function SpaceBoardView({ spaceId }: { spaceId: string }) {
 			});
 		} catch (error) {
 			console.error("Failed to create task", error);
-			// Rollback on error handled mostly by invalidation if we refetch, but a strict rollback would filter tempId
-			setTasks((prev) => prev.filter((t) => t.id !== tempId));
 		}
 	};
 
@@ -166,20 +137,11 @@ export function SpaceBoardView({ spaceId }: { spaceId: string }) {
 				triggerCelebration();
 			}
 
-			// Optimistic UI update
-			setTasks((prev) =>
-				prev.map((t) => (t.id === taskId ? { ...t, statusId: targetStatus.id } : t)),
-			);
-
-			// Backend update
+			// The useMoveTask hook handles optimistic updates and rollback
 			try {
 				await moveTask({ id: taskId, data: { statusId: targetStatus.id, position: tasks.length } });
 			} catch (error) {
 				console.error("Failed to move task", error);
-				// Revert on error
-				setTasks((prev) =>
-					prev.map((t) => (t.id === taskId ? { ...t, statusId: task.statusId } : t)),
-				);
 			}
 		}
 	};
@@ -318,6 +280,7 @@ export function SpaceBoardView({ spaceId }: { spaceId: string }) {
 				task={selectedTask}
 				isOpen={!!selectedTask}
 				onClose={() => setSelectedTask(null)}
+				columnName={space?.name}
 			/>
 		</>
 	);

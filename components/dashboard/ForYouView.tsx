@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useTasksRealtime } from "@/hooks/use-tasks-realtime";
 import { CreateTaskModal } from "../modals/CreateTaskModal";
 import { ActivityTabsNavigation } from "./foryou/ActivityTabsNavigation";
 import { AssignedToMeTab } from "./foryou/AssignedToMeTab";
@@ -16,6 +17,7 @@ export function ForYouView() {
 	const [activeActivityTab, setActiveActivityTab] = useState("Assigned to me");
 	const [activeSpaceTab, setActiveSpaceTab] = useState("Recommended");
 	const [showCreateTask, setShowCreateTask] = useState(false);
+	useTasksRealtime();
 
 	return (
 		<div

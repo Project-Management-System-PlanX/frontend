@@ -77,20 +77,27 @@ export function TimelineView({
 							Lists
 						</div>
 						<div className="flex-1 overflow-y-auto custom-scrollbar">
-							{columnOrder.map((colId) => (
-								<div
-									key={colId}
-									className="h-[100px] border-b border-white/5 flex flex-col justify-center px-6 gap-1 group hover:bg-white/[0.02] transition-colors"
-								>
-									<span className="text-[14px] font-black text-white/80 group-hover:text-white">
-										{columns[colId].name}
-									</span>
-									<div className="flex items-center justify-between">
-										<span className="text-[11px] font-bold text-white/30">(0) Not scheduled</span>
-										<Plus className="w-3.5 h-3.5 text-white/20 hover:text-white cursor-pointer transition-colors" />
+							{columnOrder.map((colId) => {
+								const columnTasks = columns[colId].taskIds.map((tid) => tasks[tid]).filter(Boolean);
+								const scheduledCount = columnTasks.filter((t) => t.dueDate).length;
+
+								return (
+									<div
+										key={colId}
+										className="h-[120px] border-b border-white/5 flex flex-col justify-center px-6 gap-2 group hover:bg-white/[0.02] transition-colors"
+									>
+										<span className="text-[15px] font-black text-white/80 group-hover:text-white truncate">
+											{columns[colId].name}
+										</span>
+										<div className="flex items-center justify-between">
+											<span className="text-[11px] font-bold text-white/30">
+												({scheduledCount}) Scheduled
+											</span>
+											<Plus className="w-4 h-4 text-white/20 hover:text-white cursor-pointer transition-colors" />
+										</div>
 									</div>
-								</div>
-							))}
+								);
+							})}
 						</div>
 						<div className="p-4 border-t border-white/5 bg-black/20">
 							<button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white font-black text-[13px] transition-all border border-white/5 shadow-lg active:scale-95">
@@ -103,14 +110,14 @@ export function TimelineView({
 					{/* Timeline Grid */}
 					<div className="flex-1 flex flex-col overflow-x-auto custom-scrollbar">
 						{/* Day Header */}
-						<div className="flex h-[60px] border-b border-white/5 bg-black/5 shrink-0">
+						<div className="flex h-[60px] border-b border-white/10 bg-black/5 shrink-0 w-max">
 							{days.map((day, idx) => {
 								const isToday = isSameDay(day, new Date());
 								return (
 									<div
 										key={idx}
 										className={cn(
-											"min-w-[120px] flex-1 border-r border-white/5 flex flex-col items-center justify-center gap-0.5 relative",
+											"w-[140px] border-r border-white/10 flex flex-col items-center justify-center gap-0.5 relative shrink-0",
 											isToday && "bg-blue-600/[0.05]",
 										)}
 									>
@@ -137,17 +144,14 @@ export function TimelineView({
 						</div>
 
 						{/* Grid Rows */}
-						<div className="flex-1 flex flex-col">
+						<div className="flex-1 flex flex-col w-max">
 							{columnOrder.map((colId) => (
 								<div
 									key={colId}
-									className="flex h-[100px] border-b border-white/5 relative group hover:bg-white/[0.01]"
+									className="flex h-[120px] border-b border-white/10 relative group hover:bg-white/[0.01]"
 								>
 									{days.map((day, idx) => (
-										<div
-											key={idx}
-											className="min-w-[120px] flex-1 border-r border-white/5 relative"
-										>
+										<div key={idx} className="w-[140px] border-r border-white/10 relative shrink-0">
 											{/* Tasks for this day in this column */}
 											{columns[colId].taskIds
 												.map((tid) => tasks[tid])
@@ -156,15 +160,26 @@ export function TimelineView({
 													<div
 														key={task.id}
 														onClick={() => onTaskClick(task)}
-														className="absolute inset-x-2 top-4 bottom-4 bg-black/40 rounded-xl border border-white/5 p-2 flex flex-col justify-between hover:bg-black/60 hover:border-white/20 transition-all cursor-pointer shadow-2xl group/task"
+														className="absolute inset-x-2 top-2 bottom-2 bg-[#1A1A1A] rounded-xl border border-white/10 p-2.5 flex flex-col gap-1.5 hover:bg-[#252525] hover:border-white/20 transition-all cursor-pointer shadow-2xl group/task z-10"
 													>
-														<span className="text-[11px] font-black text-white truncate">
+														<div className="flex items-center justify-between">
+															<div className="flex gap-1">
+																{task.labels?.slice(0, 2).map((l) => (
+																	<div
+																		key={l.id}
+																		className="h-1 w-4 rounded-full"
+																		style={{ backgroundColor: l.color }}
+																	/>
+																))}
+															</div>
+															<div className="w-5 h-5 rounded-full border border-white/10 bg-orange-500 flex items-center justify-center text-[9px] font-black text-white">
+																{task.assignees?.[0]?.user?.firstName?.[0] || "R"}
+															</div>
+														</div>
+														<span className="text-[12px] font-bold text-white truncate leading-tight">
 															{task.title}
 														</span>
-														<div className="flex items-center justify-between">
-															<div className="w-4 h-4 rounded-full border border-white/10 bg-orange-500 flex items-center justify-center text-[8px] font-black text-white">
-																R
-															</div>
+														<div className="flex items-center justify-between mt-auto">
 															<div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
 														</div>
 													</div>

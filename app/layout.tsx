@@ -1,22 +1,15 @@
 import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
-import { DM_Sans, DM_Serif_Display } from "next/font/google";
+import { Inter } from "next/font/google";
 import type React from "react";
 import { Toaster } from "sonner";
 import { QueryProvider } from "@/providers/query-provider";
 import "./globals.css";
 
-const dmSerifDisplay = DM_Serif_Display({
+const inter = Inter({
     subsets: ["latin"],
-    variable: "--font-heading",
-    weight: ["400"],
-    style: ["normal", "italic"],
-});
-
-const dmSans = DM_Sans({
-    subsets: ["latin"],
-    variable: "--font-body",
-    weight: ["300", "400", "500", "600", "700"],
+    variable: "--font-sans",
+    weight: ["300", "400", "500", "600", "700", "800", "900"],
 });
 
 export const metadata: Metadata = {
@@ -30,13 +23,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
     children,
-}: Readonly<{
+    }: Readonly<{
     children: React.ReactNode;
 }>) {
     return (
         <html lang="en">
             <body
-                className={`${dmSerifDisplay.variable} ${dmSans.variable} antialiased`}
+                className={`${inter.variable} antialiased`}
             >
                 <QueryProvider>{children}</QueryProvider>
                 <Toaster position="bottom-right" richColors />

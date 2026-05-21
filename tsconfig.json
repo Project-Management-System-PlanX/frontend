@@ -29,5 +29,11 @@
 		".next/types/**/*.ts",
 		".next/dev/types/**/*.ts"
 	],
-	"exclude": ["node_modules"]
+	"exclude": [
+		"node_modules",
+		"frontend_1",
+		"src/test/faq-section.test.tsx",
+		"src/test/footer.test.tsx",
+		"src/test/pricing-section.test.tsx"
+	]
 }

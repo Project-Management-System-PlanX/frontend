@@ -13,7 +13,6 @@ import {
 	Calendar as CalendarIcon,
 	CheckSquare,
 	ChevronDown,
-	Edit2,
 	Eye,
 	HelpCircle,
 	Image as ImageIcon,
@@ -24,7 +23,6 @@ import {
 	MoreHorizontal,
 	Paperclip,
 	Plus,
-	Smile,
 	Tag,
 	Type,
 	Users,
@@ -36,7 +34,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { taskService } from "@/lib/api/services/tasks";
-import type { Task, TaskComment, TaskLabel } from "@/lib/types/models";
+import { supabase } from "@/lib/supabase/client";
+import type { Task, TaskComment, TaskLabel, UserProfile } from "@/lib/types/models";
 import { cn } from "@/lib/utils";
 
 interface TaskDetailModalProps {
@@ -44,8 +43,9 @@ interface TaskDetailModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	columnName?: string;
-	onUpdateTask?: (id: string, data: Partial<Task>) => void;
+	onUpdateTask?: (id: string, data: any) => void;
 	workspaceId?: string | null;
+	isInbox?: boolean;
 }
 export default function TaskDetailModal({
 	task,
@@ -54,28 +54,48 @@ export default function TaskDetailModal({
 	columnName = "Today",
 	onUpdateTask,
 	workspaceId,
+	isInbox,
 }: TaskDetailModalProps) {
 	const { token, user } = useSupabaseAuth();
 	const [comment, setComment] = useState("");
 	const [localComments, setLocalComments] = useState<TaskComment[]>([]);
-	const [isSaving, setIsSaving] = useState(false);
-	const [isAddingComment, setIsAddingComment] = useState(false);
+	const [_isSaving, _setIsSaving] = useState(false);
+	const [_isAddingComment, _setIsAddingComment] = useState(false);
 	const [workspaceMembers, setWorkspaceMembers] = useState<any[]>([]);
 	const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+	const [isMetaDatePickerOpen, setIsMetaDatePickerOpen] = useState(false);
 	const [isMemberPickerOpen, setIsMemberPickerOpen] = useState(false);
+	const [isMetaMemberPickerOpen, setIsMetaMemberPickerOpen] = useState(false);
 	const [isLabelPickerOpen, setIsLabelPickerOpen] = useState(false);
+	const [isMetaLabelPickerOpen, setIsMetaLabelPickerOpen] = useState(false);
+	const [isCoverOpen, setIsCoverOpen] = useState(false);
 
-	const [localAssigneeId, setLocalAssigneeId] = useState<string | null>(task?.assigneeId || null);
+	const [localAssignees, setLocalAssignees] = useState<{ userId: string; user: UserProfile }[]>(
+		task?.assignees || [],
+	);
 	const [localDueDate, setLocalDueDate] = useState<Date | undefined>(
 		task?.dueDate ? new Date(task.dueDate) : undefined,
 	);
 	const [localLabels, setLocalLabels] = useState<TaskLabel[]>(task?.labels || []);
+	const [coverColor, setCoverColor] = useState<string | null>(task?.coverColor ?? null);
+	const [coverSize, setCoverSize] = useState<"partial" | "full">("partial");
 
 	useEffect(() => {
-		setLocalAssigneeId(task?.assigneeId || null);
+		setLocalAssignees(task?.assignees || []);
 		setLocalDueDate(task?.dueDate ? new Date(task.dueDate) : undefined);
 		setLocalLabels(task?.labels || []);
-	}, [task?.assigneeId, task?.dueDate, task?.labels]);
+		setCoverColor(task?.coverColor ?? null);
+
+		// Auto-cleanup legacy multiple labels
+		if (isOpen && task?.labels && task.labels.length > 1 && token) {
+			const keep = task.labels[0];
+			const toRemove = task.labels.slice(1);
+			setLocalLabels([keep]);
+			Promise.all(toRemove.map((l) => taskService.removeLabel(task.id, l.id, token))).catch((err) =>
+				console.error("Auto-cleanup failed", err),
+			);
+		}
+	}, [task?.assignees, task?.dueDate, task?.labels, task?.coverColor, isOpen, token, task?.id]);
 
 	useEffect(() => {
 		if (task?.comments) {
@@ -97,6 +117,76 @@ export default function TaskDetailModal({
 		};
 		if (isOpen) fetchMembers();
 	}, [workspaceId, token, isOpen]);
+
+	// ─── Realtime Comments ───
+	useEffect(() => {
+		if (!task?.id || !isOpen) return;
+
+		const channel = supabase
+			.channel(`task-comments-${task.id}`)
+			.on(
+				"postgres_changes",
+				{
+					event: "*",
+					schema: "public",
+					table: "task_comments",
+					filter: `taskId=eq.${task.id}`,
+				},
+				async (payload) => {
+					if (payload.eventType === "INSERT") {
+						const newComment = payload.new as TaskComment;
+						// If we don't have user info, we might want to fetch it or just show Team Member
+						setLocalComments((prev) => {
+							if (prev.some((c) => c.id === newComment.id)) return prev;
+							return [newComment, ...prev];
+						});
+					} else if (payload.eventType === "DELETE") {
+						setLocalComments((prev) => prev.filter((c) => c.id !== payload.old.id));
+					} else if (payload.eventType === "UPDATE") {
+						const updated = payload.new as TaskComment;
+						setLocalComments((prev) =>
+							prev.map((c) => (c.id === updated.id ? { ...c, ...updated } : c)),
+						);
+					}
+				},
+			)
+			.subscribe();
+
+		return () => {
+			supabase.removeChannel(channel);
+		};
+	}, [task?.id, isOpen]);
+
+	// ─── Realtime Task Attributes ───
+	useEffect(() => {
+		if (!task?.id || !isOpen) return;
+
+		const channel = supabase
+			.channel(`task-attributes-${task.id}`)
+			.on(
+				"postgres_changes",
+				{
+					event: "UPDATE",
+					schema: "public",
+					table: "tasks",
+					filter: `id=eq.${task.id}`,
+				},
+				async (payload) => {
+					const updatedTask = payload.new as Task;
+					// Update local states if needed, or trigger a re-fetch
+					if (updatedTask.dueDate) setLocalDueDate(new Date(updatedTask.dueDate));
+					if (updatedTask.assigneeId !== undefined) {
+						// Since we now have multi-assignees, we might need to handle those separately
+						// but this will handle the legacy single-assignee if still used
+					}
+				},
+			)
+			.subscribe();
+
+		return () => {
+			supabase.removeChannel(channel);
+		};
+	}, [task?.id, isOpen]);
 
 	const editor = useEditor({
 		immediatelyRender: false,
@@ -127,26 +217,39 @@ export default function TaskDetailModal({
 	}, [task, editor]);
 
 	const handleSaveDescription = async () => {
-		if (!task || !editor || !onUpdateTask) return;
-		setIsSaving(true);
-		try {
-			await onUpdateTask(task.id, { description: editor.getHTML() });
-		} finally {
-			setIsSaving(false);
-		}
+		if (!task || !editor || !token) return;
+		const content = editor.getHTML();
+		// Optimistic: update parent state + close immediately
+		onUpdateTask?.(task.id, { description: content });
+		onClose();
+		// Fire-and-forget backend sync
+		taskService
+			.update(task.id, { description: content }, token)
+			.catch((err) => console.error("Failed to save description", err));
 	};
 
 	const handleAddComment = async () => {
 		if (!task || !comment.trim() || !token) return;
-		setIsAddingComment(true);
+		const commentText = comment.trim();
+		// Optimistic: show comment immediately
+		const tempComment: TaskComment = {
+			id: `temp-${Date.now()}`,
+			taskId: task.id,
+			userId: user?.id || "",
+			content: commentText,
+			createdAt: new Date().toISOString(),
+			updatedAt: new Date().toISOString(),
+		};
+		setLocalComments((prev) => [tempComment, ...prev]);
+		setComment("");
+		// Background sync
 		try {
-			const newComment = await taskService.addComment(task.id, comment, token);
-			setLocalComments((prev) => [...prev, newComment]);
-			setComment("");
+			const saved = await taskService.addComment(task.id, commentText, token);
+			setLocalComments((prev) => prev.map((c) => (c.id === tempComment.id ? saved : c)));
 		} catch (error) {
 			console.error("Failed to add comment", error);
-		} finally {
-			setIsAddingComment(false);
+			// Rollback on failure
+			setLocalComments((prev) => prev.filter((c) => c.id !== tempComment.id));
 		}
 	};
 
@@ -171,20 +274,53 @@ export default function TaskDetailModal({
 					exit={{ opacity: 0, scale: 0.95, y: 20 }}
 					className="relative w-full max-w-[1000px] h-[85vh] bg-[#121212] border border-white/10 rounded-xl overflow-hidden shadow-2xl flex flex-col text-white"
 				>
+					{/* Cover Bar */}
+					{coverColor && (
+						<div
+							className={cn(
+								"w-full shrink-0 transition-all duration-300",
+								coverSize === "full" ? "h-40" : "h-16",
+							)}
+							style={{ backgroundColor: coverColor }}
+						/>
+					)}
+
 					{/* Header */}
-					<div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
-						<div className="flex items-center gap-2"></div>
-						<div className="flex items-center gap-4 text-white/40">
-							<button className="hover:text-white transition-colors p-1">
-								<ImageIcon className="w-5 h-5" />
+					<div className="flex items-center justify-between px-6 py-4 border-b border-white/5 shrink-0">
+						{/* Top-left: column name pill + label pill */}
+						<div className="flex items-center gap-2">
+							<button className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#8B2323] hover:bg-[#A52A2A] transition-colors text-[13px] font-bold text-white shadow-sm group">
+								{isInbox ? "Inbox" : task.status?.name || columnName}
+								<ChevronDown className="w-3.5 h-3.5 text-white/70 group-hover:text-white transition-colors" />
 							</button>
+						</div>
+						{/* Top-right controls */}
+						<div className="flex items-center gap-1 text-white/40">
+							<CoverPopover
+								isOpen={isCoverOpen}
+								setIsOpen={setIsCoverOpen}
+								coverColor={coverColor}
+								coverSize={coverSize}
+								onCoverChange={(color, size) => {
+									// Optimistic: update UI immediately
+									setCoverColor(color);
+									if (size) setCoverSize(size);
+									onUpdateTask?.(task.id, { coverColor: color });
+									// Fire-and-forget backend sync
+									if (token) {
+										taskService
+											.update(task.id, { coverColor: color }, token)
+											.catch((err) => console.error("Failed to save cover color", err));
+									}
+								}}
+							/>
 							<button className="hover:text-white transition-colors p-1">
 								<Eye className="w-5 h-5" />
 							</button>
 							<button className="hover:text-white transition-colors p-1">
 								<MoreHorizontal className="w-5 h-5" />
 							</button>
-							<button onClick={onClose} className="hover:text-white transition-colors p-1 ml-2">
+							<button onClick={onClose} className="hover:text-white transition-colors p-1 ml-1">
 								<X className="w-6 h-6" />
 							</button>
 						</div>
@@ -213,47 +349,72 @@ export default function TaskDetailModal({
 									isOpen={isLabelPickerOpen}
 									setIsOpen={setIsLabelPickerOpen}
 									onUpdateLabels={setLocalLabels}
-								/>
-
-								<TaskMemberPopover
-									task={task}
-									workspaceMembers={workspaceMembers}
-									isOpen={isMemberPickerOpen}
-									setIsOpen={setIsMemberPickerOpen}
 									onUpdateTask={onUpdateTask}
-									onSelectionChange={setLocalAssigneeId}
+									trigger={
+										<ActionButton
+											icon={<Tag className="w-4 h-4" />}
+											label={task.id.startsWith("temp-") ? "Syncing..." : "Labels"}
+											active={isLabelPickerOpen}
+											disabled={task.id.startsWith("temp-")}
+										/>
+									}
 								/>
-
+								{!isInbox && (
+									<TaskMemberPopover
+										task={task}
+										workspaceMembers={workspaceMembers}
+										isOpen={isMemberPickerOpen}
+										setIsOpen={setIsMemberPickerOpen}
+										onUpdateAssignees={setLocalAssignees}
+										onUpdateTask={onUpdateTask}
+										trigger={
+											<ActionButton
+												icon={<Users className="w-4 h-4" />}
+												label={task.id.startsWith("temp-") ? "Syncing..." : "Members"}
+												active={isMemberPickerOpen}
+												disabled={task.id.startsWith("temp-")}
+											/>
+										}
+									/>
+								)}
 								<ActionButton icon={<CheckSquare className="w-4 h-4" />} label="Checklist" />
 							</div>
 
 							{/* Assigned Meta Info Section */}
-							{(localAssigneeId || localDueDate || (localLabels && localLabels.length > 0)) && (
+							{(localAssignees.length > 0 ||
+								localDueDate ||
+								(localLabels && localLabels.length > 0)) && (
 								<div className="flex flex-wrap gap-8 mb-6 ml-1">
-									{localAssigneeId && (
+									{localAssignees && localAssignees.length > 0 && !isInbox && (
 										<div className="flex flex-col gap-1.5">
 											<h3 className="text-[11px] font-bold text-white/50 tracking-wide uppercase">
 												Members
 											</h3>
-											<div className="flex items-center gap-1.5">
-												<div className="w-7 h-7 rounded-full bg-[#F59E0B] flex items-center justify-center text-[11px] font-bold text-black shadow-sm uppercase shrink-0">
-													{workspaceMembers.find((m) => m.userId === localAssigneeId)?.user
-														?.firstName?.[0] || "U"}
-												</div>
-												<TaskMemberPopover
-													task={task}
-													workspaceMembers={workspaceMembers}
-													isOpen={isMemberPickerOpen}
-													setIsOpen={setIsMemberPickerOpen}
-													onUpdateTask={onUpdateTask}
-													onSelectionChange={setLocalAssigneeId}
-													trigger={
-														<button className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-colors border border-dashed border-white/20 cursor-pointer shrink-0">
+											<TaskMemberPopover
+												task={task}
+												workspaceMembers={workspaceMembers}
+												isOpen={isMetaMemberPickerOpen}
+												setIsOpen={setIsMetaMemberPickerOpen}
+												onUpdateAssignees={setLocalAssignees}
+												onUpdateTask={onUpdateTask}
+												trigger={
+													<div className="flex items-center gap-1.5 cursor-pointer group">
+														<div className="flex -space-x-2">
+															{localAssignees.map((assignee) => (
+																<div
+																	key={assignee.userId}
+																	className="w-7 h-7 rounded-full bg-[#F59E0B] flex items-center justify-center text-[11px] font-bold text-black shadow-sm uppercase border-2 border-[#1E1F21]"
+																>
+																	{assignee.user?.firstName?.[0] || "U"}
+																</div>
+															))}
+														</div>
+														<button className="w-7 h-7 rounded-full bg-white/5 group-hover:bg-white/10 flex items-center justify-center text-white/50 group-hover:text-white transition-colors border border-dashed border-white/20 shrink-0">
 															<Plus className="w-3.5 h-3.5" />
 														</button>
-													}
-												/>
-											</div>
+													</div>
+												}
+											/>
 										</div>
 									)}
 
@@ -262,27 +423,28 @@ export default function TaskDetailModal({
 											<h3 className="text-[11px] font-bold text-white/50 tracking-wide uppercase">
 												Labels
 											</h3>
-											<div className="flex flex-wrap items-center gap-1.5">
-												{localLabels.map((label) => (
-													<div
-														key={label.id}
-														className="w-8 h-8 rounded shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-														style={{ backgroundColor: label.color }}
-														title={label.name}
-													/>
-												))}
-												<TaskLabelPopover
-													task={task}
-													isOpen={isLabelPickerOpen}
-													setIsOpen={setIsLabelPickerOpen}
-													onUpdateLabels={setLocalLabels}
-													trigger={
-														<button className="w-8 h-8 rounded bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-colors border border-dashed border-white/20 cursor-pointer shrink-0">
+											<TaskLabelPopover
+												task={task}
+												isOpen={isMetaLabelPickerOpen}
+												setIsOpen={setIsMetaLabelPickerOpen}
+												onUpdateLabels={setLocalLabels}
+												onUpdateTask={onUpdateTask}
+												trigger={
+													<div className="flex flex-wrap items-center gap-1.5 cursor-pointer group">
+														{localLabels.slice(0, 1).map((label) => (
+															<div
+																key={label.id}
+																className="w-10 h-8 rounded shrink-0 hover:opacity-80 transition-opacity"
+																style={{ backgroundColor: label.color }}
+																title={label.name}
+															/>
+														))}
+														<button className="w-8 h-8 rounded bg-white/5 group-hover:bg-white/10 flex items-center justify-center text-white/50 group-hover:text-white transition-colors border border-dashed border-white/20 shrink-0">
 															<Plus className="w-3.5 h-3.5" />
 														</button>
-													}
-												/>
-											</div>
+													</div>
+												}
+											/>
 										</div>
 									)}
 
@@ -293,8 +455,8 @@ export default function TaskDetailModal({
 											</h3>
 											<TaskDatePickerPopover
 												task={task}
-												isOpen={isDatePickerOpen}
-												setIsOpen={setIsDatePickerOpen}
+												isOpen={isMetaDatePickerOpen}
+												setIsOpen={setIsMetaDatePickerOpen}
 												onUpdateTask={onUpdateTask}
 												onDueDateChange={setLocalDueDate}
 												trigger={
@@ -368,10 +530,9 @@ export default function TaskDetailModal({
 									<div className="flex items-center gap-3">
 										<button
 											onClick={handleSaveDescription}
-											disabled={isSaving}
-											className="px-5 py-2 bg-[#5294E2] hover:bg-[#4A85CC] text-white rounded font-bold text-[14px] transition-colors disabled:opacity-50"
+											className="px-5 py-2 bg-[#5294E2] hover:bg-[#4A85CC] text-white rounded font-bold text-[14px] transition-colors active:scale-95"
 										>
-											{isSaving ? "Saving..." : "Save"}
+											Save
 										</button>
 										<button
 											onClick={() => editor?.commands.setContent(task.description || "")}
@@ -409,8 +570,7 @@ export default function TaskDetailModal({
 									onKeyDown={(e) => {
 										if (e.key === "Enter") handleAddComment();
 									}}
-									disabled={isAddingComment}
-									className="w-full bg-[#1A1A1A] border border-white/10 rounded-lg px-4 py-3 text-[14px] focus:outline-none focus:border-white/20 transition-colors disabled:opacity-50"
+									className="w-full bg-[#1A1A1A] border border-white/10 rounded-lg px-4 py-3 text-[14px] focus:outline-none focus:border-white/20 transition-colors"
 								/>
 							</div>
 
@@ -422,41 +582,38 @@ export default function TaskDetailModal({
 									const authorName = isMe
 										? user?.user_metadata?.first_name || user?.email?.split("@")[0] || "You"
 										: "Team Member";
-									const initial = authorName.charAt(0).toUpperCase();
-
 									return (
-										<div key={c.id} className="flex gap-4">
-											<div className="w-9 h-9 rounded-full bg-[#E67E22] flex items-center justify-center text-[14px] font-black shrink-0">
-												{initial}
+										<div key={c.id} className="flex gap-4 group">
+											<div className="w-9 h-9 rounded-full bg-[#3498DB] flex items-center justify-center text-[14px] font-black shrink-0 border border-white/10 shadow-sm">
+												{authorName[0].toUpperCase()}
 											</div>
-											<div className="flex-1 min-w-0">
-												<div className="flex items-center gap-2 mb-1">
-													<span className="font-bold text-[14px]">{authorName}</span>
-													<span className="text-blue-400 text-[12px] underline cursor-pointer">
-														{format(new Date(c.createdAt), "MMM d, h:mm a")}
+											<div className="flex-1">
+												<div className="flex items-center justify-between mb-1">
+													<span className="text-[14px] font-bold text-white/90">{authorName}</span>
+													<span className="text-[11px] text-white/30 font-medium">
+														{format(new Date(c.createdAt), "h:mm a")}
 													</span>
 												</div>
-												<div className="bg-[#1A1A1A] rounded-lg p-3 text-[14px] text-white/80 border border-white/5 shadow-sm">
+												<div className="bg-white/[0.03] border border-white/5 rounded-2xl rounded-tl-none px-4 py-2.5 text-[14px] text-white/80 leading-relaxed group-hover:bg-white/[0.05] transition-colors">
 													{c.content}
 												</div>
-												<div className="flex items-center gap-3 mt-2 text-white/40 text-[12px]">
-													<button className="hover:text-white flex items-center gap-1.5">
-														<Smile className="w-3.5 h-3.5" />
+												<div className="flex items-center gap-3 mt-1.5 ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
+													<button className="text-[11px] text-white/30 hover:text-white/60 transition-colors font-medium">
+														Reply
+													</button>
+													<button className="text-[11px] text-white/30 hover:text-white/60 transition-colors font-medium">
+														React
 													</button>
 													{isMe && (
-														<>
-															<span>•</span>
-															<button className="hover:text-white">Edit</button>
-															<span>•</span>
-															<button className="hover:text-[#FF6B6B]">Delete</button>
-														</>
+														<button className="text-[11px] text-white/30 hover:text-[#FF6B6B] transition-colors font-medium">
+															Delete
+														</button>
 													)}
 												</div>
 											</div>
 										</div>
 									);
 								})}
-
 								{/* System Activity (Creation) */}
 								<div className="flex gap-4">
 									<div className="w-9 h-9 rounded-full bg-[#E67E22] flex items-center justify-center text-[14px] font-black shrink-0">
@@ -490,15 +647,22 @@ const ActionButton = forwardRef<
 		label: string;
 		onClick?: React.MouseEventHandler<HTMLButtonElement>;
 		className?: string;
+		active?: boolean;
+		disabled?: boolean;
 	}
->(({ icon, label, onClick, className, ...props }, ref) => {
+>(({ icon, label, onClick, className, active, disabled, ...props }, ref) => {
 	return (
 		<button
 			ref={ref}
 			onClick={onClick}
 			type="button"
+			disabled={disabled}
 			className={cn(
-				"flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 text-[14px] font-bold text-white/80 transition-colors",
+				"flex items-center gap-2 px-4 py-2 rounded-lg transition-colors border text-[14px] font-bold",
+				active
+					? "bg-white/20 text-white border-white/20 shadow-lg"
+					: "bg-white/5 hover:bg-white/10 border-white/5 text-white/80",
+				disabled && "opacity-50 cursor-not-allowed grayscale",
 				className,
 			)}
 			{...props}
@@ -536,13 +700,14 @@ function ToolbarBtn({
 	);
 }
 
-function TaskDatePickerPopover({
+export function TaskDatePickerPopover({
 	task,
 	isOpen,
 	setIsOpen,
 	onUpdateTask,
 	trigger,
 	onDueDateChange,
+	onCloseModal,
 }: {
 	task: Task;
 	isOpen: boolean;
@@ -550,6 +715,7 @@ function TaskDatePickerPopover({
 	onUpdateTask?: (id: string, data: Partial<Task>) => void;
 	trigger?: React.ReactNode;
 	onDueDateChange?: (date: Date | undefined) => void;
+	onCloseModal?: () => void;
 }) {
 	const [startDate, setStartDate] = useState<Date | undefined>(
 		task.startDate ? new Date(task.startDate) : undefined,
@@ -558,7 +724,7 @@ function TaskDatePickerPopover({
 		task.dueDate ? new Date(task.dueDate) : undefined,
 	);
 	const [isStartEnabled, setIsStartEnabled] = useState(!!task.startDate);
-	const [isDueEnabled, setIsDueEnabled] = useState(!!task.dueDate || true);
+	const [isDueEnabled, setIsDueEnabled] = useState<boolean>(!!task.dueDate || true);
 
 	useEffect(() => {
 		if (isOpen) {
@@ -604,6 +770,7 @@ function TaskDatePickerPopover({
 
 		onUpdateTask?.(task.id, payload);
 		setIsOpen(false);
+		onCloseModal?.();
 	};
 
 	const handleRemove = () => {
@@ -625,15 +792,16 @@ function TaskDatePickerPopover({
 					<ActionButton
 						icon={<CalendarIcon className="w-4 h-4" />}
 						label={task.dueDate ? format(new Date(task.dueDate), "MMM d, yyyy") : "Dates"}
+						active={isOpen}
 					/>
 				)}
 			</PopoverTrigger>
 			<PopoverContent
-				className="w-[340px] p-0 border-white/10 bg-[#2A2B2E] text-white shadow-2xl rounded-xl z-[9999]"
+				className="w-[340px] p-0 border-white/10 bg-[#2A2B2E] text-white shadow-2xl rounded-xl z-[9999] overflow-hidden"
 				align="start"
 			>
-				{/* Header */}
-				<div className="flex items-center justify-between p-3 border-b border-white/10 relative">
+				{/* Header (Fixed) */}
+				<div className="flex items-center justify-between p-3 border-b border-white/10 relative shrink-0">
 					<div className="flex-1 text-center font-bold text-[14px]">Dates</div>
 					<button
 						onClick={() => setIsOpen(false)}
@@ -643,95 +811,101 @@ function TaskDatePickerPopover({
 					</button>
 				</div>
 
-				{/* Calendar */}
-				<div className="p-2 pb-0 flex justify-center scale-95 origin-top">
-					<Calendar
-						mode="single"
-						selected={isStartEnabled && !isDueEnabled ? startDate : dueDate}
-						onSelect={(date) => {
-							if (isStartEnabled && !isDueEnabled) {
-								setStartDate(date);
-							} else {
-								setDueDate(date);
-								setIsDueEnabled(true);
-							}
-						}}
-						initialFocus
-						className="bg-transparent text-white"
-					/>
-				</div>
+				{/* Scrollable Content */}
+				<div className="max-h-[450px] overflow-y-auto custom-scrollbar">
+					{/* Calendar */}
+					<div className="p-2 pb-0 flex justify-center scale-95 origin-top">
+						<Calendar
+							mode="single"
+							selected={isStartEnabled && !isDueEnabled ? startDate : dueDate}
+							onSelect={(date) => {
+								if (isStartEnabled && !isDueEnabled) {
+									setStartDate(date);
+								} else {
+									setDueDate(date);
+									setIsDueEnabled(true);
+								}
+							}}
+							initialFocus
+							captionLayout="dropdown"
+							fromYear={2020}
+							toYear={2030}
+							className="bg-transparent text-white"
+						/>
+					</div>
 
-				{/* Start Date */}
-				<div className="px-3 py-1 flex flex-col gap-1">
-					<label className="text-[11px] font-bold text-white/60">Start date</label>
-					<div className="flex items-center gap-2">
-						<Checkbox
-							checked={isStartEnabled}
-							onCheckedChange={(c) => setIsStartEnabled(!!c)}
-							className="border-white/30 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500 rounded h-3.5 w-3.5"
-						/>
-						<input
-							type="text"
-							value={isStartEnabled && startDate ? format(startDate, "M/d/yyyy") : "M/D/YYYY"}
-							readOnly
-							className="flex-1 bg-[#1A1C1E] border border-white/10 rounded px-2 py-1 text-[13px] disabled:opacity-50 text-white/90 focus:outline-none"
-						/>
+					{/* Start Date */}
+					<div className="px-3 py-1 flex flex-col gap-1">
+						<label className="text-[11px] font-bold text-white/60">Start date</label>
+						<div className="flex items-center gap-2">
+							<Checkbox
+								checked={isStartEnabled}
+								onCheckedChange={(c) => setIsStartEnabled(!!c)}
+								className="border-white/30 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500 rounded h-3.5 w-3.5"
+							/>
+							<input
+								type="text"
+								value={isStartEnabled && startDate ? format(startDate, "M/d/yyyy") : "M/D/YYYY"}
+								readOnly
+								className="flex-1 bg-[#1A1C1E] border border-white/10 rounded px-2 py-1 text-[13px] disabled:opacity-50 text-white/90 focus:outline-none"
+							/>
+						</div>
+					</div>
+
+					{/* Due Date */}
+					<div className="px-3 py-1 flex flex-col gap-1">
+						<label className="text-[11px] font-bold text-white/60">Due date</label>
+						<div className="flex items-center gap-2">
+							<Checkbox
+								checked={isDueEnabled}
+								onCheckedChange={(c) => setIsDueEnabled(!!c)}
+								className="border-white/30 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500 rounded h-3.5 w-3.5"
+							/>
+							<input
+								type="text"
+								value={isDueEnabled && dueDate ? format(dueDate, "M/d/yyyy") : "M/D/YYYY"}
+								readOnly
+								className="flex-1 w-full bg-[#1A1C1E] border border-white/10 rounded px-2 py-1 text-[13px] disabled:opacity-50 text-white/90 focus:outline-none"
+							/>
+							<input
+								type="text"
+								value="12:00 AM"
+								readOnly
+								className="w-[80px] bg-[#1A1C1E] border border-white/10 rounded px-2 py-1 text-[13px] disabled:opacity-50 text-white/90 text-center focus:outline-none"
+							/>
+						</div>
+					</div>
+
+					{/* Recurring */}
+					<div className="px-3 py-1 flex flex-col gap-1">
+						<label className="text-[11px] font-bold text-white/60">Recurring</label>
+						<select className="w-full bg-[#1A1C1E] border border-white/10 rounded px-2 py-1 text-[13px] text-white/90 focus:outline-none appearance-none">
+							<option>Never</option>
+							<option>Daily</option>
+							<option>Weekly</option>
+							<option>Monthly</option>
+						</select>
+					</div>
+
+					{/* Reminders */}
+					<div className="px-3 py-1 flex flex-col gap-1">
+						<label className="text-[11px] font-bold text-white/60">Set due date reminder</label>
+						<select className="w-full bg-[#1A1C1E] border border-white/10 rounded px-2 py-1 text-[13px] text-white/90 focus:outline-none appearance-none">
+							<option>1 Day before</option>
+							<option>1 Hour before</option>
+							<option>At time of due date</option>
+						</select>
+					</div>
+
+					<div className="px-3 py-1 pb-2">
+						<p className="text-[11px] text-white/50 leading-tight">
+							Reminders will be sent to all members and watchers of this card.
+						</p>
 					</div>
 				</div>
 
-				{/* Due Date */}
-				<div className="px-3 py-1 flex flex-col gap-1">
-					<label className="text-[11px] font-bold text-white/60">Due date</label>
-					<div className="flex items-center gap-2">
-						<Checkbox
-							checked={isDueEnabled}
-							onCheckedChange={(c) => setIsDueEnabled(!!c)}
-							className="border-white/30 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500 rounded h-3.5 w-3.5"
-						/>
-						<input
-							type="text"
-							value={isDueEnabled && dueDate ? format(dueDate, "M/d/yyyy") : "M/D/YYYY"}
-							readOnly
-							className="flex-1 w-full bg-[#1A1C1E] border border-white/10 rounded px-2 py-1 text-[13px] disabled:opacity-50 text-white/90 focus:outline-none"
-						/>
-						<input
-							type="text"
-							value="12:00 AM"
-							readOnly
-							className="w-[80px] bg-[#1A1C1E] border border-white/10 rounded px-2 py-1 text-[13px] disabled:opacity-50 text-white/90 text-center focus:outline-none"
-						/>
-					</div>
-				</div>
-
-				{/* Recurring */}
-				<div className="px-3 py-1 flex flex-col gap-1">
-					<label className="text-[11px] font-bold text-white/60">Recurring</label>
-					<select className="w-full bg-[#1A1C1E] border border-white/10 rounded px-2 py-1 text-[13px] text-white/90 focus:outline-none appearance-none">
-						<option>Never</option>
-						<option>Daily</option>
-						<option>Weekly</option>
-						<option>Monthly</option>
-					</select>
-				</div>
-
-				{/* Reminders */}
-				<div className="px-3 py-1 flex flex-col gap-1">
-					<label className="text-[11px] font-bold text-white/60">Set due date reminder</label>
-					<select className="w-full bg-[#1A1C1E] border border-white/10 rounded px-2 py-1 text-[13px] text-white/90 focus:outline-none appearance-none">
-						<option>1 Day before</option>
-						<option>1 Hour before</option>
-						<option>At time of due date</option>
-					</select>
-				</div>
-
-				<div className="px-3 py-1 pb-2">
-					<p className="text-[11px] text-white/50 leading-tight">
-						Reminders will be sent to all members and watchers of this card.
-					</p>
-				</div>
-
-				{/* Buttons */}
-				<div className="p-3 pt-0 flex gap-2">
+				{/* Buttons (Fixed) */}
+				<div className="p-3 border-t border-white/10 flex gap-2 shrink-0">
 					<button
 						onClick={handleSave}
 						className="flex-1 bg-[#5294E2] hover:bg-[#4A85CC] text-white font-bold py-1.5 rounded transition-colors text-[13px]"
@@ -750,65 +924,96 @@ function TaskDatePickerPopover({
 	);
 }
 
-function TaskMemberPopover({
+export function TaskMemberPopover({
 	task,
 	workspaceMembers,
 	isOpen,
 	setIsOpen,
+	onUpdateAssignees,
 	onUpdateTask,
 	trigger,
-	onSelectionChange,
 }: {
 	task: Task;
 	workspaceMembers: any[];
 	isOpen: boolean;
 	setIsOpen: (open: boolean) => void;
+	onUpdateAssignees?: (assignees: any[]) => void;
 	onUpdateTask?: (id: string, data: Partial<Task>) => void;
 	trigger?: React.ReactNode;
-	onSelectionChange?: (id: string | null) => void;
 }) {
-	const [selectedAssigneeId, setSelectedAssigneeId] = useState<string | null>(
-		task.assigneeId || null,
-	);
+	const { token } = useSupabaseAuth();
+	const [localAssignees, setLocalAssignees] = useState<any[]>(task.assignees || []);
+	const [search, setSearch] = useState("");
 
 	useEffect(() => {
 		if (isOpen) {
-			setSelectedAssigneeId(task.assigneeId || null);
+			setLocalAssignees(task.assignees || []);
 		}
-	}, [isOpen, task.assigneeId]);
+	}, [isOpen, task.assignees]);
 
-	const handleOpenChange = (open: boolean) => {
-		setIsOpen(open);
+	const handleToggleMember = async (member: any) => {
+		if (!token) return;
+
+		const previousAssignees = [...localAssignees];
+		const existing = localAssignees.find((a) => a.userId === member.userId);
+
+		if (existing) {
+			const newAssignees = localAssignees.filter((a) => a.userId !== member.userId);
+			setLocalAssignees(newAssignees);
+			onUpdateAssignees?.(newAssignees);
+			onUpdateTask?.(task.id, { assignees: newAssignees });
+			try {
+				await taskService.removeMember(task.id, member.userId, token);
+			} catch (err) {
+				console.error("Failed to remove member", err);
+				setLocalAssignees(previousAssignees);
+				onUpdateAssignees?.(previousAssignees);
+				onUpdateTask?.(task.id, { assignees: previousAssignees });
+			}
+		} else {
+			const tempAssignee = { userId: member.userId, user: member.user };
+			const newAssignees = [...localAssignees, tempAssignee];
+			setLocalAssignees(newAssignees);
+			onUpdateAssignees?.(newAssignees);
+			onUpdateTask?.(task.id, { assignees: newAssignees });
+			try {
+				await taskService.addMember(task.id, member.userId, token);
+			} catch (err) {
+				console.error("Failed to add member", err);
+				setLocalAssignees(previousAssignees);
+				onUpdateAssignees?.(previousAssignees);
+				onUpdateTask?.(task.id, { assignees: previousAssignees });
+			}
+		}
 	};
 
-	const handleSelect = (userId: string | null) => {
-		setSelectedAssigneeId(userId);
-		onSelectionChange?.(userId);
-		if (onUpdateTask) {
-			onUpdateTask(task.id, { assigneeId: userId as string });
-		}
-		setIsOpen(false);
-	};
-
-	const selectedMember = workspaceMembers.find(
-		(m) => m.userId === (isOpen ? selectedAssigneeId : task.assigneeId),
-	);
+	const filteredMembers = workspaceMembers.filter((m) => {
+		const u = m.user;
+		if (!u) return false;
+		const q = search.toLowerCase();
+		return (
+			u.firstName?.toLowerCase().includes(q) ||
+			u.lastName?.toLowerCase().includes(q) ||
+			u.email?.toLowerCase().includes(q) ||
+			u.username?.toLowerCase().includes(q)
+		);
+	});
 
 	return (
-		<Popover open={isOpen} onOpenChange={handleOpenChange}>
+		<Popover open={isOpen} onOpenChange={setIsOpen}>
 			<PopoverTrigger asChild>
 				{trigger || (
 					<ActionButton
 						icon={<Users className="w-4 h-4" />}
-						label={selectedMember?.user?.firstName || selectedMember?.user?.email || "Members"}
+						label="Members"
+						active={localAssignees.length > 0}
 					/>
 				)}
 			</PopoverTrigger>
 			<PopoverContent
-				className="w-[280px] p-0 border-white/10 bg-[#2A2B2E] text-white shadow-2xl rounded-xl z-[9999]"
+				className="w-[300px] p-0 border-white/10 bg-[#2A2B2E] text-white shadow-2xl rounded-xl z-[9999]"
 				align="start"
 			>
-				{/* Header */}
 				<div className="flex items-center justify-between p-3 border-b border-white/10 relative">
 					<div className="flex-1 text-center font-bold text-[14px]">Members</div>
 					<button
@@ -818,47 +1023,52 @@ function TaskMemberPopover({
 						<X className="w-4 h-4" />
 					</button>
 				</div>
-
-				{/* Search */}
-				<div className="p-3 pb-0">
-					<input
-						type="text"
-						placeholder="Search members"
-						className="w-full bg-[#1A1C1E] border border-white/10 rounded px-3 py-1.5 text-[13px] text-white/90 focus:outline-none"
-					/>
-				</div>
-
-				{/* Members List */}
-				<div className="p-2 max-h-[200px] overflow-y-auto mt-2">
-					<div className="px-2 pb-1 text-[11px] font-bold text-white/50 uppercase tracking-wider">
-						Board members
+				<div className="p-3">
+					<div className="relative mb-3">
+						<input
+							type="text"
+							placeholder="Search members..."
+							value={search}
+							onChange={(e) => setSearch(e.target.value)}
+							className="w-full bg-[#1A1C1E] border border-white/10 rounded px-3 py-1.5 text-[13px] focus:outline-none focus:border-blue-500/50 transition-colors"
+						/>
 					</div>
-					{workspaceMembers.map((m) => {
-						const isSelected = selectedAssigneeId === m.userId;
-						return (
-							<button
-								key={m.userId}
-								onClick={() => {
-									const newId = isSelected ? null : m.userId;
-									handleSelect(newId);
-								}}
-								className={cn(
-									"w-full flex items-center gap-3 px-2 py-1.5 rounded hover:bg-white/5 transition-colors text-left",
-									isSelected && "bg-white/10",
-								)}
-							>
-								<div className="w-6 h-6 rounded-full bg-[#5294E2] flex items-center justify-center text-[10px] font-bold uppercase shrink-0">
-									{m.user?.firstName?.[0] || m.user?.email?.[0] || "U"}
-								</div>
-								<div className="flex flex-col flex-1 min-w-0">
-									<span className="text-[13px] font-medium truncate">
-										{m.user?.firstName || m.user?.email}
-									</span>
-								</div>
-								{isSelected && <CheckSquare className="w-4 h-4 text-[#5294E2] shrink-0" />}
-							</button>
-						);
-					})}
+					<div className="space-y-1 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
+						<div className="text-[11px] font-bold text-white/40 mb-2 uppercase px-1">
+							Workspace members
+						</div>
+						{filteredMembers.map((member) => {
+							const memberUserId = member.userId; // supabaseId
+							const memberUser = member.user;
+							const isSelected = localAssignees.some((a) => a.userId === memberUserId);
+							const initials =
+								memberUser?.firstName?.[0] || memberUser?.email?.[0]?.toUpperCase() || "U";
+							const displayName =
+								[memberUser?.firstName, memberUser?.lastName].filter(Boolean).join(" ") ||
+								memberUser?.email ||
+								"Unknown";
+							return (
+								<button
+									key={member.id}
+									onClick={() => handleToggleMember({ userId: memberUserId, user: memberUser })}
+									className="w-full flex items-center justify-between p-2 rounded hover:bg-white/5 transition-colors text-left group"
+								>
+									<div className="flex items-center gap-3">
+										<div className="w-8 h-8 rounded-full bg-[#F59E0B] flex items-center justify-center text-[12px] font-bold text-black uppercase">
+											{initials}
+										</div>
+										<div className="flex flex-col">
+											<span className="text-[13px] font-medium text-white/90">{displayName}</span>
+											{memberUser?.username && (
+												<span className="text-[11px] text-white/40">@{memberUser.username}</span>
+											)}
+										</div>
+									</div>
+									{isSelected && <div className="w-2 h-2 rounded-full bg-blue-500" />}
+								</button>
+							);
+						})}
+					</div>
 				</div>
 			</PopoverContent>
 		</Popover>
@@ -875,46 +1085,205 @@ const LABEL_COLORS = [
 	{ name: "Teal", color: "#60C6D2" },
 ];
 
-function TaskLabelPopover({
+const COVER_COLORS = [
+	"#61BD4F", // green
+	"#F2D600", // yellow
+	"#FF9F1A", // orange
+	"#EB5A46", // red
+	"#C377E0", // purple
+	"#0079BF", // blue
+	"#00C2E0", // teal
+	"#51E898", // mint
+	"#FF78CB", // pink
+	"#344563", // dark navy
+];
+
+function CoverPopover({
+	isOpen,
+	setIsOpen,
+	coverColor,
+	coverSize,
+	onCoverChange,
+}: {
+	isOpen: boolean;
+	setIsOpen: (v: boolean) => void;
+	coverColor: string | null;
+	coverSize: "partial" | "full";
+	onCoverChange: (color: string | null, size?: "partial" | "full") => void;
+}) {
+	return (
+		<Popover open={isOpen} onOpenChange={setIsOpen}>
+			<PopoverTrigger asChild>
+				<button
+					className={cn(
+						"hover:text-white transition-colors p-1 rounded",
+						isOpen ? "text-white bg-white/10" : "text-white/40",
+					)}
+					title="Cover"
+				>
+					<ImageIcon className="w-5 h-5" />
+				</button>
+			</PopoverTrigger>
+			<PopoverContent
+				className="w-[320px] p-0 border-white/10 bg-[#2A2B2E] text-white shadow-2xl rounded-xl z-[9999] overflow-hidden"
+				align="end"
+				sideOffset={8}
+			>
+				{/* Header */}
+				<div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+					<span className="text-[14px] font-bold">Cover</span>
+					<button
+						onClick={() => setIsOpen(false)}
+						className="text-white/50 hover:text-white transition-colors p-0.5"
+					>
+						<X className="w-4 h-4" />
+					</button>
+				</div>
+
+				<div className="p-4 space-y-4">
+					{/* Size picker */}
+					<div>
+						<p className="text-[11px] font-bold text-white/50 uppercase tracking-wide mb-2">Size</p>
+						<div className="flex gap-2">
+							{/* Partial size preview */}
+							<button
+								onClick={() => onCoverChange(coverColor, "partial")}
+								className={cn(
+									"flex-1 h-[70px] rounded-lg overflow-hidden border-2 transition-all relative",
+									coverSize === "partial" ? "border-white" : "border-white/20",
+								)}
+								style={{ backgroundColor: coverColor ?? "#2A2B2E" }}
+							>
+								{/* Mock card lines */}
+								<div className="absolute bottom-0 left-0 right-0 h-[42px] bg-[#1F2933] rounded-b-lg flex flex-col justify-center px-2 gap-1">
+									<div className="h-1.5 w-14 rounded-full bg-white/30" />
+									<div className="h-1 w-10 rounded-full bg-white/15" />
+									<div className="h-1 w-8 rounded-full bg-white/10" />
+								</div>
+								{coverSize === "partial" && (
+									<div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-white flex items-center justify-center">
+										<div className="w-2 h-2 rounded-full bg-[#2A2B2E]" />
+									</div>
+								)}
+							</button>
+							{/* Full size preview */}
+							<button
+								onClick={() => onCoverChange(coverColor, "full")}
+								className={cn(
+									"flex-1 h-[70px] rounded-lg overflow-hidden border-2 transition-all relative",
+									coverSize === "full" ? "border-white" : "border-white/20",
+								)}
+								style={{ backgroundColor: coverColor ?? "#2A2B2E" }}
+							>
+								{coverSize === "full" && (
+									<div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-white flex items-center justify-center">
+										<div className="w-2 h-2 rounded-full bg-[#2A2B2E]" />
+									</div>
+								)}
+							</button>
+						</div>
+					</div>
+
+					{/* Remove cover */}
+					{coverColor && (
+						<button
+							onClick={() => {
+								onCoverChange(null);
+								setIsOpen(false);
+							}}
+							className="w-full py-1.5 text-[13px] font-bold text-white/80 bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 transition-colors"
+						>
+							Remove cover
+						</button>
+					)}
+
+					{/* Color palette */}
+					<div>
+						<p className="text-[11px] font-bold text-white/50 uppercase tracking-wide mb-2">
+							Colors
+						</p>
+						<div className="grid grid-cols-5 gap-2">
+							{COVER_COLORS.map((c) => (
+								<button
+									key={c}
+									onClick={() => onCoverChange(c, coverSize)}
+									className="h-9 rounded-lg transition-all hover:scale-105 hover:shadow-lg relative border-2"
+									style={{
+										backgroundColor: c,
+										borderColor: coverColor === c ? "white" : "transparent",
+									}}
+								>
+									{coverColor === c && (
+										<span className="absolute inset-0 flex items-center justify-center">
+											<svg
+												className="w-4 h-4 text-white drop-shadow"
+												fill="none"
+												viewBox="0 0 24 24"
+												stroke="currentColor"
+												strokeWidth={3}
+											>
+												<path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+											</svg>
+										</span>
+									)}
+								</button>
+							))}
+						</div>
+					</div>
+
+					{/* Colorblind mode */}
+					<button className="w-full py-1.5 text-[13px] font-bold text-white/80 bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 transition-colors">
+						Enable colorblind friendly mode
+					</button>
+				</div>
+			</PopoverContent>
+		</Popover>
+	);
+}
+
+export function TaskLabelPopover({
 	task,
 	isOpen,
 	setIsOpen,
 	onUpdateLabels,
+	onCloseModal,
 	trigger,
+	onUpdateTask,
 }: {
 	task: Task;
 	isOpen: boolean;
 	setIsOpen: (open: boolean) => void;
 	onUpdateLabels?: (labels: TaskLabel[]) => void;
+	onCloseModal?: () => void;
 	trigger?: React.ReactNode;
+	onUpdateTask?: (id: string, data: Partial<Task>) => void;
 }) {
 	const { token } = useSupabaseAuth();
 	const [localLabels, setLocalLabels] = useState<TaskLabel[]>(task.labels || []);
 	const [search, setSearch] = useState("");
 
-	useEffect(() => {
-		if (isOpen) {
-			setLocalLabels(task.labels || []);
-		}
-	}, [isOpen, task.labels]);
-
 	const handleToggleLabel = async (labelInfo: { name: string; color: string }) => {
 		if (!token) return;
 
+		const previousLabels = [...localLabels];
 		const existing = localLabels.find((l) => l.color === labelInfo.color);
 
 		if (existing) {
-			// Remove
-			const newLabels = localLabels.filter((l) => l.id !== existing.id);
-			setLocalLabels(newLabels);
-			onUpdateLabels?.(newLabels);
-			try {
-				await taskService.removeLabel(task.id, existing.id, token);
-			} catch (err) {
-				console.error("Failed to remove label", err);
+			// If clicking the existing label, remove it (toggle off)
+			setLocalLabels([]);
+			onUpdateLabels?.([]);
+			if (!existing.id.startsWith("temp-")) {
+				try {
+					await taskService.removeLabel(task.id, existing.id, token);
+					onUpdateTask?.(task.id, { labels: [] });
+				} catch (_err) {
+					setLocalLabels(previousLabels);
+					onUpdateLabels?.(previousLabels);
+					onUpdateTask?.(task.id, { labels: previousLabels });
+				}
 			}
 		} else {
-			// Add
+			// Add the new label
 			const tempId = `temp-${Date.now()}`;
 			const newLabel: TaskLabel = {
 				id: tempId,
@@ -922,9 +1291,11 @@ function TaskLabelPopover({
 				name: labelInfo.name,
 				color: labelInfo.color,
 			};
+
 			const newLabels = [...localLabels, newLabel];
 			setLocalLabels(newLabels);
 			onUpdateLabels?.(newLabels);
+			onUpdateTask?.(task.id, { labels: newLabels });
 			try {
 				const savedLabel = await taskService.addLabel(
 					task.id,
@@ -932,11 +1303,16 @@ function TaskLabelPopover({
 					labelInfo.color,
 					token,
 				);
-				const finalLabels = newLabels.map((l) => (l.id === tempId ? savedLabel : l));
-				setLocalLabels(finalLabels);
-				onUpdateLabels?.(finalLabels);
+				const savedLabels = [...previousLabels, savedLabel];
+				setLocalLabels(savedLabels);
+				onUpdateLabels?.(savedLabels);
+				onUpdateTask?.(task.id, { labels: savedLabels });
+				// Removed auto-close to allow selecting multiple labels
 			} catch (err) {
 				console.error("Failed to add label", err);
+				setLocalLabels(previousLabels);
+				onUpdateLabels?.(previousLabels);
+				onUpdateTask?.(task.id, { labels: previousLabels });
 			}
 		}
 	};
@@ -981,27 +1357,27 @@ function TaskLabelPopover({
 							{LABEL_COLORS.filter((lc) =>
 								lc.name.toLowerCase().includes(search.toLowerCase()),
 							).map((lc) => {
-								const isSelected = localLabels.some((l) => l.color === lc.color);
+								const isSelected = localLabels.length > 0 && localLabels[0].color === lc.color;
 								return (
-									<div key={lc.color} className="flex items-center gap-2 group">
-										<div className="w-5 h-5 flex items-center justify-center">
-											<Checkbox
-												checked={isSelected}
-												onCheckedChange={() => handleToggleLabel(lc)}
-												className="border-white/20 data-[state=checked]:bg-[#5294E2] data-[state=checked]:border-[#5294E2]"
-											/>
-										</div>
-										<button
-											onClick={() => handleToggleLabel(lc)}
-											className="flex-1 h-8 rounded flex items-center px-3 text-[13px] font-medium transition-all group-hover:brightness-110"
-											style={{ backgroundColor: lc.color, color: "rgba(0,0,0,0.7)" }}
-										>
-											{lc.name === "Teal" ? "net" : ""}
-										</button>
-										<button className="p-1.5 hover:bg-white/5 rounded opacity-0 group-hover:opacity-100 transition-all">
-											<Edit2 className="w-3.5 h-3.5 text-white/50" />
-										</button>
-									</div>
+									<button
+										key={lc.color}
+										onClick={() => handleToggleLabel(lc)}
+										className="w-full h-8 rounded flex items-center justify-between px-3 text-[13px] font-medium transition-all hover:brightness-110 relative group"
+										style={{ backgroundColor: lc.color, color: "rgba(0,0,0,0.8)" }}
+									>
+										<span>{lc.name}</span>
+										{isSelected && (
+											<svg
+												className="w-4 h-4 text-black/60"
+												fill="none"
+												viewBox="0 0 24 24"
+												stroke="currentColor"
+												strokeWidth={3}
+											>
+												<path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+											</svg>
+										)}
+									</button>
 								);
 							})}
 						</div>

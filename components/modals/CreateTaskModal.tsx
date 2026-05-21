@@ -103,7 +103,8 @@ export function CreateTaskModal({
 	const [errors, setErrors] = useState<Record<string, string>>({});
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
-	const _selectedSpace = spaces?.find((s: Space) => s.id === spaceId);
+	const selectedSpace = spaces?.find((s: Space) => s.id === spaceId);
+	const defaultStatusId = selectedSpace?.statuses?.[0]?.id || "";
 
 	const resetForm = useCallback(() => {
 		if (!createAnother) {
@@ -133,6 +134,7 @@ export function CreateTaskModal({
 	const validate = () => {
 		const newErrors: Record<string, string> = {};
 		if (!spaceId) newErrors.spaceId = "Space is required";
+		if (!defaultStatusId) newErrors.spaceId = "Selected space has no statuses";
 		if (!summary.trim()) newErrors.summary = "Summary is required";
 		if (isCreatingNewTeam && !newTeamName.trim()) newErrors.newTeamName = "Team name is required";
 		setErrors(newErrors);
@@ -175,7 +177,7 @@ export function CreateTaskModal({
 
 			const createdTask = await createTask({
 				spaceId,
-				statusId: _selectedSpace?.statuses?.[0]?.id || "",
+				statusId: defaultStatusId,
 				title: summary.trim(),
 				description: description.trim() || undefined,
 				workType,
@@ -193,17 +195,22 @@ export function CreateTaskModal({
 
 			// Create subtasks after main task
 			if (subtaskTitles.length > 0 && createdTask?.id) {
+				const subtaskStatusId = (createdTask.statusId ||
+					createdTask.status?.id ||
+					defaultStatusId) as string;
 				await Promise.all(
 					subtaskTitles.map((title) =>
 						createTask({
 							spaceId,
-							statusId: _selectedSpace?.statuses?.[0]?.id || "",
+							statusId: subtaskStatusId,
 							title,
 							parentId: createdTask.id,
+							workType: "SUBTASK",
 						}),
 					),
 				);
 			}
+
 			if (createAnother) {
 				resetForm();
 			} else {

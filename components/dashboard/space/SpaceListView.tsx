@@ -35,7 +35,7 @@ const COL_GRID =
 export function SpaceListView({ spaceId }: { spaceId: string }) {
 	const { token } = useSupabaseAuth();
 	const { data: space } = useSpace(spaceId, token || undefined);
-	const { data: tasks, isLoading } = useTasks(spaceId, token || undefined);
+	const { data: tasks, isLoading } = useTasks(spaceId, undefined, token || undefined);
 	const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
 	const selectedTask = tasks?.find((t) => t.id === selectedTaskId) || null;
@@ -90,6 +90,7 @@ export function SpaceListView({ spaceId }: { spaceId: string }) {
 				task={selectedTask}
 				isOpen={!!selectedTaskId}
 				onClose={() => setSelectedTaskId(null)}
+				columnName={space?.name}
 			/>
 		</div>
 	);

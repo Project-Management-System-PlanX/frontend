@@ -6,21 +6,21 @@ export interface CreateTaskPayload {
 	spaceId: string;
 	statusId: string;
 	title: string;
-	description?: string;
+	description?: string | null;
 	priority?: string;
 	workType?: string;
-	assigneeId?: string;
-	dueDate?: string;
-	startDate?: string;
+	assigneeId?: string | null;
+	dueDate?: string | null;
+	startDate?: string | null;
 	position?: number;
-	parentId?: string;
-	teamId?: string;
+	parentId?: string | null;
+	teamId?: string | null;
 	flagged?: boolean;
 }
 
 export interface UpdateTaskPayload {
 	title?: string;
-	description?: string;
+	description?: string | null;
 	statusId?: string;
 	priority?: string;
 	workType?: string;
@@ -30,9 +30,10 @@ export interface UpdateTaskPayload {
 	resolution?: string;
 	position?: number;
 	parentId?: string | null;
-	teamId?: string;
+	teamId?: string | null;
 	flagged?: boolean;
-	restrictTo?: string;
+	restrictTo?: string | null;
+	coverColor?: string | null;
 }
 
 export interface MoveTaskPayload {
@@ -122,8 +123,21 @@ export const taskService = {
 	removeLabel: async (taskId: string, labelId: string, token?: string) =>
 		apiClient.delete<{ deleted: boolean }>(`/tasks/${taskId}/labels/${labelId}`, { token }),
 
+	// ─── Members ───
+
+	addMember: async (taskId: string, userId: string, token?: string) =>
+		apiClient.post<any>(`/tasks/${taskId}/members`, { userId }, { token }),
+
+	removeMember: async (taskId: string, userId: string, token?: string) =>
+		apiClient.delete<any>(`/tasks/${taskId}/members/${userId}`, { token }),
+
 	// ─── Activities ───
 
 	getActivities: async (taskId: string, token?: string) =>
 		apiClient.get<ActivityLogEntry[]>(`/tasks/${taskId}/activities`, { token }),
+
+	// ─── Bulk ───
+
+	createBulk: async (data: { tasks: CreateTaskPayload[] }, token?: string) =>
+		apiClient.post<Task[]>("/tasks/bulk", data, { token }),
 };

@@ -21,11 +21,11 @@ import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { cn } from "@/lib/utils";
 
 const UI = {
-	primary: "#2d6a4f",
-	bg: "#f8f9f4",
-	border: "rgba(45, 106, 79, 0.1)",
-	textPrimary: "#0f2318",
-	textSecondary: "#4a6552",
+	primary: "#4F46E5",
+	bg: "#1E293B",
+	border: "rgba(255,255,255,0.1)",
+	textPrimary: "#F1F5F9",
+	textSecondary: "#94A3B8",
 };
 
 export function TopNav() {
@@ -33,6 +33,10 @@ export function TopNav() {
 	const { user } = useSupabaseAuth();
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
 	const menuRef = useRef<HTMLDivElement>(null);
+	const isDashboardHome = pathname === "/dashboard";
+
+	const navBg = isDashboardHome ? "#FFFFFF" : UI.bg;
+	const navBorder = isDashboardHome ? "rgba(0,0,0,0.08)" : UI.border;
 
 	const initials = user?.email?.substring(0, 2).toUpperCase() || "?";
 	const imageUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.picture;
@@ -56,28 +60,31 @@ export function TopNav() {
 
 	return (
 		<nav
-			className="h-14 w-full border-b flex items-center px-4 gap-4 z-[100] relative shrink-0"
-			style={{ backgroundColor: UI.bg, borderColor: UI.border }}
+			className="h-14 w-full border-b flex items-center px-4 gap-4 z-[100] relative shrink-0 transition-colors duration-300"
+			style={{ backgroundColor: navBg, borderColor: navBorder }}
 		>
 			{/* Logo + Dropdown Trigger */}
 			<div className="relative" ref={menuRef}>
 				<button
 					type="button"
 					onClick={() => setIsMenuOpen(!isMenuOpen)}
-					className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-black/5 transition-colors group"
+					className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/10 transition-colors group"
 				>
-					<div className="w-8 h-8 rounded-lg bg-[#2d6a4f] flex items-center justify-center text-white shadow-lg">
+					<div className="w-8 h-8 rounded-lg bg-[#007AFF] flex items-center justify-center text-white shadow-lg">
 						<Zap className="w-5 h-5 fill-white/20" />
 					</div>
 					<span
-						className="font-bold text-[#0f2318] text-[14px] hidden sm:block"
-						style={{ fontFamily: "var(--font-heading)" }}
+						className={cn(
+							"font-bold text-[14px] hidden sm:block",
+							isDashboardHome ? "text-gray-900" : "text-white",
+						)}
 					>
 						TeamUp
 					</span>
 					<ChevronDown
 						className={cn(
-							"w-4 h-4 text-[#4a6552] transition-transform",
+							"w-4 h-4 transition-transform",
+							isDashboardHome ? "text-gray-400" : "text-white/60",
 							isMenuOpen && "rotate-180",
 						)}
 					/>
@@ -90,10 +97,10 @@ export function TopNav() {
 							animate={{ opacity: 1, y: 0, scale: 1 }}
 							exit={{ opacity: 0, y: 10, scale: 0.95 }}
 							className="absolute top-full left-0 mt-2 w-64 rounded-xl border shadow-2xl overflow-hidden py-2"
-							style={{ backgroundColor: "#f0f4ee", borderColor: UI.border }}
+							style={{ backgroundColor: "#15181C", borderColor: UI.border }}
 						>
-							<div className="px-3 py-2 border-b mb-2" style={{ borderColor: UI.border }}>
-								<p className="text-[11px] font-bold text-[#4a6552] uppercase tracking-wider">
+							<div className="px-3 py-2 border-b border-white/5 mb-2">
+								<p className="text-[11px] font-bold text-white/40 uppercase tracking-wider">
 									Navigate to
 								</p>
 							</div>
@@ -105,8 +112,8 @@ export function TopNav() {
 									className={cn(
 										"flex items-center gap-3 px-4 py-3 transition-colors",
 										pathname === item.href
-											? "bg-[#d8f3dc] text-[#0f2318]"
-											: "text-[#4a6552] hover:bg-[#f0f4ee] hover:text-[#0f2318]",
+											? "bg-white/10 text-white"
+											: "text-white/60 hover:bg-white/5 hover:text-white",
 									)}
 								>
 									<item.icon className="w-5 h-5" />
@@ -127,13 +134,20 @@ export function TopNav() {
 			{/* Search */}
 			<div className="hidden md:flex flex-1 max-w-[520px] ml-4">
 				<div
-					className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-[#f0f4ee] border w-full focus-within:border-[#2d6a4f] transition-colors"
-					style={{ borderColor: UI.border }}
+					className={cn(
+						"flex items-center gap-2.5 px-3 py-2 rounded-lg border w-full transition-colors focus-within:ring-2 focus-within:ring-blue-500/20",
+						isDashboardHome ? "bg-gray-100 border-gray-200" : "bg-white/5 border-white/10",
+					)}
 				>
-					<Search className="w-4 h-4 text-[#4a6552]" />
+					<Search className={cn("w-4 h-4", isDashboardHome ? "text-gray-400" : "text-white/40")} />
 					<input
 						placeholder="Search cards, tasks, files..."
-						className="bg-transparent text-[13px] text-[#0f2318] placeholder:text-[#4a6552] outline-none w-full"
+						className={cn(
+							"bg-transparent text-[13px] outline-none w-full",
+							isDashboardHome
+								? "text-gray-900 placeholder:text-gray-400"
+								: "text-white placeholder:text-white/40",
+						)}
 					/>
 				</div>
 			</div>
@@ -148,10 +162,20 @@ export function TopNav() {
 					<Plus className="w-4 h-4" />
 					Create
 				</button>
-				<div className="w-[1px] h-6 bg-white/10 mx-2 hidden sm:block" />
+				<div
+					className={cn(
+						"w-[1px] h-6 mx-2 hidden sm:block",
+						isDashboardHome ? "bg-gray-200" : "bg-white/10",
+					)}
+				/>
 				<button
 					type="button"
-					className="p-2 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors relative"
+					className={cn(
+						"p-2 rounded-lg transition-colors relative",
+						isDashboardHome
+							? "hover:bg-gray-100 text-gray-500 hover:text-gray-900"
+							: "hover:bg-white/10 text-white/60 hover:text-white",
+					)}
 				>
 					<Bell className="w-5 h-5" />
 					<div
@@ -161,7 +185,12 @@ export function TopNav() {
 				</button>
 				<button
 					type="button"
-					className="p-2 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+					className={cn(
+						"p-2 rounded-lg transition-colors",
+						isDashboardHome
+							? "hover:bg-gray-100 text-gray-500 hover:text-gray-900"
+							: "hover:bg-white/10 text-white/60 hover:text-white",
+					)}
 				>
 					<HelpCircle className="w-5 h-5" />
 				</button>

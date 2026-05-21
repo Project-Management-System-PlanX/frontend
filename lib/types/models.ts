@@ -50,9 +50,17 @@ export interface Group {
 export interface WorkspaceMember {
 	id: string;
 	workspaceId: string;
-	userId: string;
+	userId: string; // This is the supabaseId
 	role: Role;
 	joinedAt: string;
+	user?: {
+		supabaseId: string;
+		email: string;
+		firstName: string | null;
+		lastName: string | null;
+		username: string | null;
+		imageUrl?: string | null;
+	};
 }
 
 export interface ChannelMember {
@@ -124,20 +132,21 @@ export interface Task {
 	spaceId: string;
 	statusId: string;
 	title: string;
-	description?: string;
+	description?: string | null;
 	taskNumber: number;
 	priority: string; // "NONE" | "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
 	workType: string; // "TASK" | "STORY" | "BUG" | "EPIC" | "SUBTASK"
-	assigneeId?: string;
+	assigneeId?: string | null;
 	reporterId: string;
-	dueDate?: string;
-	startDate?: string;
+	dueDate?: string | null;
+	startDate?: string | null;
 	resolution: string; // "UNRESOLVED" | "DONE" | "WONT_DO" | "DUPLICATE"
 	position: number;
-	parentId?: string;
-	teamId?: string;
+	coverColor?: string | null;
+	parentId?: string | null;
+	teamId?: string | null;
 	flagged: boolean;
-	restrictTo?: string;
+	restrictTo?: string | null;
 	createdAt: string;
 	updatedAt: string;
 	space?: Space;
@@ -145,6 +154,7 @@ export interface Task {
 	labels?: TaskLabel[];
 	comments?: TaskComment[];
 	attachments?: TaskAttachment[];
+	assignees?: { userId: string; user: UserProfile }[];
 	parent?: { id: string; title: string; taskNumber: number };
 	team?: { id: string; name: string };
 	children?: { id: string; title: string; taskNumber: number; statusId: string }[];
