@@ -21,11 +21,11 @@ import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { cn } from "@/lib/utils";
 
 const UI = {
-	primary: "#4F46E5",
-	bg: "#1E293B",
-	border: "rgba(255,255,255,0.1)",
-	textPrimary: "#F1F5F9",
-	textSecondary: "#94A3B8",
+	primary: "#2d6a4f",
+	bg: "#0f2318",
+	border: "rgba(255, 255, 255, 0.05)",
+	textPrimary: "#ffffff",
+	textSecondary: "#a0a0b0",
 };
 
 export function TopNav() {
@@ -70,7 +70,7 @@ export function TopNav() {
 					onClick={() => setIsMenuOpen(!isMenuOpen)}
 					className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/10 transition-colors group"
 				>
-					<div className="w-8 h-8 rounded-lg bg-[#007AFF] flex items-center justify-center text-white shadow-lg">
+					<div className="w-8 h-8 rounded-lg bg-[#2d6a4f] flex items-center justify-center text-white shadow-lg">
 						<Zap className="w-5 h-5 fill-white/20" />
 					</div>
 					<span

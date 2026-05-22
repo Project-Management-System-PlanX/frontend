@@ -7,17 +7,17 @@ export interface Column {
 
 export const UI = {
 	inbox: {
-		bg: "linear-gradient(135deg, #2F6F66 0%, #3F8A80 100%)",
+		bg: "linear-gradient(160deg, #6B3A1F 0%, #8B4A2A 50%, #A05530 100%)",
 		input: "#1F2933",
 		text: "#FFFFFF",
 		muted: "rgba(255,255,255,0.75)",
 	},
 	planner: {
-		bg: "#1F2329",
-		card: "#2A2F36",
-		accent: "#3B82F6",
+		bg: "#1A1625",
+		card: "#231D32",
+		accent: "#8B5CF6",
 		text: "#FFFFFF",
-		muted: "#94A3B8",
+		muted: "#A78BFA",
 	},
 	board: {
 		bg: "linear-gradient(135deg, #7C4D7E 0%, #8B5E8C 100%)",
@@ -29,8 +29,8 @@ export const UI = {
 		text: "#FFFFFF",
 	},
 	nav: {
-		bg: "#0D0F12",
-		border: "rgba(255,255,255,0.1)",
-		primary: "#3B82F6",
+		bg: "#120E20",
+		border: "rgba(255,255,255,0.08)",
+		primary: "#8B5CF6",
 	},
 };

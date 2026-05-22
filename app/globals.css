@@ -44,6 +44,7 @@
 }
 
 @layer components {
+
 	/* Layout */
 	.container {
 		max-width: 1200px;
@@ -1106,15 +1107,19 @@
 	0% {
 		transform: translateY(0px) translateX(0px);
 	}
+
 	25% {
 		transform: translateY(-20px) translateX(12px);
 	}
+
 	50% {
 		transform: translateY(-8px) translateX(-8px);
 	}
+
 	75% {
 		transform: translateY(-28px) translateX(6px);
 	}
+
 	100% {
 		transform: translateY(0px) translateX(0px);
 	}
@@ -1124,6 +1129,7 @@
 	from {
 		transform: translateX(0);
 	}
+
 	to {
 		transform: translateX(-50%);
 	}
@@ -1133,6 +1139,7 @@
 	from {
 		transform: translateX(-50%);
 	}
+
 	to {
 		transform: translateX(0);
 	}
@@ -1143,6 +1150,7 @@
 		opacity: 0;
 		transform: translateY(30px);
 	}
+
 	to {
 		opacity: 1;
 		transform: translateY(0);
@@ -1154,6 +1162,7 @@
 		opacity: 0;
 		transform: translateY(16px);
 	}
+
 	to {
 		opacity: 1;
 		transform: translateY(0);
@@ -1165,33 +1174,40 @@
 		opacity: 0;
 		transform: translateX(-50%) scale(0.3);
 	}
+
 	50% {
 		opacity: 1;
 		transform: translateX(-50%) scale(1.08);
 	}
+
 	70% {
 		transform: translateX(-50%) scale(0.95);
 	}
+
 	100% {
 		transform: translateX(-50%) scale(1);
 	}
 }
 
 @keyframes gentleFloat {
+
 	0%,
 	100% {
 		transform: translateY(0);
 	}
+
 	50% {
 		transform: translateY(-8px);
 	}
 }
 
 @keyframes checkPulse {
+
 	0%,
 	100% {
 		transform: translateX(-50%) scale(1);
 	}
+
 	50% {
 		transform: translateX(-50%) scale(1.08);
 	}
@@ -1201,9 +1217,11 @@
 	0% {
 		opacity: 0.5;
 	}
+
 	50% {
 		opacity: 1;
 	}
+
 	100% {
 		opacity: 0.5;
 	}
@@ -1249,15 +1267,19 @@
 .delay-1 {
 	animation-delay: 0.1s;
 }
+
 .delay-2 {
 	animation-delay: 0.2s;
 }
+
 .delay-3 {
 	animation-delay: 0.3s;
 }
+
 .delay-4 {
 	animation-delay: 0.4s;
 }
+
 .delay-5 {
 	animation-delay: 0.5s;
 }

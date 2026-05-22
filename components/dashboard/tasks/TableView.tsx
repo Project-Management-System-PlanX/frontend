@@ -95,10 +95,10 @@ export function TableView({
 
 	return (
 		<div className="flex-1 overflow-auto custom-scrollbar p-5">
-			<div className="w-full min-w-[800px] bg-[#141414] rounded-[24px] border border-white/5 shadow-2xl overflow-hidden">
+			<div className="w-full min-w-[800px] bg-[#3d3d54] rounded-[24px] border border-[#505060] shadow-2xl overflow-hidden">
 				<div className="p-8">
 					{/* Table Header - Sticky */}
-					<div className="sticky top-0 z-10 bg-[#141414] flex items-center px-4 py-4 border-b border-white/20 text-[12px] font-black text-white/80 uppercase tracking-[0.1em]">
+					<div className="sticky top-0 z-10 bg-[#3d3d54] flex items-center px-4 py-4 border-b border-[#505060] text-[12px] font-black text-white/80 uppercase tracking-[0.1em]">
 						<div
 							className="flex-1 flex items-center gap-2 cursor-pointer hover:text-white transition-colors"
 							onClick={() => handleSort("title")}
@@ -173,7 +173,7 @@ function TableRow({
 	const isCompleted = task.resolution === "DONE" || (task.status?.isDone ?? false);
 
 	return (
-		<div className="flex items-center px-4 py-5 hover:bg-white/5 transition-colors cursor-pointer group bg-[#141414]">
+		<div className="flex items-center px-4 py-5 hover:bg-[#505060]/40 transition-colors cursor-pointer group bg-[#3d3d54]">
 			<div className="flex-1 flex items-center gap-4" onClick={() => onTaskClick(task)}>
 				<div
 					className={cn(
@@ -257,7 +257,7 @@ function TableRow({
 										return (
 											<div
 												key={a.userId}
-												className="w-5 h-5 rounded-full bg-[#F59E0B] flex items-center justify-center text-[10px] font-bold text-black shrink-0 shadow-sm border border-[#141414] uppercase"
+												className="w-5 h-5 rounded-full bg-[#e85d04] flex items-center justify-center text-[10px] font-bold text-white shrink-0 shadow-sm border border-[#3d3d54] uppercase"
 												title={a.user?.firstName || a.user?.email || a.userId}
 											>
 												{initial}
@@ -266,7 +266,7 @@ function TableRow({
 									})}
 								</div>
 							) : task.assigneeId ? (
-								<div className="w-5 h-5 rounded-full bg-[#F59E0B] flex items-center justify-center text-[10px] font-bold text-black shrink-0 shadow-sm border border-[#141414] uppercase">
+									<div className="w-5 h-5 rounded-full bg-[#e85d04] flex items-center justify-center text-[10px] font-bold text-white shrink-0 shadow-sm border border-[#3d3d54] uppercase">
 									{/* Not showing exact initials since we don't have the user object here, but it signals it's assigned */}
 									U
 								</div>

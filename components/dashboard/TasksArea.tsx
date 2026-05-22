@@ -358,9 +358,9 @@ export function TasksArea() {
 			prev.includes(tabId)
 				? prev.filter((t) => t !== tabId)
 				: [...prev, tabId].sort((a, b) => {
-						const order = ["inbox", "planner", "board"];
-						return order.indexOf(a) - order.indexOf(b);
-					}),
+					const order = ["inbox", "planner", "board"];
+					return order.indexOf(a) - order.indexOf(b);
+				}),
 		);
 	};
 
@@ -567,13 +567,13 @@ export function TasksArea() {
 
 	const activeTask = activeId
 		? (() => {
-				const id = activeId.replace(/^(inbox-|board-|planner-)/, "");
-				return (
-					liveTasksMap[id] ||
-					inboxTasks.find((t) => t.id === id) ||
-					plannerTasks.find((t) => t.id === id)
-				);
-			})()
+			const id = activeId.replace(/^(inbox-|board-|planner-)/, "");
+			return (
+				liveTasksMap[id] ||
+				inboxTasks.find((t) => t.id === id) ||
+				plannerTasks.find((t) => t.id === id)
+			);
+		})()
 		: null;
 
 	// ─── Error State ─────────────────────────────────────────────
@@ -606,8 +606,8 @@ export function TasksArea() {
 		return (
 			<div className="flex-1 flex items-center justify-center bg-[#111111]">
 				<div className="flex flex-col items-center gap-4">
-					<div className="w-12 h-12 border-4 border-white/10 border-t-white rounded-full animate-spin" />
-					<p className="text-white/40 font-bold text-[15px] uppercase tracking-widest">
+					<div className="w-12 h-12 border-4 border-[#8B5CF6]/30 border-t-[#8B5CF6] rounded-full animate-spin" />
+					<p className="text-white/50 font-semibold text-[14px] uppercase tracking-[0.2em]">
 						Synchronizing...
 					</p>
 				</div>
@@ -719,7 +719,7 @@ export function TasksArea() {
 
 			{/* Floating Bottom Nav (Oldest Design) */}
 			<div className="absolute left-1/2 -translate-x-1/2 bottom-8 z-40">
-				<div className="flex items-center gap-1.5 px-3 py-2 rounded-2xl border shadow-2xl bg-[#0D0F12] border-white/10">
+				<div className="flex items-center gap-1 px-2 py-1.5 rounded-2xl border shadow-2xl shadow-black/40" style={{ background: "rgba(18,14,32,0.92)", borderColor: "rgba(139,92,246,0.2)", backdropFilter: "blur(20px)" }}>
 					<NavButton
 						icon={<InboxIcon className="w-5 h-5" />}
 						label="Inbox"
@@ -809,7 +809,8 @@ export function TasksArea() {
 							initial={{ scale: 0.9, opacity: 0 }}
 							animate={{ scale: 1, opacity: 1 }}
 							exit={{ scale: 0.9, opacity: 0 }}
-							className="w-full max-w-md bg-[#1A1C1E] border border-white/10 rounded-[32px] overflow-hidden shadow-2xl"
+							className="w-full max-w-md border border-purple-500/20 rounded-[32px] overflow-hidden shadow-2xl"
+							style={{ background: "linear-gradient(160deg, #1E1535 0%, #2D1B5E 100%)" }}
 						>
 							<div className="p-8">
 								<div className="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center mb-6">
@@ -859,7 +860,7 @@ export function TasksArea() {
 							initial={{ scale: 0.9, opacity: 0 }}
 							animate={{ scale: 1, opacity: 1 }}
 							exit={{ scale: 0.9, opacity: 0 }}
-							className="w-full max-w-md bg-[#1A1C1E] border border-white/10 rounded-[32px] overflow-hidden shadow-2xl"
+							className="w-full max-w-md border border-purple-500/20 rounded-[32px] overflow-hidden shadow-2xl" style={{ background: "linear-gradient(160deg, #1E1535 0%, #2D1B5E 100%)" }}
 						>
 							<div className="p-8">
 								<div className="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center mb-6">
@@ -911,9 +912,10 @@ function PanelContainer({ id, children }: { id: string; children: React.ReactNod
 		<div
 			ref={setNodeRef}
 			className={cn(
-				"flex-1 h-full overflow-hidden rounded-[24px] border border-white/5 shadow-2xl transition-colors",
-				id === "planner" ? "bg-[#0D0D0D]" : "bg-transparent",
+				"flex-1 h-full overflow-hidden rounded-[24px] border shadow-2xl transition-colors",
+				id === "planner" ? "bg-[#1A1625]" : "bg-transparent",
 			)}
+			style={{ borderColor: "rgba(255,255,255,0.06)" }}
 		>
 			{children}
 		</div>
@@ -936,8 +938,10 @@ function NavButton({
 			type="button"
 			onClick={onClick}
 			className={cn(
-				"flex items-center gap-2 px-4 py-2.5 rounded-xl text-[14px] font-bold transition-all",
-				active ? "bg-white text-black shadow-lg" : "text-white/40 hover:text-white/60",
+				"flex items-center gap-2 px-4 py-2.5 rounded-xl text-[14px] font-semibold tracking-tight transition-all duration-200",
+				active
+					? "bg-[#8B5CF6] text-white shadow-lg shadow-purple-500/30"
+					: "text-white/50 hover:text-white/80 hover:bg-white/5",
 			)}
 		>
 			{icon}

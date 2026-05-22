@@ -4,15 +4,15 @@ export default function StatsAndCTA() {
       <div className="container">
         <div className="stats-grid">
           <div className="stat-item">
-            <h3>2021</h3>
+            <h3>2026</h3>
             <p>TeamUp Founded</p>
           </div>
           <div className="stat-item">
-            <h3>50K+</h3>
+            <h3>3+</h3>
             <p>Active Users</p>
           </div>
           <div className="stat-item">
-            <h3>1K+</h3>
+            <h3>1+</h3>
             <p>Company Partners</p>
           </div>
         </div>

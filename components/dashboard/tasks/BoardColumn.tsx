@@ -2,7 +2,7 @@
 
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ChevronsLeftRight, MoreHorizontal, Plus } from "lucide-react";
+import { ChevronsLeftRight, MoreHorizontal, Plus, X } from "lucide-react";
 import { memo, useState } from "react";
 import type { Task } from "@/lib/types/models";
 import { cn } from "@/lib/utils";
@@ -126,7 +126,7 @@ export const BoardColumn = memo(
 									/>
 								) : (
 									<span
-										className="text-[15px] font-black text-white uppercase tracking-wider"
+										className="text-[14px] font-bold text-white/90"
 										onDoubleClick={() => setIsEditing(true)}
 									>
 										{column.name}
@@ -165,37 +165,40 @@ export const BoardColumn = memo(
 							</SortableContext>
 
 							{isAddingTask ? (
-								<div className="mt-1">
-									<input
-										className="w-full bg-black/20 border-none outline-none rounded-lg px-3 py-2 text-white font-medium text-[14px] placeholder:text-white/20 mb-2"
-										placeholder="What needs to be done?"
-										value={newTaskTitle}
-										onChange={(e) => setNewTaskTitle(e.target.value)}
-										onBlur={() => {
-											if (!newTaskTitle.trim()) setIsAddingTask(false);
-										}}
-										onKeyDown={(e) => {
-											if (e.key === "Enter") handleAddTask();
-											if (e.key === "Escape") {
-												setNewTaskTitle("");
-												setIsAddingTask(false);
-											}
-										}}
-									/>
+								<div className="mt-1 animate-in fade-in duration-200">
+									<div className="bg-[#22272B] rounded-lg shadow-sm border border-transparent px-3 py-2.5 mb-2">
+										<input
+											className="w-full bg-transparent border-none outline-none text-white/90 text-[14px] placeholder:text-white/40"
+											placeholder="Enter a title for this card..."
+											value={newTaskTitle}
+											onChange={(e) => setNewTaskTitle(e.target.value)}
+											onBlur={() => {
+												if (!newTaskTitle.trim()) setIsAddingTask(false);
+											}}
+											onKeyDown={(e) => {
+												if (e.key === "Enter") handleAddTask();
+												if (e.key === "Escape") {
+													setNewTaskTitle("");
+													setIsAddingTask(false);
+												}
+											}}
+											autoFocus
+										/>
+									</div>
 									<div className="flex items-center gap-2">
 										<button
 											type="button"
 											onClick={handleAddTask}
-											className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-md text-[12px] font-bold transition-colors"
+											className="px-3 py-1.5 bg-[#579DFF] hover:bg-[#85B8FF] text-[#1D2125] rounded-[3px] text-[14px] font-semibold transition-colors"
 										>
-											Add
+											Add card
 										</button>
 										<button
 											type="button"
 											onClick={() => setIsAddingTask(false)}
-											className="text-white/40 hover:text-white transition-colors"
+											className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded transition-colors"
 										>
-											<Plus className="w-4 h-4 rotate-45" />
+											<X className="w-5 h-5" />
 										</button>
 									</div>
 								</div>
@@ -203,9 +206,9 @@ export const BoardColumn = memo(
 								<button
 									type="button"
 									onClick={() => setIsAddingTask(true)}
-									className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-black/20 text-[12px] font-bold text-white w-full transition-colors mt-1 group"
+									className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-black/20 text-[14px] font-medium text-white/70 w-full transition-colors mt-1 group"
 								>
-									<Plus className="w-4 h-4 transition-transform group-hover:rotate-90" /> Add card
+									<Plus className="w-4 h-4 transition-transform group-hover:bg-white/10 rounded" /> Add a card
 								</button>
 							)}
 						</div>

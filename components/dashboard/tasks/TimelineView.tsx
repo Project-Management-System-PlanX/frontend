@@ -26,7 +26,7 @@ export function TimelineView({
 
 	return (
 		<div className="flex-1 overflow-auto custom-scrollbar p-5 flex flex-col h-full">
-			<div className="flex-1 bg-[#141414] rounded-[24px] border border-white/5 shadow-2xl overflow-hidden flex flex-col min-w-[1000px]">
+			<div className="flex-1 bg-[#3d3d54] rounded-[24px] border border-[#505060] shadow-2xl overflow-hidden flex flex-col min-w-[1000px]">
 				{/* Timeline Header */}
 				<div className="p-4 flex items-center justify-between border-b border-white/5 bg-black/20 shrink-0">
 					<div className="flex items-center gap-4">
@@ -160,7 +160,7 @@ export function TimelineView({
 													<div
 														key={task.id}
 														onClick={() => onTaskClick(task)}
-														className="absolute inset-x-2 top-2 bottom-2 bg-[#1A1A1A] rounded-xl border border-white/10 p-2.5 flex flex-col gap-1.5 hover:bg-[#252525] hover:border-white/20 transition-all cursor-pointer shadow-2xl group/task z-10"
+															className="absolute inset-x-2 top-2 bottom-2 bg-[#505060] rounded-xl border border-[#606070] p-2.5 flex flex-col gap-1.5 hover:bg-[#5a5a70] hover:border-[#707080] transition-all cursor-pointer shadow-2xl group/task z-10"
 													>
 														<div className="flex items-center justify-between">
 															<div className="flex gap-1">

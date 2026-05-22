@@ -195,9 +195,8 @@ export function DashboardHome() {
 										key={tab}
 										type="button"
 										onClick={() => setActiveTab(tab)}
-										className={`relative z-10 px-4 py-1.5 text-[13px] font-semibold transition-colors duration-200 ${
-											isActive ? "text-gray-900" : "text-gray-500 hover:text-gray-700"
-										}`}
+										className={`relative z-10 px-4 py-1.5 text-[13px] font-semibold transition-colors duration-200 ${isActive ? "text-gray-900" : "text-gray-500 hover:text-gray-700"
+											}`}
 									>
 										{isActive && (
 											<motion.div
@@ -240,11 +239,10 @@ export function DashboardHome() {
 												setDateRange(range);
 												setShowDatePicker(false);
 											}}
-											className={`w-full text-left px-4 py-2 text-[13px] font-medium transition-colors ${
-												dateRange === range
+											className={`w-full text-left px-4 py-2 text-[13px] font-medium transition-colors ${dateRange === range
 													? "text-gray-900 bg-gray-100"
 													: "text-gray-600 hover:bg-gray-50"
-											}`}
+												}`}
 										>
 											{range}
 											{dateRange === range && <span className="float-right text-[#007AFF]">✓</span>}
@@ -262,11 +260,10 @@ export function DashboardHome() {
 									setShowFilter(!showFilter);
 									setShowDatePicker(false);
 								}}
-								className={`flex items-center gap-2 backdrop-blur-xl border rounded-xl px-3.5 py-2 text-[13px] font-medium shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
-									filterType !== "all"
+								className={`flex items-center gap-2 backdrop-blur-xl border rounded-xl px-3.5 py-2 text-[13px] font-medium shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${filterType !== "all"
 										? "bg-[#007AFF]/10 border-[#007AFF]/20 text-[#007AFF]"
 										: "bg-white/70 hover:bg-white border-white text-gray-700"
-								}`}
+									}`}
 							>
 								<Filter className="w-4 h-4" />
 								{filterType === "all"
@@ -283,11 +280,10 @@ export function DashboardHome() {
 												setFilterType(type);
 												setShowFilter(false);
 											}}
-											className={`w-full text-left px-4 py-2 text-[13px] font-medium transition-colors ${
-												filterType === type
+											className={`w-full text-left px-4 py-2 text-[13px] font-medium transition-colors ${filterType === type
 													? "text-gray-900 bg-gray-100"
 													: "text-gray-600 hover:bg-gray-50"
-											}`}
+												}`}
 										>
 											{type === "all" ? "All Types" : type.charAt(0).toUpperCase() + type.slice(1)}
 											{filterType === type && <span className="float-right text-[#007AFF]">✓</span>}
@@ -401,9 +397,8 @@ function OverviewTab({
 							</div>
 							<div className="flex items-center gap-1.5 mt-3">
 								<span
-									className={`text-[12px] font-semibold px-1.5 py-0.5 rounded-md ${
-										m.positive ? "bg-[#34C759]/10 text-[#34C759]" : "bg-[#FF3B30]/10 text-[#FF3B30]"
-									}`}
+									className={`text-[12px] font-semibold px-1.5 py-0.5 rounded-md ${m.positive ? "bg-[#34C759]/10 text-[#34C759]" : "bg-[#FF3B30]/10 text-[#FF3B30]"
+										}`}
 								>
 									{m.positive ? "↑" : "↓"} {m.change}
 								</span>
@@ -933,7 +928,7 @@ function AudienceTab({ members, isLoaded, analytics }: any) {
 						{members.map((member: any) => {
 							const name = member.profile
 								? [member.profile.firstName, member.profile.lastName].filter(Boolean).join(" ") ||
-									member.profile.email
+								member.profile.email
 								: member.userId.slice(0, 8);
 							const initials = name.substring(0, 2).toUpperCase();
 							return (

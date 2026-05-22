@@ -35,7 +35,7 @@ function IconCard({ name, icon, color }: { name: string; icon: string; color: st
   return (
     <div className="integration-icon-card" title={name} style={{ '--icon-color': color } as React.CSSProperties}>
       <svg className="integration-card-bg" viewBox="0 0 72 72" fill="none">
-        <circle cx="36" cy="36" r="35" fill={color} opacity="0.08" stroke={color} strokeWidth="1.5"/>
+        <circle cx="36" cy="36" r="35" fill={color} opacity="0.08" stroke={color} strokeWidth="1.5" />
       </svg>
       <img src={`${icon}?color=${color.replace('#', '')}`} alt={name} width={44} height={44} style={{ objectFit: 'contain', position: 'relative', zIndex: 2, filter: `drop-shadow(0 2px 6px rgba(0,0,0,0.15))` }} />
     </div>

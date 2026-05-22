@@ -66,7 +66,7 @@ export default function FeaturesSection() {
           {/* Left side - Content */}
           <div className="features-content">
             <h3 className="features-content-title">{content.title}</h3>
-            
+
             {/* Checklist items */}
             <div className="features-checklist">
               {content.subtitle.map((item, i) => (

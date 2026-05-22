@@ -7,29 +7,28 @@ const avatars = [
     label: 'Team member 1',
     arrowDir: 'right' as const,
     style: { top: '22%', left: '7%' },
-    // top-left face: clip to top-left of sprite
-    clipStyle: { objectPosition: '25% 25%' },
+    src: 'https://i.pravatar.cc/150?img=32',
     animDelay: '0s',
   },
   {
     label: 'Team member 2',
     arrowDir: 'left' as const,
     style: { top: '22%', right: '7%' },
-    clipStyle: { objectPosition: '75% 25%' },
+    src: 'https://i.pravatar.cc/150?img=47',
     animDelay: '0.75s',
   },
   {
     label: 'Team member 3',
     arrowDir: 'right' as const,
     style: { top: '62%', left: '6%' },
-    clipStyle: { objectPosition: '25% 75%' },
+    src: 'https://i.pravatar.cc/150?img=12',
     animDelay: '1.5s',
   },
   {
     label: 'Team member 4',
     arrowDir: 'left' as const,
     style: { top: '62%', right: '6%' },
-    clipStyle: { objectPosition: '75% 75%' },
+    src: 'https://i.pravatar.cc/150?img=43',
     animDelay: '2.25s',
   },
 ]
@@ -70,14 +69,12 @@ export default function BankingScaleHero() {
               {/* Circular avatar photo */}
               <div className="floating-avatar">
                 <img
-                  src="/hero-avatars.png"
+                  src={a.src}
                   alt={a.label}
                   style={{
-                    width: '200%',
-                    height: '200%',
+                    width: '100%',
+                    height: '100%',
                     objectFit: 'cover',
-                    position: 'absolute',
-                    objectPosition: a.clipStyle.objectPosition,
                   }}
                 />
               </div>

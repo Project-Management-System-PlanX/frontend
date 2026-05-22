@@ -106,7 +106,7 @@ export function DashboardView({ tasks, columns, columnOrder }: DashboardViewProp
 	];
 
 	return (
-		<div className="flex-1 overflow-auto custom-scrollbar p-6 bg-[#111111]">
+		<div className="flex-1 overflow-auto custom-scrollbar p-6 bg-[#2d2d44]">
 			<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 				{/* Cards per List */}
 				<ChartCard title="Cards per list">
@@ -117,8 +117,8 @@ export function DashboardView({ tasks, columns, columnOrder }: DashboardViewProp
 							<YAxis stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
 							<Tooltip
 								contentStyle={{
-									backgroundColor: "#1A1A1A",
-									border: "1px solid #333",
+										backgroundColor: "#3d3d54",
+										border: "1px solid #505060",
 									borderRadius: "8px",
 								}}
 								itemStyle={{ color: "#fff" }}
@@ -132,22 +132,22 @@ export function DashboardView({ tasks, columns, columnOrder }: DashboardViewProp
 				<ChartCard title="Cards per due date">
 					<ResponsiveContainer width="100%" height={300}>
 						<BarChart data={cardsPerDueDateData} barCategoryGap="20%">
-							<CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
-							<XAxis dataKey="name" stroke="#666" fontSize={11} tickLine={false} axisLine={false} />
-							<YAxis stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
+						<CartesianGrid strokeDasharray="3 3" stroke="#505060" vertical={false} />
+						<XAxis dataKey="name" stroke="#a0a0b0" fontSize={11} tickLine={false} axisLine={false} />
+						<YAxis stroke="#a0a0b0" fontSize={12} tickLine={false} axisLine={false} />
 							<Tooltip
-								contentStyle={{
-									backgroundColor: "#1A1A1A",
-									border: "1px solid #333",
-									borderRadius: "8px",
-								}}
+							contentStyle={{
+								backgroundColor: "#3d3d54",
+								border: "1px solid #505060",
+								borderRadius: "8px",
+							}}
 								itemStyle={{ color: "#fff" }}
 							/>
 							<Bar dataKey="count" radius={[4, 4, 0, 0]}>
 								{cardsPerDueDateData.map((entry, index) => (
 									<Cell
 										key={`cell-${index}`}
-										fill={entry.name === "Due later" ? "#F59E0B" : "#4B5563"}
+										fill={entry.name === "Due later" ? "#e85d04" : "#505060"}
 									/>
 								))}
 							</Bar>
@@ -243,7 +243,7 @@ export function DashboardView({ tasks, columns, columnOrder }: DashboardViewProp
 							<Line
 								type="monotone"
 								dataKey="Later"
-								stroke="#F59E0B"
+								stroke="#e85d04"
 								strokeWidth={3}
 								dot={{ r: 4 }}
 								activeDot={{ r: 6 }}
@@ -266,7 +266,7 @@ function ChartCard({
 	className?: string;
 }) {
 	return (
-		<div className={cn("bg-[#1A1A1A] rounded-2xl p-6 border border-white/5 shadow-xl", className)}>
+			<div className={cn("bg-[#3d3d54] rounded-2xl p-6 border border-[#505060] shadow-xl", className)}>
 			<div className="flex items-center justify-between mb-8">
 				<h3 className="text-[16px] font-bold text-white tracking-tight">{title}</h3>
 				<button className="p-1 hover:bg-white/5 rounded-md transition-colors text-white/40 hover:text-white">

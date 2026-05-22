@@ -33,7 +33,7 @@ const WORKSPACE_GRADIENTS = [
 	"from-[#34C759] to-[#30D158]",
 	"from-[#AF52DE] to-[#5856D6]",
 	"from-[#FF2D55] to-[#FF6482]",
-	"from-[#5AC8FA] to-[#007AFF]",
+	"[#1a3d2b]",
 	"from-[#FF9500] to-[#FFCC00]",
 	"from-[#64D2FF] to-[#5AC8FA]",
 ];
@@ -98,10 +98,10 @@ export default function WorkspacesPage() {
 			<header className="sticky top-0 z-50 bg-white/70 backdrop-blur-2xl border-b border-white/40">
 				<div className="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
 					<Link href="/" className="flex items-center gap-3 group">
-						<div className="w-9 h-9 rounded-[12px] bg-gradient-to-b from-[#5AC8FA] to-[#007AFF] flex items-center justify-center text-white shadow-md shadow-blue-500/20 transition-all group-hover:shadow-blue-500/30">
+						<div className="w-9 h-9 rounded-[12px] bg-[#1a3d2b] flex items-center justify-center text-white shadow-md shadow-green-900/20 transition-all group-hover:shadow-green-900/30">
 							<Zap className="w-5 h-5 fill-white/20" />
 						</div>
-						<span className="font-bold text-[18px] text-gray-900 tracking-tight">TeamUp</span>
+						<span className="font-bold text-[18px] text-[#1a3d2b] tracking-tight">TeamUp</span>
 					</Link>
 
 					<div className="flex items-center gap-3">

@@ -32,7 +32,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 		<MeetingProvider>
 			<div
 				className="h-screen w-full flex flex-col overflow-hidden"
-				style={{ backgroundColor: isDashboardHome ? "#F2F4F7" : "#0F172A" }}
+				style={{ backgroundColor: isDashboardHome ? "#F2F4F7" : "#0f2318" }}
 			>
 				<TopNav />
 
@@ -56,7 +56,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 								}}
 								className="h-full shrink-0 overflow-hidden border-r border-white/5"
 							>
-								<aside className="h-full w-[400px] bg-[#0F172A]/50 backdrop-blur-xl overflow-hidden flex flex-col">
+								<aside className="h-full w-[400px] bg-transparent backdrop-blur-xl overflow-hidden flex flex-col">
 									<SynapseSidebar />
 								</aside>
 							</motion.div>

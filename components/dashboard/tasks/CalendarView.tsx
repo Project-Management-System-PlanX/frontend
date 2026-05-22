@@ -51,7 +51,7 @@ export function CalendarView({
 
 	return (
 		<div className="flex-1 overflow-auto custom-scrollbar p-5 flex flex-col h-full">
-			<div className="flex-1 bg-[#141414] rounded-[24px] border border-white/5 shadow-2xl overflow-hidden flex flex-col min-w-[1800px]">
+			<div className="flex-1 bg-[#3d3d54] rounded-[24px] border border-[#505060] shadow-2xl overflow-hidden flex flex-col min-w-[1800px]">
 				{/* Calendar Header */}
 				<div className="p-4 flex items-center justify-between border-b border-white/5 bg-black/20 shrink-0">
 					<div className="flex items-center gap-4">
@@ -198,7 +198,7 @@ export function CalendarView({
 												<div
 													key={task.id}
 													onClick={() => onTaskClick(task)}
-													className="p-2.5 bg-[#1A1A1A] rounded-lg border border-white/5 text-white cursor-pointer hover:bg-[#252525] hover:border-white/10 transition-all flex flex-col gap-2 shadow-xl group/task shrink-0"
+													className="p-2.5 bg-[#505060] rounded-lg border border-[#606070] text-white cursor-pointer hover:bg-[#5a5a70] hover:border-[#707080] transition-all flex flex-col gap-2 shadow-xl group/task shrink-0"
 												>
 													<div className="flex items-start justify-between gap-2">
 														{/* Labels */}

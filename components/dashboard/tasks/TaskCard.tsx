@@ -98,44 +98,20 @@ export const TaskCard = memo(
 		return (
 			<div
 				className={cn(
-					"rounded-xl shadow-xl border border-white/10 group transition-all flex flex-col relative overflow-hidden",
-					isOverlay ? "bg-[#1F2933]" : "bg-[#1F2933] hover:bg-white/[0.04]",
-					isCompleted && "opacity-60",
+					"rounded-lg shadow-sm border border-transparent hover:border-white/10 group transition-colors block relative overflow-hidden",
+					isOverlay ? "bg-[#22272B] ring-2 ring-blue-500" : "bg-[#22272B] hover:bg-[#2C333A]",
+					isCompleted && "opacity-70",
 				)}
 				onClick={onClick}
 			>
 				{/* Cover color bar */}
 				{task.coverColor && (
 					<div
-						className="w-full h-8 shrink-0 rounded-t-xl"
+						className="w-full h-8 shrink-0 rounded-t-lg"
 						style={{ backgroundColor: task.coverColor }}
 					/>
 				)}
-				<div className="flex items-center gap-3 py-2.5 px-3">
-					{/* ── Checkbox ─────────────────────────── */}
-					<div
-						role="checkbox"
-						aria-checked={isCompleted}
-						aria-label={isCompleted ? "Mark incomplete" : "Mark complete"}
-						tabIndex={0}
-						className="cursor-pointer shrink-0 flex items-center justify-center w-5 h-5 mt-1"
-						onPointerDown={stopPointer}
-						onClick={handleCheckbox}
-						onKeyDown={(e) => {
-							if (e.key === " " || e.key === "Enter") {
-								e.preventDefault();
-								e.stopPropagation();
-								onToggle?.(task.id);
-							}
-						}}
-					>
-						{isCompleted ? (
-							<CheckCircle2 className="w-5 h-5 text-emerald-500 transition-all duration-200" />
-						) : (
-							<Circle className="w-5 h-5 text-white/30 hover:text-white/70 transition-all duration-200" />
-						)}
-					</div>
-
+				<div className="flex items-start justify-between py-2 px-3 gap-2">
 					{/* ── Title + Subtasks ─────────────────── */}
 					<div className="flex flex-col flex-1 min-w-0">
 						{/* Labels */}
@@ -154,8 +130,8 @@ export const TaskCard = memo(
 
 						<p
 							className={cn(
-								"text-[15px] font-semibold text-white truncate transition-all duration-200",
-								isCompleted && "line-through text-white/40",
+								"text-[14px] leading-[20px] font-medium text-white/90 font-sans tracking-[0.01em] break-words",
+								isCompleted && "line-through text-white/50",
 							)}
 						>
 							{task.title}
@@ -180,7 +156,7 @@ export const TaskCard = memo(
 											return (
 												<div
 													key={a.userId}
-													className="w-6 h-6 rounded-full bg-[#F59E0B] flex items-center justify-center text-[11px] font-bold text-black shrink-0 shadow-sm border border-[#1F2933] uppercase"
+													className="w-[20px] h-[20px] rounded-full bg-[#172B4D] flex items-center justify-center text-[10px] font-bold text-white shrink-0 shadow-sm uppercase"
 													title={a.user?.firstName || a.user?.email || a.userId}
 												>
 													{initial}
@@ -188,7 +164,7 @@ export const TaskCard = memo(
 											);
 										})
 									) : task.assigneeId ? (
-										<div className="w-6 h-6 rounded-full bg-[#F59E0B] flex items-center justify-center text-[11px] font-bold text-black shrink-0 shadow-sm border border-[#1F2933] uppercase">
+										<div className="w-[20px] h-[20px] rounded-full bg-[#172B4D] flex items-center justify-center text-[10px] font-bold text-white shrink-0 shadow-sm uppercase">
 											{assigneeInitial}
 										</div>
 									) : null}
