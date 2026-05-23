@@ -21,23 +21,23 @@ export const taskKeys = {
 
 export const useTasks = (spaceId?: string | null, _unused?: unknown, token?: string) =>
 	useQuery({
-		queryKey: taskKeys.bySpace(spaceId!),
-		queryFn: () => taskService.getBySpace(spaceId!, token),
+		queryKey: taskKeys.bySpace(spaceId || ""),
+		queryFn: () => taskService.getBySpace(spaceId || "", token),
 		enabled: !!spaceId && !!token,
 		staleTime: 30_000,
 	});
 
 export const useTask = (id?: string | null, token?: string) =>
 	useQuery({
-		queryKey: taskKeys.byId(id!),
-		queryFn: () => taskService.getById(id!, token),
+		queryKey: taskKeys.byId(id || ""),
+		queryFn: () => taskService.getById(id || "", token),
 		enabled: !!id && !!token,
 	});
 
 export const useTasksAssignedToMe = (workspaceId?: string, token?: string) =>
 	useQuery({
-		queryKey: taskKeys.assignedToMe(workspaceId!),
-		queryFn: () => taskService.getAssignedToMe(workspaceId!, token),
+		queryKey: taskKeys.assignedToMe(workspaceId || ""),
+		queryFn: () => taskService.getAssignedToMe(workspaceId || "", token),
 		enabled: !!workspaceId && !!token,
 	});
 
@@ -253,6 +253,18 @@ export const useBulkCreateTasks = (token?: string) => {
 			if (variables.tasks.length > 0) {
 				queryClient.invalidateQueries({ queryKey: taskKeys.bySpace(variables.tasks[0].spaceId) });
 			}
+			queryClient.invalidateQueries({ queryKey: taskKeys.all });
+		},
+	});
+};
+
+export const useAssignViaAi = (token?: string) => {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: ({ taskId, workspaceId }: { taskId: string; workspaceId: string }): Promise<Task> =>
+			taskService.assignViaAi(taskId, workspaceId, token),
+		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: taskKeys.all });
 		},
 	});

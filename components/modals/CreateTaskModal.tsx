@@ -180,17 +180,11 @@ export function CreateTaskModal({
 				statusId: defaultStatusId,
 				title: summary.trim(),
 				description: description.trim() || undefined,
-				workType,
 				priority,
 				assigneeId: resolvedAssigneeId,
 				dueDate: dueDate
 					? new Date(dueDate.getTime() - dueDate.getTimezoneOffset() * 60000).toISOString()
 					: undefined,
-				startDate: startDate
-					? new Date(startDate.getTime() - startDate.getTimezoneOffset() * 60000).toISOString()
-					: undefined,
-				teamId: finalTeamId || undefined,
-				parentId: parentId,
 			});
 
 			// Create subtasks after main task
@@ -200,13 +194,11 @@ export function CreateTaskModal({
 					defaultStatusId) as string;
 				await Promise.all(
 					subtaskTitles.map((title) =>
-						createTask({
-							spaceId,
-							statusId: subtaskStatusId,
-							title,
-							parentId: createdTask.id,
-							workType: "SUBTASK",
-						}),
+								createTask({
+									spaceId,
+									statusId: subtaskStatusId,
+									title,
+								}),
 					),
 				);
 			}

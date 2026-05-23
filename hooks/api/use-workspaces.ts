@@ -26,7 +26,7 @@ export const useWorkspace = (id: string, token?: string) => {
 	return useQuery({
 		queryKey: workspaceKeys.detail(id),
 		queryFn: () => workspaceService.getById(id, token),
-		enabled: !!id,
+		enabled: !!id && !!token,
 	});
 };
 
@@ -67,7 +67,7 @@ export const useWorkspaceMembers = (workspaceId: string, token?: string) => {
 	return useQuery({
 		queryKey: workspaceKeys.members(workspaceId),
 		queryFn: () => workspaceService.listMembers(workspaceId, token),
-		enabled: !!workspaceId,
+		enabled: !!workspaceId && !!token,
 	});
 };
 

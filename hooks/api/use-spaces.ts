@@ -6,6 +6,7 @@ import {
 	type UpdateSpacePayload,
 	type UpdateTaskStatusPayload,
 } from "../../lib/api/services";
+import { taskKeys } from "./use-tasks";
 
 export const spaceKeys = {
 	all: ["spaces"] as const,
@@ -60,6 +61,8 @@ export const useDeleteSpace = (token?: string) => {
 		onSuccess: (_, id) => {
 			queryClient.invalidateQueries({ queryKey: spaceKeys.lists() });
 			queryClient.removeQueries({ queryKey: spaceKeys.detail(id) });
+			// Also clear task queries for this space
+			queryClient.removeQueries({ queryKey: taskKeys.bySpace(id) });
 		},
 	});
 };
@@ -100,6 +103,16 @@ export const useDeleteTaskStatus = (token?: string) => {
 			spacesService.deleteStatus(spaceId, statusId, token),
 		onSuccess: (_, variables) => {
 			queryClient.invalidateQueries({ queryKey: spaceKeys.detail(variables.spaceId) });
+		},
+	});
+};
+
+export const useAddDefaultStatusesToAllSpaces = (token?: string) => {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: (workspaceId: string) => spacesService.addDefaultStatusesToAllSpaces(workspaceId, token),
+		onSuccess: (_data) => {
+			queryClient.invalidateQueries({ queryKey: spaceKeys.lists() });
 		},
 	});
 };

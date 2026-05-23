@@ -38,7 +38,7 @@ interface UseBoardSyncReturn {
 		title: string,
 		extraData?: Partial<Parameters<typeof taskService.create>[0]>,
 	) => Promise<Task | null>;
-	updateTask: (id: string, data: any) => Promise<Task | null>;
+	updateTask: (id: string, data: Parameters<typeof taskService.update>[1]) => Promise<Task | null>;
 	moveTask: (
 		taskId: string,
 		newStatusId: string,
@@ -88,7 +88,8 @@ export function useBoardSync({
 
 		// Build tasks map and assign to columns
 		const tMap: Record<string, Task> = {};
-		const sortedTasks = [...tasksList].sort((a, b) => a.position - b.position);
+		const scopedTasks = spaceId ? tasksList.filter((task) => task.spaceId === spaceId) : [];
+		const sortedTasks = [...scopedTasks].sort((a, b) => a.position - b.position);
 
 		for (const task of sortedTasks) {
 			tMap[task.id] = task;
@@ -112,7 +113,7 @@ export function useBoardSync({
 		}
 
 		return { columns: cols, columnOrder: order, tasksMap: tMap };
-	}, [statuses, tasksList]);
+	}, [statuses, tasksList, spaceId]);
 
 	// ─── Board-specific mutations ───
 

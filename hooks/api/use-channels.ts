@@ -17,7 +17,7 @@ export const useChannelsByWorkspace = (workspaceId: string, token?: string) => {
 	return useQuery({
 		queryKey: channelKeys.listByWorkspace(workspaceId),
 		queryFn: () => channelService.listByWorkspace(workspaceId, token),
-		enabled: !!workspaceId,
+		enabled: !!workspaceId && !!token,
 	});
 };
 
@@ -25,7 +25,7 @@ export const useChannel = (id: string, token?: string) => {
 	return useQuery({
 		queryKey: channelKeys.detail(id),
 		queryFn: () => channelService.getById(id, token),
-		enabled: !!id,
+		enabled: !!id && !!token,
 	});
 };
 

@@ -126,10 +126,10 @@ export const taskService = {
 	// ─── Members ───
 
 	addMember: async (taskId: string, userId: string, token?: string) =>
-		apiClient.post<any>(`/tasks/${taskId}/members`, { userId }, { token }),
+		apiClient.post<unknown>(`/tasks/${taskId}/members`, { userId }, { token }),
 
 	removeMember: async (taskId: string, userId: string, token?: string) =>
-		apiClient.delete<any>(`/tasks/${taskId}/members/${userId}`, { token }),
+		apiClient.delete<unknown>(`/tasks/${taskId}/members/${userId}`, { token }),
 
 	// ─── Activities ───
 
@@ -140,4 +140,9 @@ export const taskService = {
 
 	createBulk: async (data: { tasks: CreateTaskPayload[] }, token?: string) =>
 		apiClient.post<Task[]>("/tasks/bulk", data, { token }),
+
+	// ─── AI ───
+
+	assignViaAi: async (taskId: string, workspaceId: string, token?: string) =>
+		apiClient.post<Task>(`/tasks/${taskId}/assign-ai`, { workspaceId }, { token }),
 };

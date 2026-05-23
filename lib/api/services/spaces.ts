@@ -62,4 +62,13 @@ export const spacesService = {
 
 	deleteStatus: async (spaceId: string, statusId: string, token?: string) =>
 		apiClient.delete<TaskStatus>(API_ENDPOINTS.SPACE_STATUS(spaceId, statusId), { token }),
+
+	// Migration: Add default statuses to all spaces in a workspace
+	addDefaultStatusesToAllSpaces: async (workspaceId: string, token?: string) =>
+		apiClient.post<{
+			success: boolean;
+			spacesUpdated: number;
+			totalSpaces: number;
+			message: string;
+		}>(`${API_ENDPOINTS.SPACES}/workspace/${workspaceId}/add-default-statuses`, {}, { token }),
 };

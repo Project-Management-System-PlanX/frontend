@@ -38,6 +38,7 @@ import { supabase } from "@/lib/supabase/client";
 import type { Task, TaskComment, TaskLabel, UserProfile } from "@/lib/types/models";
 import { cn } from "@/lib/utils";
 
+
 interface TaskDetailModalProps {
 	task: Task | null;
 	isOpen: boolean;
@@ -305,13 +306,8 @@ export default function TaskDetailModal({
 									// Optimistic: update UI immediately
 									setCoverColor(color);
 									if (size) setCoverSize(size);
+									// Persist to backend
 									onUpdateTask?.(task.id, { coverColor: color });
-									// Fire-and-forget backend sync
-									if (token) {
-										taskService
-											.update(task.id, { coverColor: color }, token)
-											.catch((err) => console.error("Failed to save cover color", err));
-									}
 								}}
 							/>
 							<button className="hover:text-white transition-colors p-1">
@@ -367,6 +363,7 @@ export default function TaskDetailModal({
 										setIsOpen={setIsMemberPickerOpen}
 										onUpdateAssignees={setLocalAssignees}
 										onUpdateTask={onUpdateTask}
+										workspaceId={workspaceId || undefined}
 										trigger={
 											<ActionButton
 												icon={<Users className="w-4 h-4" />}
@@ -397,6 +394,7 @@ export default function TaskDetailModal({
 												setIsOpen={setIsMetaMemberPickerOpen}
 												onUpdateAssignees={setLocalAssignees}
 												onUpdateTask={onUpdateTask}
+												workspaceId={workspaceId || undefined}
 												trigger={
 													<div className="flex items-center gap-1.5 cursor-pointer group">
 														<div className="flex -space-x-2">
@@ -750,13 +748,6 @@ export function TaskDatePickerPopover({
 	const handleSave = () => {
 		isSavingRef.current = true;
 		const payload: Partial<Task> = {};
-		if (isStartEnabled && startDate) {
-			const s = new Date(startDate);
-			s.setHours(12, 0, 0, 0);
-			payload.startDate = s.toISOString();
-		} else {
-			payload.startDate = null as unknown as string;
-		}
 
 		if (isDueEnabled && dueDate) {
 			const d = new Date(dueDate);
@@ -777,7 +768,6 @@ export function TaskDatePickerPopover({
 		isSavingRef.current = true;
 		if (onUpdateTask) {
 			onUpdateTask(task.id, {
-				startDate: null as unknown as string,
 				dueDate: null as unknown as string,
 			});
 			onDueDateChange?.(undefined);
@@ -931,6 +921,7 @@ export function TaskMemberPopover({
 	setIsOpen,
 	onUpdateAssignees,
 	onUpdateTask,
+	workspaceId,
 	trigger,
 }: {
 	task: Task;
@@ -939,6 +930,7 @@ export function TaskMemberPopover({
 	setIsOpen: (open: boolean) => void;
 	onUpdateAssignees?: (assignees: any[]) => void;
 	onUpdateTask?: (id: string, data: Partial<Task>) => void;
+	workspaceId?: string;
 	trigger?: React.ReactNode;
 }) {
 	const { token } = useSupabaseAuth();
@@ -958,32 +950,16 @@ export function TaskMemberPopover({
 		const existing = localAssignees.find((a) => a.userId === member.userId);
 
 		if (existing) {
-			const newAssignees = localAssignees.filter((a) => a.userId !== member.userId);
+			const newAssignees: any[] = [];
 			setLocalAssignees(newAssignees);
 			onUpdateAssignees?.(newAssignees);
-			onUpdateTask?.(task.id, { assignees: newAssignees });
-			try {
-				await taskService.removeMember(task.id, member.userId, token);
-			} catch (err) {
-				console.error("Failed to remove member", err);
-				setLocalAssignees(previousAssignees);
-				onUpdateAssignees?.(previousAssignees);
-				onUpdateTask?.(task.id, { assignees: previousAssignees });
-			}
+			onUpdateTask?.(task.id, { assignees: newAssignees, assigneeId: null });
 		} else {
 			const tempAssignee = { userId: member.userId, user: member.user };
-			const newAssignees = [...localAssignees, tempAssignee];
+			const newAssignees = [tempAssignee];
 			setLocalAssignees(newAssignees);
 			onUpdateAssignees?.(newAssignees);
-			onUpdateTask?.(task.id, { assignees: newAssignees });
-			try {
-				await taskService.addMember(task.id, member.userId, token);
-			} catch (err) {
-				console.error("Failed to add member", err);
-				setLocalAssignees(previousAssignees);
-				onUpdateAssignees?.(previousAssignees);
-				onUpdateTask?.(task.id, { assignees: previousAssignees });
-			}
+			onUpdateTask?.(task.id, { assignees: newAssignees, assigneeId: member.userId });
 		}
 	};
 
@@ -1257,6 +1233,7 @@ export function TaskLabelPopover({
 	onCloseModal?: () => void;
 	trigger?: React.ReactNode;
 	onUpdateTask?: (id: string, data: Partial<Task>) => void;
+	workspaceId?: string;
 }) {
 	const { token } = useSupabaseAuth();
 	const [localLabels, setLocalLabels] = useState<TaskLabel[]>(task.labels || []);
@@ -1272,16 +1249,7 @@ export function TaskLabelPopover({
 			// If clicking the existing label, remove it (toggle off)
 			setLocalLabels([]);
 			onUpdateLabels?.([]);
-			if (!existing.id.startsWith("temp-")) {
-				try {
-					await taskService.removeLabel(task.id, existing.id, token);
-					onUpdateTask?.(task.id, { labels: [] });
-				} catch (_err) {
-					setLocalLabels(previousLabels);
-					onUpdateLabels?.(previousLabels);
-					onUpdateTask?.(task.id, { labels: previousLabels });
-				}
-			}
+			onUpdateTask?.(task.id, { labels: [] });
 		} else {
 			// Add the new label
 			const tempId = `temp-${Date.now()}`;
@@ -1296,24 +1264,6 @@ export function TaskLabelPopover({
 			setLocalLabels(newLabels);
 			onUpdateLabels?.(newLabels);
 			onUpdateTask?.(task.id, { labels: newLabels });
-			try {
-				const savedLabel = await taskService.addLabel(
-					task.id,
-					labelInfo.name,
-					labelInfo.color,
-					token,
-				);
-				const savedLabels = [...previousLabels, savedLabel];
-				setLocalLabels(savedLabels);
-				onUpdateLabels?.(savedLabels);
-				onUpdateTask?.(task.id, { labels: savedLabels });
-				// Removed auto-close to allow selecting multiple labels
-			} catch (err) {
-				console.error("Failed to add label", err);
-				setLocalLabels(previousLabels);
-				onUpdateLabels?.(previousLabels);
-				onUpdateTask?.(task.id, { labels: previousLabels });
-			}
 		}
 	};
 

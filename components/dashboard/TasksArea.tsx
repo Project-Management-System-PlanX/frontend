@@ -47,6 +47,8 @@ import { InboxPanel } from "./tasks/InboxPanel";
 import { PlannerPanel } from "./tasks/PlannerPanel";
 import { SwitchBoardPanel } from "./tasks/SwitchBoardPanel";
 import { TaskCard } from "./tasks/TaskCard";
+import { AskAIPanel } from "./space/AskAIPanel";
+import { Sparkles } from "lucide-react";
 
 const dropAnimation: any = {
 	sideEffects: defaultDropAnimationSideEffects({
@@ -59,7 +61,7 @@ const dropAnimation: any = {
 };
 
 export function TasksArea() {
-	const { token, user } = useSupabaseAuth();
+	const { token, user, isLoading: isAuthLoading } = useSupabaseAuth();
 	const { activeWorkspaceId } = useWorkspaceStore();
 	const { data: spaces, isLoading: isLoadingSpaces } = useSpaces(activeWorkspaceId || "", token);
 
@@ -105,6 +107,7 @@ export function TasksArea() {
 		moveTask,
 		updateTask: updateTaskApi,
 		deleteTask: deleteTaskApi,
+		refetch,
 	} = useBoardSync({
 		spaceId: selectedSpaceId,
 		statuses: selectedSpace?.statuses || [],
@@ -113,29 +116,48 @@ export function TasksArea() {
 	});
 
 	// Handle default status creation if empty
+	const initializedSpaceRef = useRef<string | null>(null);
 	useEffect(() => {
 		if (
 			selectedSpaceId &&
+			token &&
+			!isAuthLoading &&
 			spaces &&
 			selectedSpace &&
 			(selectedSpace.statuses?.length || 0) === 0 &&
 			!isLoadingTasks &&
-			!createStatus.isPending
+			initializedSpaceRef.current !== selectedSpaceId
 		) {
+			initializedSpaceRef.current = selectedSpaceId;
 			const initDefaults = async () => {
 				try {
-					await createStatus.mutateAsync({
-						spaceId: selectedSpaceId,
-						data: { name: "Today", color: "#A16207", position: 0, isDone: false },
-					});
-					await createStatus.mutateAsync({
-						spaceId: selectedSpaceId,
-						data: { name: "This Week", color: "#166534", position: 1, isDone: false },
-					});
-					await createStatus.mutateAsync({
-						spaceId: selectedSpaceId,
-						data: { name: "Later", color: "#111111", position: 2, isDone: false },
-					});
+					// Create default statuses sequentially, continuing even if one fails
+					try {
+						await createStatus.mutateAsync({
+							spaceId: selectedSpaceId,
+							data: { name: "Today", color: "#A16207", position: 0, isDone: false },
+						});
+					} catch (err) {
+						console.warn("Today status already exists or failed to create", err);
+					}
+
+					try {
+						await createStatus.mutateAsync({
+							spaceId: selectedSpaceId,
+							data: { name: "This Week", color: "#166534", position: 1, isDone: false },
+						});
+					} catch (err) {
+						console.warn("This Week status already exists or failed to create", err);
+					}
+
+					try {
+						await createStatus.mutateAsync({
+							spaceId: selectedSpaceId,
+							data: { name: "Later", color: "#111111", position: 2, isDone: false },
+						});
+					} catch (err) {
+						console.warn("Later status already exists or failed to create", err);
+					}
 				} catch (err) {
 					console.error("Failed to create default statuses", err);
 				}
@@ -147,7 +169,8 @@ export function TasksArea() {
 		selectedSpace,
 		spaces,
 		isLoadingTasks,
-		createStatus.isPending,
+		token,
+		isAuthLoading,
 		createStatus.mutateAsync,
 	]);
 
@@ -182,8 +205,9 @@ export function TasksArea() {
 		return allPlannerTasks.filter((t) => t.startDate || t.dueDate);
 	}, [allPlannerTasks]);
 
-	const [activeTabs, setActiveTabs] = useState<string[]>(["inbox", "planner", "board"]);
+	const [activeTabs, setActiveTabs] = useState<string[]>(["inbox", "board"]);
 	const [isSwitchBoardModalOpen, setIsSwitchBoardModalOpen] = useState(false);
+	const [isAIPanelOpen, setIsAIPanelOpen] = useState(false);
 	const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
@@ -541,7 +565,6 @@ export function TasksArea() {
 					updateTaskApi(id, {
 						assigneeId: user.id,
 						statusId: targetStatusId,
-						parentId: null,
 						position: newPosition,
 					});
 				} else if (overContainer === "planner") {
@@ -555,7 +578,6 @@ export function TasksArea() {
 					updateTaskApi(id, {
 						statusId: overContainer,
 						position: newPosition,
-						parentId: null,
 						assigneeId: null,
 					});
 				}
@@ -650,6 +672,7 @@ export function TasksArea() {
 									{tabId === "planner" && <PlannerPanel />}
 									{tabId === "board" && (
 										<BoardPanel
+											key={selectedSpaceId}
 											columnOrder={liveColumnOrder}
 											columns={liveColumnsFiltered}
 											tasks={liveTasksMapFiltered}
@@ -744,8 +767,23 @@ export function TasksArea() {
 						active={isSwitchBoardModalOpen}
 						onClick={() => setIsSwitchBoardModalOpen(true)}
 					/>
+					<NavButton
+						icon={<Sparkles className="w-5 h-5" />}
+						label="Ask AI"
+						active={isAIPanelOpen}
+						onClick={() => setIsAIPanelOpen(true)}
+					/>
 				</div>
 			</div>
+
+			<AskAIPanel
+				open={isAIPanelOpen}
+				onClose={() => setIsAIPanelOpen(false)}
+				spaceId={selectedSpaceId || ""}
+				onTasksCreated={() => {
+					refetch();
+				}}
+			/>
 
 			{/* Switch Board Modal */}
 			<AnimatePresence>
@@ -883,12 +921,20 @@ export function TasksArea() {
 									<button
 										onClick={async () => {
 											if (boardToDelete) {
-												await deleteSpace.mutateAsync(boardToDelete);
-												toast.success("Board deleted");
-												setShowBoardDeleteConfirm(false);
-												setBoardToDelete(null);
-												if (selectedSpaceId === boardToDelete) {
-													setSelectedSpaceId(null);
+												try {
+													// Clear selected space immediately to prevent further fetches
+													if (selectedSpaceId === boardToDelete) {
+														setSelectedSpaceId(null);
+													}
+													// Then delete the space
+													await deleteSpace.mutateAsync(boardToDelete);
+													toast.success("Board deleted successfully");
+												} catch (error) {
+													console.error("Failed to delete board:", error);
+													toast.error("Failed to delete board");
+												} finally {
+													setShowBoardDeleteConfirm(false);
+													setBoardToDelete(null);
 												}
 											}
 										}}

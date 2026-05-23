@@ -5,8 +5,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { taskService } from "@/lib/api/services/tasks";
 import type { Task } from "@/lib/types/models";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -47,13 +47,28 @@ export function useRealtimeTasks({
 			const data = await taskService.getBySpace(spaceId, token);
 			setTasks(data);
 		} catch (err) {
-			setError(err instanceof Error ? err : new Error("Failed to fetch tasks"));
+			// Handle 403/404 errors gracefully (space may have been deleted)
+			const errorMessage = err instanceof Error ? err.message : String(err);
+			if (errorMessage.includes('403') || errorMessage.includes('404') || errorMessage.includes('not found') || errorMessage.includes('access')) {
+				// Space doesn't exist or user doesn't have access - clear tasks but don't show error
+				setTasks([]);
+				setError(null);
+			} else {
+				setError(err instanceof Error ? err : new Error("Failed to fetch tasks"));
+			}
 		} finally {
 			setIsLoading(false);
 		}
 	}, [spaceId, token]);
 
 	// ─── Initial fetch ───
+
+	useEffect(() => {
+		// Clear tasks immediately when spaceId changes
+		setTasks([]);
+		setError(null);
+		setIsLoading(Boolean(spaceId));
+	}, [spaceId]);
 
 	useEffect(() => {
 		if (enabled && spaceId && token) {
@@ -64,7 +79,10 @@ export function useRealtimeTasks({
 	// ─── Supabase Realtime subscription ───
 
 	useEffect(() => {
-		if (!enabled || !spaceId) return;
+		if (!enabled || !spaceId) {
+			// Clear realtime listeners when disabled or no spaceId
+			return;
+		}
 
 		const channel = supabase
 			.channel(`space-tasks-${spaceId}`)
@@ -79,8 +97,8 @@ export function useRealtimeTasks({
 				(payload) => {
 					const newTask = payload.new as Task;
 					setTasks((prev) => {
-						// Avoid duplicates from optimistic updates
-						if (prev.some((t) => t.id === newTask.id)) return prev;
+						// Avoid duplicates from optimistic updates and ensure spaceId matches
+						if (prev.some((t) => t.id === newTask.id) || newTask.spaceId !== spaceId) return prev;
 						return [...prev, newTask];
 					});
 				},
@@ -181,11 +199,47 @@ export function useRealtimeTasks({
 			setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...data } : t)));
 
 			try {
-				// Strip relational fields that the backend doesn't accept in the update DTO
-				const { labels, assignees, comments, ...apiPayload } = data as any;
+				// Strip fields the backend doesn't accept in the update DTO
+				const {
+					labels,
+					assignees,
+					comments,
+					attachments,
+					startDate,
+					workType,
+					parentId,
+					teamId,
+					flagged,
+					restrictTo,
+					...rest
+				} = data as Record<string, unknown>;
 
-				if (Object.keys(apiPayload).length > 0) {
-					const updated = await taskService.update(id, apiPayload, token);
+				const allowed: Record<string, unknown> = {};
+				for (const key of [
+					"title",
+					"description",
+					"statusId",
+					"priority",
+					"assigneeId",
+					"dueDate",
+					"resolution",
+					"position",
+					"coverColor",
+				]) {
+					if (rest[key] !== undefined) {
+						allowed[key] = rest[key];
+					}
+				}
+
+				if (Array.isArray(labels)) {
+					const labelNames = labels
+						.map((label) => (typeof label === "string" ? label : label?.name))
+						.filter((name) => typeof name === "string" && name.length > 0);
+					allowed.labels = labelNames;
+				}
+
+				if (Object.keys(allowed).length > 0) {
+					const updated = await taskService.update(id, allowed, token);
 					// Merge backend response with our optimistically added relational fields
 					setTasks((prev) =>
 						prev.map((t) =>
@@ -214,19 +268,17 @@ export function useRealtimeTasks({
 	);
 
 	const moveTask = useCallback(
-		async (id: string, statusId: string, position: number, parentId?: string | null) => {
+		async (id: string, statusId: string, position: number, _parentId?: string | null) => {
 			if (!token) return null;
 
 			// Save previous state for rollback
 			previousStateRef.current = [...tasks];
 
 			// Optimistic move
-			setTasks((prev) =>
-				prev.map((t) => (t.id === id ? { ...t, statusId, position, parentId } : t)),
-			);
+			setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, statusId, position } : t)));
 
 			try {
-				const moved = await taskService.move(id, { statusId, position, parentId }, token);
+				const moved = await taskService.move(id, { statusId, position }, token);
 				setTasks((prev) => prev.map((t) => (t.id === id ? moved : t)));
 				return moved;
 			} catch (err) {

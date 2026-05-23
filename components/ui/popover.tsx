@@ -19,8 +19,10 @@ function PopoverContent({
 	sideOffset = 4,
 	...props
 }: React.ComponentProps<typeof PopoverPrimitive.Content>) {
+	const portalContainer = typeof document !== "undefined" ? document.body : undefined;
+
 	return (
-		<PopoverPrimitive.Portal>
+		<PopoverPrimitive.Portal container={portalContainer}>
 			<PopoverPrimitive.Content
 				data-slot="popover-content"
 				align={align}

@@ -6,16 +6,19 @@ import {
 	Check,
 	ChevronDown,
 	Loader2,
+	Maximize2,
+	Minus,
 	Send,
 	Sparkles,
 	User,
 	X,
 } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { motion, useDragControls } from "framer-motion";
 import { useSpaces } from "@/hooks/api/use-spaces";
 import { useBulkCreateTasks } from "@/hooks/api/use-tasks";
 import { useMemberLookup } from "@/hooks/use-member-lookup";
@@ -115,10 +118,10 @@ async function fetchAITasks(
 
 // ─── Priority badge ───
 const priorityConfig: Record<string, { label: string; color: string; bg: string }> = {
-	LOW: { label: "Low", color: "text-blue-700", bg: "bg-blue-50" },
-	MEDIUM: { label: "Medium", color: "text-yellow-700", bg: "bg-yellow-50" },
-	HIGH: { label: "High", color: "text-orange-700", bg: "bg-orange-50" },
-	CRITICAL: { label: "Critical", color: "text-red-700", bg: "bg-red-50" },
+	LOW: { label: "Low", color: "text-blue-300", bg: "bg-blue-500/15" },
+	MEDIUM: { label: "Medium", color: "text-yellow-300", bg: "bg-yellow-500/15" },
+	HIGH: { label: "High", color: "text-orange-300", bg: "bg-orange-500/15" },
+	CRITICAL: { label: "Critical", color: "text-red-300", bg: "bg-red-500/15" },
 };
 
 const workTypeConfig: Record<string, { label: string; color: string }> = {
@@ -133,18 +136,22 @@ export function AskAIPanel({
 	open,
 	onClose,
 	spaceId,
+	onTasksCreated,
 }: {
 	open: boolean;
 	onClose: () => void;
 	spaceId: string;
+	onTasksCreated?: () => void;
 }) {
 	const [messages, setMessages] = useState<ChatMessage[]>([]);
 	const [input, setInput] = useState("");
 	const [isTyping, setIsTyping] = useState(false);
 	const [confirmedMsgIds, setConfirmedMsgIds] = useState<Set<string>>(new Set());
 	const [creatingMsgId, setCreatingMsgId] = useState<string | null>(null);
+	const [isMinimized, setIsMinimized] = useState(false);
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const inputRef = useRef<HTMLInputElement>(null);
+	const dragControls = useDragControls();
 
 	const { members } = useWorkspaceMembers();
 	const { getMember } = useMemberLookup();
@@ -227,12 +234,11 @@ export function AskAIPanel({
 						statusId: defaultStatusId, // Add statusId as well
 						title: task.title,
 						priority: task.priority,
-						workType: task.workType,
 						assigneeId: task.assigneeId,
-						startDate: task.startDate?.toISOString(),
 						dueDate: task.dueDate?.toISOString(),
 					})),
 				});
+				onTasksCreated?.();
 			} catch (err) {
 				console.error("Failed to bulk create tasks:", err);
 			}
@@ -248,41 +254,70 @@ export function AskAIPanel({
 			setMessages((prev) => [...prev, successMsg]);
 			scrollToBottom();
 		},
-		[messages, spaceId, bulkCreate, scrollToBottom, defaultStatusId],
+		[messages, spaceId, bulkCreate, scrollToBottom, defaultStatusId, onTasksCreated],
 	);
 
 	if (!open) return null;
 
 	return (
-		<div className="fixed bottom-5 right-5 w-[420px] h-[560px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col z-50 animate-[fadeInUp_0.25s_ease-out] overflow-hidden">
+		<motion.div 
+			drag 
+			dragListener={false}
+			dragControls={dragControls}
+			dragMomentum={false}
+			style={{ resize: isMinimized ? "none" : "both", overflow: isMinimized ? "hidden" : "visible" }}
+			className={`fixed top-20 right-20 bg-[#111111] rounded-2xl shadow-2xl border border-white/10 flex flex-col z-[100] animate-[fadeInUp_0.25s_ease-out] ${
+				isMinimized ? 'w-[340px] h-auto' : 'w-[500px] min-w-[300px] min-h-[400px] h-[650px]'
+			}`}
+		>
 			{/* ── Header ── */}
-			<div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-[#0B6E4F] to-[#0d8c64] text-white rounded-t-2xl">
-				<div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
+			<div 
+				onPointerDown={(e) => dragControls.start(e)}
+				className="flex items-center gap-3 px-4 py-3 bg-[#0D0D0D] border-b border-white/10 text-white cursor-grab active:cursor-grabbing"
+			>
+				<div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center">
 					<Bot className="w-5 h-5" />
 				</div>
 				<div className="flex-1 min-w-0">
 					<p className="text-sm font-semibold leading-tight">TeamUP AI</p>
 					<p className="text-[11px] text-white/70">Describe your work, I'll break it into tasks</p>
 				</div>
-				<button
-					type="button"
-					onClick={onClose}
-					className="p-1 hover:bg-white/20 rounded-full transition-colors"
-				>
-					<X className="w-4 h-4" />
-				</button>
+				<div className="flex items-center gap-1">
+					<button
+						type="button"
+						onClick={() => setIsMinimized(!isMinimized)}
+						className="p-1 hover:bg-white/20 rounded-full transition-colors"
+					>
+						{isMinimized ? <Maximize2 className="w-3.5 h-3.5" /> : <Minus className="w-4 h-4" />}
+					</button>
+					<button
+						type="button"
+						onClick={onClose}
+						className="p-1 hover:bg-white/20 rounded-full transition-colors"
+					>
+						<X className="w-4 h-4" />
+					</button>
+				</div>
 			</div>
 
+			{!isMinimized && (
+				<>
 			{/* ── Chat body ── */}
-			<div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-4 bg-slate-50/60">
+			<div
+				ref={scrollRef}
+				className="flex-1 overflow-y-auto px-4 py-3 space-y-4 bg-[#111111]"
+				onScroll={() => {
+					window.dispatchEvent(new CustomEvent("teamup-ai-scroll"));
+				}}
+			>
 				{messages.length === 0 && (
 					<div className="flex flex-col items-center justify-center h-full text-center gap-3 py-8">
-						<div className="w-14 h-14 rounded-full bg-[#0B6E4F]/10 flex items-center justify-center">
-							<Sparkles className="w-7 h-7 text-[#0B6E4F]" />
+						<div className="w-14 h-14 rounded-full bg-[#8B5CF6]/10 flex items-center justify-center">
+							<Sparkles className="w-7 h-7 text-[#8B5CF6]" />
 						</div>
 						<div>
-							<p className="text-sm font-semibold text-slate-700">What are you working on?</p>
-							<p className="text-xs text-slate-400 mt-1 max-w-[260px]">
+							<p className="text-sm font-semibold text-white/80">What are you working on?</p>
+							<p className="text-xs text-white/50 mt-1 max-w-[260px]">
 								Describe your feature or project and I'll suggest an ordered list of tasks with
 								priorities.
 							</p>
@@ -296,7 +331,7 @@ export function AskAIPanel({
 										setInput(ex);
 										inputRef.current?.focus();
 									}}
-									className="px-2.5 py-1 text-[11px] bg-white border border-slate-200 text-slate-600 rounded-full hover:border-[#0B6E4F] hover:text-[#0B6E4F] transition-colors"
+									className="px-2.5 py-1 text-[11px] bg-[#1A1A1A] border border-white/10 text-white/70 rounded-full hover:border-[#8B5CF6] hover:text-[#8B5CF6] transition-colors"
 								>
 									{ex}
 								</button>
@@ -309,38 +344,45 @@ export function AskAIPanel({
 					<div key={msg.id}>
 						{msg.role === "user" ? (
 							<div className="flex justify-end">
-								<div className="max-w-[85%] px-3 py-2 rounded-2xl rounded-br-sm bg-[#0B6E4F] text-white text-[13px]">
+								<div className="max-w-[85%] px-3 py-2 rounded-2xl rounded-br-sm bg-[#8B5CF6] text-white text-[13px]">
 									{msg.content}
 								</div>
 							</div>
 						) : (
 							<div className="space-y-2">
 								<div className="flex items-start gap-2">
-									<div className="w-6 h-6 rounded-full bg-[#0B6E4F]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-										<Bot className="w-3.5 h-3.5 text-[#0B6E4F]" />
+									<div className="w-6 h-6 rounded-full bg-[#8B5CF6]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+										<Bot className="w-3.5 h-3.5 text-[#8B5CF6]" />
 									</div>
-									<p className="text-[13px] text-slate-600 leading-relaxed">{msg.content}</p>
+									<p className="text-[13px] text-white/70 leading-relaxed">{msg.content}</p>
 								</div>
 
 								{msg.tasks && (
 									<div className="ml-8 space-y-2">
-										{msg.tasks.map((task, idx) => (
-											<TaskCard
-												key={task.id}
-												task={task}
-												index={idx}
-												members={members}
-												getMember={getMember}
-												onUpdate={(updates) => updateTask(msg.id, task.id, updates)}
-												disabled={confirmedMsgIds.has(msg.id)}
-											/>
-										))}
+										<div
+											className="max-h-[320px] overflow-y-auto pr-1 custom-scrollbar"
+											onScroll={() => {
+												window.dispatchEvent(new CustomEvent("teamup-ai-scroll"));
+											}}
+										>
+											{msg.tasks.map((task, idx) => (
+												<TaskCard
+													key={task.id}
+													task={task}
+													index={idx}
+													members={members}
+													getMember={getMember}
+													onUpdate={(updates) => updateTask(msg.id, task.id, updates)}
+													disabled={confirmedMsgIds.has(msg.id)}
+												/>
+											))}
+										</div>
 
 										{/* Confirm button */}
 										{confirmedMsgIds.has(msg.id) ? (
-											<div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg mt-1">
-												<Check className="w-4 h-4 text-green-600" />
-												<span className="text-[12px] font-medium text-green-700">
+											<div className="flex items-center gap-2 px-3 py-2 bg-green-500/10 border border-green-500/20 rounded-lg mt-1">
+												<Check className="w-4 h-4 text-green-400" />
+												<span className="text-[12px] font-medium text-green-400">
 													Tasks created successfully
 												</span>
 											</div>
@@ -349,7 +391,7 @@ export function AskAIPanel({
 												type="button"
 												onClick={() => handleConfirmTasks(msg.id)}
 												disabled={creatingMsgId === msg.id}
-												className="w-full mt-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#0B6E4F] text-white text-[13px] font-semibold rounded-lg hover:bg-[#095a40] disabled:opacity-60 transition-colors shadow-sm"
+												className="w-full mt-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#8B5CF6] text-white text-[13px] font-semibold rounded-lg hover:bg-[#7C3AED] disabled:opacity-60 transition-colors shadow-sm"
 											>
 												{creatingMsgId === msg.id ? (
 													<>
@@ -373,22 +415,22 @@ export function AskAIPanel({
 
 				{isTyping && (
 					<div className="flex items-start gap-2">
-						<div className="w-6 h-6 rounded-full bg-[#0B6E4F]/10 flex items-center justify-center flex-shrink-0">
-							<Bot className="w-3.5 h-3.5 text-[#0B6E4F]" />
+						<div className="w-6 h-6 rounded-full bg-[#8B5CF6]/10 flex items-center justify-center flex-shrink-0">
+							<Bot className="w-3.5 h-3.5 text-[#8B5CF6]" />
 						</div>
-						<div className="flex items-center gap-1 px-3 py-2 bg-white rounded-2xl rounded-bl-sm border border-slate-100">
-							<span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:0ms]" />
-							<span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:150ms]" />
-							<span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:300ms]" />
+						<div className="flex items-center gap-1 px-3 py-2 bg-white/5 rounded-2xl rounded-bl-sm border border-white/10">
+							<span className="w-1.5 h-1.5 bg-[#8B5CF6] rounded-full animate-bounce [animation-delay:0ms]" />
+							<span className="w-1.5 h-1.5 bg-[#8B5CF6] rounded-full animate-bounce [animation-delay:150ms]" />
+							<span className="w-1.5 h-1.5 bg-[#8B5CF6] rounded-full animate-bounce [animation-delay:300ms]" />
 						</div>
 					</div>
 				)}
 			</div>
 
 			{/* ── Input bar ── */}
-			<div className="px-3 py-3 border-t border-slate-100 bg-white">
-				<div className="flex items-center gap-2 bg-slate-50 rounded-xl px-3 py-2 border border-slate-200 focus-within:border-[#0B6E4F] transition-colors">
-					<Sparkles className="w-4 h-4 text-[#0B6E4F] flex-shrink-0" />
+			<div className="px-3 py-3 border-t border-white/5 bg-[#0D0D0D]">
+				<div className="flex items-center gap-2 bg-[#1A1A1A] rounded-xl px-3 py-2 border border-white/10 focus-within:border-[#8B5CF6] transition-colors">
+					<Sparkles className="w-4 h-4 text-[#8B5CF6] flex-shrink-0" />
 					<input
 						ref={inputRef}
 						value={input}
@@ -400,19 +442,36 @@ export function AskAIPanel({
 							}
 						}}
 						placeholder="Describe your feature or project..."
-						className="flex-1 bg-transparent outline-none text-[13px] text-slate-800 placeholder:text-slate-400"
+						className="flex-1 bg-transparent outline-none text-[13px] text-white/90 placeholder:text-white/50"
 					/>
 					<button
 						type="button"
 						onClick={handleSend}
 						disabled={!input.trim()}
-						className="p-1.5 rounded-lg bg-[#0B6E4F] text-white hover:bg-[#095a40] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+						className="p-1.5 rounded-lg bg-[#8B5CF6] text-white hover:bg-[#7C3AED] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
 					>
 						<Send className="w-3.5 h-3.5" />
 					</button>
 				</div>
-			</div>
-		</div>
+				</div>
+			</>
+			)}
+
+			{/* Resize grip indicator */}
+			{!isMinimized && (
+				<div className="absolute bottom-1 right-1 w-4 h-4 flex items-center justify-center text-white/20 pointer-events-none">
+					<svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
+						<title>Resize grip</title>
+						<circle cx="8" cy="2" r="1" />
+						<circle cx="8" cy="5.5" r="1" />
+						<circle cx="8" cy="9" r="1" />
+						<circle cx="4.5" cy="5.5" r="1" />
+						<circle cx="4.5" cy="9" r="1" />
+						<circle cx="1" cy="9" r="1" />
+					</svg>
+				</div>
+			)}
+		</motion.div>
 	);
 }
 
@@ -438,6 +497,21 @@ function TaskCard({
 	const pri = priorityConfig[task.priority];
 	const wt = workTypeConfig[task.workType];
 	const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
+	const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+	const [showDueDatePicker, setShowDueDatePicker] = useState(false);
+
+	useEffect(() => {
+		const handleScroll = () => {
+			setShowAssigneeDropdown(false);
+			setShowStartDatePicker(false);
+			setShowDueDatePicker(false);
+		};
+
+		window.addEventListener("teamup-ai-scroll", handleScroll);
+		return () => {
+			window.removeEventListener("teamup-ai-scroll", handleScroll);
+		};
+	}, []);
 
 	const fmtDate = (d?: Date) =>
 		d ? d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "—";
@@ -446,11 +520,11 @@ function TaskCard({
 
 	return (
 		<div
-			className={`group bg-white border border-slate-150 rounded-lg p-3 shadow-sm transition-shadow animate-[fadeInUp_0.3s_ease-out] ${disabled ? "opacity-70" : "hover:shadow-md"}`}
+			className={`group bg-[#1A1A1A] border border-white/10 rounded-lg p-3 shadow-sm transition-all animate-[fadeInUp_0.3s_ease-out] ${disabled ? "opacity-60 cursor-default" : "hover:bg-[#222222] hover:border-white/20 hover:shadow-md"}`}
 		>
 			{/* Row 1: Order, type badge, title */}
 			<div className="flex items-start gap-2">
-				<span className="text-[11px] font-bold text-slate-400 mt-0.5 w-4 text-center flex-shrink-0">
+				<span className="text-[11px] font-bold text-white/40 mt-0.5 w-4 text-center flex-shrink-0">
 					{index + 1}
 				</span>
 				{disabled && <Check className="w-3.5 h-3.5 text-green-500 mt-0.5 flex-shrink-0" />}
@@ -459,108 +533,219 @@ function TaskCard({
 				>
 					{wt.label}
 				</span>
-				<p className="text-[13px] font-medium text-slate-800 leading-snug">{task.title}</p>
+				<p className="text-[13px] font-semibold text-white/95 leading-snug flex-1">{task.title}</p>
 			</div>
 
-			{/* Row 2: Priority, Assignee, Dates */}
-			<div className="flex items-center gap-2 mt-2 ml-6 flex-wrap">
-				{/* Priority */}
+			{/* Row 2: Priority, Assignee, Dates - Enhanced */}
+			<div className="flex items-center gap-2 mt-3 ml-6 flex-wrap">
+				{/* Priority Badge */}
 				<span
-					className={`${pri.bg} ${pri.color} text-[10px] font-semibold px-2 py-0.5 rounded-full`}
+					className={`${pri.bg} ${pri.color} text-[10px] font-semibold px-2.5 py-1 rounded-full border border-white/10`}
 				>
 					{pri.label}
 				</span>
 
-				{/* Assignee */}
-				<Popover open={showAssigneeDropdown} onOpenChange={setShowAssigneeDropdown}>
+				{/* Assignee Dropdown */}
+				<Popover
+					open={showAssigneeDropdown}
+					onOpenChange={(openState) => {
+						setShowAssigneeDropdown(openState);
+						if (openState) {
+							setShowStartDatePicker(false);
+							setShowDueDatePicker(false);
+						}
+					}}
+				>
 					<PopoverTrigger asChild>
 						<button
 							type="button"
-							className="flex items-center gap-1 px-2 py-0.5 text-[10px] rounded-full border border-slate-200 hover:border-[#0B6E4F] text-slate-600 transition-colors"
+							disabled={disabled}
+							className={`flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-lg border transition-all ${
+								assignee
+									? "border-[#8B5CF6] bg-[#8B5CF6]/10 text-[#8B5CF6] hover:bg-[#8B5CF6]/20"
+									: "border-white/20 bg-white/5 text-white/70 hover:border-[#8B5CF6] hover:bg-[#8B5CF6]/10 hover:text-[#8B5CF6]"
+							} ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
 						>
 							{assignee ? (
 								<>
-									<div className="w-4 h-4 rounded-full bg-[#0B6E4F] text-white flex items-center justify-center text-[8px] font-bold">
-										{assignee.initials}
-									</div>
-									<span className="max-w-[60px] truncate">{assignee.name}</span>
+									<Avatar className="w-4 h-4">
+										{assignee.imageUrl && <AvatarImage src={assignee.imageUrl} />}
+										<AvatarFallback className="text-[7px] bg-[#8B5CF6] text-white font-bold">
+											{assignee.initials}
+										</AvatarFallback>
+									</Avatar>
+									<span className="max-w-[70px] truncate">{assignee.name}</span>
+									<span
+										role="button"
+										tabIndex={disabled ? -1 : 0}
+										aria-label="Clear assignee"
+										onClick={(e) => {
+											e.stopPropagation();
+											if (!disabled) onUpdate({ assigneeId: undefined });
+										}}
+										onKeyDown={(e) => {
+											if (disabled) return;
+											if (e.key === "Enter" || e.key === " ") {
+												e.preventDefault();
+												e.stopPropagation();
+												onUpdate({ assigneeId: undefined });
+											}
+										}}
+										className={`ml-0.5 hover:text-red-400 transition-colors ${
+											disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+										}`}
+									>
+										<X className="w-3 h-3" />
+									</span>
 								</>
 							) : (
 								<>
-									<User className="w-3 h-3 text-slate-400" />
+									<User className="w-3.5 h-3.5" />
 									<span>Assign</span>
+									<ChevronDown className="w-3 h-3 ml-auto" />
 								</>
 							)}
-							<ChevronDown className="w-2.5 h-2.5 text-slate-400" />
 						</button>
 					</PopoverTrigger>
-					<PopoverContent align="start" className="w-48 p-1" side="bottom">
-						<ScrollArea className="max-h-36">
-							{members.map((m) => {
-								const info = getMember(m.userId);
-								return (
-									<button
-										key={m.userId}
-										type="button"
-										onClick={() => {
-											onUpdate({ assigneeId: m.userId });
-											setShowAssigneeDropdown(false);
-										}}
-										className="w-full flex items-center gap-2 px-2 py-1.5 text-[12px] text-slate-700 hover:bg-slate-50 rounded transition-colors"
-									>
-										<Avatar className="w-5 h-5">
-											{info.imageUrl && <AvatarImage src={info.imageUrl} />}
-											<AvatarFallback className="text-[9px] bg-[#0B6E4F] text-white">
-												{info.initials}
-											</AvatarFallback>
-										</Avatar>
-										<span className="truncate">{info.name}</span>
-									</button>
-								);
-							})}
-							{members.length === 0 && (
-								<p className="text-xs text-slate-400 text-center py-2">No members found</p>
-							)}
-						</ScrollArea>
+					<PopoverContent
+						align="start"
+						side="bottom"
+						sideOffset={8}
+						collisionPadding={12}
+						className="w-56 p-2 z-[20000] bg-[#2A2B2E] text-white border border-white/10 shadow-2xl"
+					>
+						<div className="space-y-1">
+							<button
+								type="button"
+								onClick={() => {
+									onUpdate({ assigneeId: undefined });
+									setShowAssigneeDropdown(false);
+								}}
+								className="w-full flex items-center gap-2 px-2 py-2 text-[12px] text-white/60 hover:bg-[#1A1A1A] hover:text-white/80 rounded transition-colors"
+							>
+								<X className="w-3.5 h-3.5" />
+								<span>Unassigned</span>
+							</button>
+							<div className="h-px bg-white/10 my-1" />
+							<ScrollArea className="max-h-40">
+								{members.map((m) => {
+									const info = getMember(m.userId);
+									const isSelected = task.assigneeId === m.userId;
+									return (
+										<button
+											key={m.userId}
+											type="button"
+											onClick={() => {
+												onUpdate({ assigneeId: m.userId });
+												setShowAssigneeDropdown(false);
+											}}
+											className={`w-full flex items-center gap-2 px-2 py-2 text-[12px] rounded transition-colors ${
+												isSelected
+													? "bg-[#8B5CF6]/20 text-white"
+													: "text-white/70 hover:bg-[#1A1A1A] hover:text-white"
+											}`}
+										>
+											<Avatar className="w-5 h-5">
+												{info.imageUrl && <AvatarImage src={info.imageUrl} />}
+												<AvatarFallback className="text-[8px] bg-[#8B5CF6] text-white font-bold">
+													{info.initials}
+												</AvatarFallback>
+											</Avatar>
+											<span className="flex-1 truncate text-left">{info.name}</span>
+											{isSelected && <Check className="w-3.5 h-3.5 text-[#8B5CF6]" />}
+										</button>
+									);
+								})}
+								{members.length === 0 && (
+									<p className="text-xs text-white/40 text-center py-3">No members available</p>
+								)}
+							</ScrollArea>
+						</div>
 					</PopoverContent>
 				</Popover>
 
-				{/* Start Date */}
-				<Popover>
+				{/* Start Date Picker */}
+				<Popover
+					open={showStartDatePicker}
+					onOpenChange={(openState) => {
+						setShowStartDatePicker(openState);
+						if (openState) {
+							setShowAssigneeDropdown(false);
+							setShowDueDatePicker(false);
+						}
+					}}
+				>
 					<PopoverTrigger asChild>
 						<button
 							type="button"
-							className="flex items-center gap-1 px-2 py-0.5 text-[10px] rounded-full border border-slate-200 hover:border-[#0B6E4F] text-slate-600 transition-colors"
+							disabled={disabled}
+							className={`flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-lg border transition-all ${
+								task.startDate
+									? "border-blue-500/30 bg-blue-500/10 text-blue-300 hover:border-blue-500 hover:bg-blue-500/20"
+									: "border-white/20 bg-white/5 text-white/60 hover:border-blue-400 hover:bg-blue-500/10 hover:text-blue-300"
+							} ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
 						>
-							<CalendarIcon className="w-3 h-3 text-slate-400" />
-							<span>{fmtDate(task.startDate)}</span>
+							<CalendarIcon className="w-3.5 h-3.5" />
+							<span>Start: {fmtDate(task.startDate)}</span>
 						</button>
 					</PopoverTrigger>
-					<PopoverContent align="start" className="w-auto p-0" side="bottom">
+					<PopoverContent
+						align="start"
+						side="bottom"
+						sideOffset={8}
+						collisionPadding={12}
+						className="w-auto p-3 z-[20000] bg-[#2A2B2E] text-white border border-white/10 shadow-2xl"
+					>
 						<Calendar
 							mode="single"
 							selected={task.startDate}
-							onSelect={(d) => d && onUpdate({ startDate: d })}
+							onSelect={(d) => {
+								if (d) onUpdate({ startDate: d });
+								setShowStartDatePicker(false);
+							}}
 						/>
 					</PopoverContent>
 				</Popover>
 
-				{/* Due Date */}
-				<Popover>
+				{/* Due Date Picker */}
+				<Popover
+					open={showDueDatePicker}
+					onOpenChange={(openState) => {
+						setShowDueDatePicker(openState);
+						if (openState) {
+							setShowAssigneeDropdown(false);
+							setShowStartDatePicker(false);
+						}
+					}}
+				>
 					<PopoverTrigger asChild>
 						<button
 							type="button"
-							className="flex items-center gap-1 px-2 py-0.5 text-[10px] rounded-full border border-dashed border-red-300 hover:border-red-500 text-red-600 transition-colors"
+							disabled={disabled}
+							className={`flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-lg border transition-all ${
+								task.dueDate
+									? "border-red-500/40 bg-red-500/10 text-red-300 hover:border-red-500 hover:bg-red-500/20"
+									: "border-white/20 bg-white/5 text-white/60 hover:border-red-400 hover:bg-red-500/10 hover:text-red-300"
+							} ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
 						>
-							<CalendarIcon className="w-3 h-3" />
-							<span>{fmtDate(task.dueDate)}</span>
+							<CalendarIcon className="w-3.5 h-3.5" />
+							<span>Due: {fmtDate(task.dueDate)}</span>
 						</button>
 					</PopoverTrigger>
-					<PopoverContent align="start" className="w-auto p-0" side="bottom">
+					<PopoverContent
+						align="start"
+						side="bottom"
+						sideOffset={8}
+						collisionPadding={12}
+						className="w-auto p-3 z-[20000] bg-[#2A2B2E] text-white border border-white/10 shadow-2xl"
+					>
 						<Calendar
 							mode="single"
 							selected={task.dueDate}
-							onSelect={(d) => d && onUpdate({ dueDate: d })}
+							onSelect={(d) => {
+								if (d) onUpdate({ dueDate: d });
+								setShowDueDatePicker(false);
+							}}
 						/>
 					</PopoverContent>
 				</Popover>
