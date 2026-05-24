@@ -11,6 +11,28 @@ import { messageKeys, normalizeMessage } from "./message-utils";
 export { messageKeys, normalizeMessage };
 export type { Message };
 
+type MessageRow = Record<string, unknown> & {
+	new?: never;
+};
+
+type RealtimeMessagePayload = {
+	new: Record<string, unknown> & {
+		user_id: string;
+		parent_id?: string | null;
+	};
+};
+
+type SendMessageBody = {
+	channelId: string;
+	content: string | null;
+	fileUrl?: string;
+	fileName?: string;
+	fileType?: string;
+	fileSize?: number;
+	duration?: number;
+	parentId?: string;
+};
+
 export function useMessages(channelId: string | null) {
 	const queryClient = useQueryClient();
 	const supabaseRef = useRef(createClient());
@@ -29,7 +51,7 @@ export function useMessages(channelId: string | null) {
 			} = await supabase.auth.getSession();
 			const token = session?.access_token;
 
-			const data = await fetchClient<any[]>(API_ENDPOINTS.MESSAGES_BY_CHANNEL(channelId), {
+			const data = await fetchClient<MessageRow[]>(API_ENDPOINTS.MESSAGES_BY_CHANNEL(channelId), {
 				token,
 				method: "GET",
 			});
@@ -54,7 +76,7 @@ export function useMessages(channelId: string | null) {
 					table: "messages",
 					filter: `channel_id=eq.${channelId}`,
 				},
-				async (payload: any) => {
+				async (payload: RealtimeMessagePayload) => {
 					let userData: Record<string, unknown> | null = null;
 					try {
 						const res = await supabase
@@ -140,7 +162,7 @@ export function useMessages(channelId: string | null) {
 					table: "messages",
 					filter: `channel_id=eq.${channelId}`,
 				},
-				(payload: any) => {
+				(payload: RealtimeMessagePayload) => {
 					const updated = normalizeMessage(payload.new);
 					queryClient.setQueryData(messageKeys.byChannel(channelId), (old: Message[] = []) =>
 						old.map((msg) => (msg.id === updated.id ? { ...msg, ...updated } : msg)),
@@ -171,7 +193,7 @@ export function useMessages(channelId: string | null) {
 			const userEmail = session?.user?.email || "";
 			const userMeta = session?.user?.user_metadata;
 
-			const body: any = {
+			const body: SendMessageBody = {
 				channelId,
 				content: content.trim() || null,
 			};
@@ -186,7 +208,7 @@ export function useMessages(channelId: string | null) {
 
 			if (parentId) body.parentId = parentId;
 
-			const result = await fetchClient<any>(API_ENDPOINTS.MESSAGES, {
+			const result = await fetchClient<Message>(API_ENDPOINTS.MESSAGES, {
 				token,
 				method: "POST",
 				body: JSON.stringify(body),
@@ -303,6 +325,19 @@ export function useMessages(channelId: string | null) {
 		[channelId, queryClient],
 	);
 
+	const addLocalMessage = useCallback(
+		(message: Message) => {
+			if (!channelId) return null;
+			const normalized = normalizeMessage(message);
+			queryClient.setQueryData(messageKeys.byChannel(channelId), (old: Message[] = []) => {
+				if (old.some((msg) => msg.id === normalized.id)) return old;
+				return [...old, normalized];
+			});
+			return normalized;
+		},
+		[channelId, queryClient],
+	);
+
 	return {
 		messages,
 		isLoading,
@@ -311,5 +346,6 @@ export function useMessages(channelId: string | null) {
 		deleteMessage,
 		editMessage,
 		togglePinMessage,
+		addLocalMessage,
 	};
 }

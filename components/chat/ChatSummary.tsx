@@ -33,17 +33,46 @@ const DUMMY_SUMMARIES = {
 	],
 };
 
+export interface UnreadItem {
+	id: string;
+	name: string;
+	time: string;
+	text: string;
+}
+
+export interface SummaryPayload {
+	channelName: string;
+	requestedAt: string;
+	items: UnreadItem[];
+}
+
+export interface SummaryResult {
+	summary: string;
+	lines: string[];
+	payload: SummaryPayload;
+}
+
 interface ChatSummaryProps {
 	unreadCount: number;
 	channelName: string;
+	unreadItems?: UnreadItem[];
 	forceShow?: boolean;
 	onClose?: () => void;
+	onSummarize?: (result: SummaryResult) => void;
 }
 
-export function ChatSummary({ unreadCount, channelName, forceShow, onClose }: ChatSummaryProps) {
+export function ChatSummary({
+	unreadCount,
+	channelName,
+	unreadItems = [],
+	forceShow,
+	onClose,
+	onSummarize,
+}: ChatSummaryProps) {
 	const [showSummary, setShowSummary] = useState(false);
 	const [summaryType, setSummaryType] = useState<keyof typeof DUMMY_SUMMARIES | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
+	const [summaryLines, setSummaryLines] = useState<string[]>([]);
 
 	// Capture the initial unread count so the banner doesn't vanish instantly when the store resets it on load
 	const [initialUnreadCount, setInitialUnreadCount] = useState(unreadCount);
@@ -55,16 +84,51 @@ export function ChatSummary({ unreadCount, channelName, forceShow, onClose }: Ch
 		}
 	}, [unreadCount, initialUnreadCount]);
 
-	const handleSummarize = useCallback((type: keyof typeof DUMMY_SUMMARIES) => {
-		setIsLoading(true);
-		setSummaryType(type);
+	const buildPayload = useCallback((): SummaryPayload => {
+		return {
+			channelName,
+			requestedAt: new Date().toISOString(),
+			items: unreadItems,
+		};
+	}, [channelName, unreadItems]);
 
-		// Simulate AI processing delay
-		setTimeout(() => {
-			setShowSummary(true);
-			setIsLoading(false);
-		}, 800);
-	}, []);
+	const buildSummary = useCallback(
+		(items: UnreadItem[]): SummaryResult => {
+			const payload = buildPayload();
+			const headline = `Summary of ${items.length} unread message${items.length === 1 ? "" : "s"}`;
+			const lines = items.length
+				? items.slice(0, 5).map((item) => `${item.name}: ${item.text}`)
+				: ["No unread messages to summarize."];
+			if (items.length > 5) {
+				lines.push(`...and ${items.length - 5} more updates.`);
+			}
+			const summary = [headline, ...lines].join("\n");
+			return { summary, lines, payload };
+		},
+		[buildPayload],
+	);
+
+	const handleSummarize = useCallback(
+		(type: keyof typeof DUMMY_SUMMARIES) => {
+			setIsLoading(true);
+			setSummaryType(type);
+
+			// Simulate AI processing delay
+			setTimeout(() => {
+				if (type === "unread") {
+					const result = buildSummary(unreadItems);
+					console.info("Mock summary payload", result.payload);
+					setSummaryLines(result.lines);
+					onSummarize?.(result);
+				} else {
+					setSummaryLines(DUMMY_SUMMARIES[type]);
+				}
+				setShowSummary(true);
+				setIsLoading(false);
+			}, 800);
+		},
+		[buildSummary, onSummarize, unreadItems],
+	);
 
 	const getSummaryTitle = () => {
 		switch (summaryType) {
@@ -122,6 +186,31 @@ export function ChatSummary({ unreadCount, channelName, forceShow, onClose }: Ch
 								</button>
 							)}
 						</div>
+
+						{/* Unread Preview */}
+						{unreadItems.length > 0 && (
+							<div className="mb-3 rounded-xl bg-white/70 border border-gray-200/60 p-3">
+								<p className="text-[11px] uppercase tracking-wider text-gray-400 font-semibold mb-2">
+									Unread Preview
+								</p>
+								<ul className="space-y-1.5">
+									{unreadItems.slice(0, 4).map((item) => (
+										<li key={item.id} className="text-[12px] text-gray-600">
+											<span className="text-gray-400">{item.time}</span>
+											<span className="mx-1">•</span>
+											<span className="font-medium text-gray-700">{item.name}</span>
+											<span className="mx-1">—</span>
+											{item.text}
+										</li>
+									))}
+									{unreadItems.length > 4 && (
+										<li className="text-[11px] text-gray-400">
+											+ {unreadItems.length - 4} more unread messages
+										</li>
+									)}
+								</ul>
+							</div>
+						)}
 
 						{/* Summarize Unread Button */}
 						<button
@@ -206,7 +295,7 @@ export function ChatSummary({ unreadCount, channelName, forceShow, onClose }: Ch
 
 							{/* Summary Items */}
 							<ul className="space-y-2">
-								{DUMMY_SUMMARIES[summaryType].map((item) => (
+								{summaryLines.map((item) => (
 									<motion.li
 										key={item}
 										initial={{ opacity: 0, x: -8 }}

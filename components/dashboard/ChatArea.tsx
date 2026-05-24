@@ -77,7 +77,7 @@ const EmojiPicker = dynamic(
 	},
 );
 
-import { ChatSummary } from "@/components/chat/ChatSummary";
+import { ChatSummary, type SummaryResult, type UnreadItem } from "@/components/chat/ChatSummary";
 import { UnreadSeparator } from "@/components/chat/UnreadSeparator";
 import { VoicePlayer } from "@/components/chat/VoicePlayer";
 import { VoiceRecorder } from "@/components/chat/VoiceRecorder";
@@ -94,6 +94,28 @@ import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { useChannelStore } from "@/stores/channel-store";
 import { useUnreadStore } from "@/stores/unread-store";
+
+const formatMessageTime = (timestamp: string) => {
+	try {
+		let tzString = timestamp;
+		const timePart = tzString.split("T")[1];
+		if (timePart && !timePart.endsWith("Z") && !timePart.includes("+") && !timePart.includes("-")) {
+			tzString += "Z";
+		}
+		return new Date(tzString).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+	} catch {
+		return timestamp;
+	}
+};
+
+const getNameFromEmail = (email: string) => {
+	const local = email.split("@")[0] || "";
+	return local
+		.replace(/[._-]/g, " ")
+		.split(" ")
+		.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+		.join(" ");
+};
 
 interface ChatAreaProps {
 	channelName: string;
@@ -124,6 +146,15 @@ export function ChatArea({
 	const [isRecording, setIsRecording] = useState(false);
 	const [showSummarizer, setShowSummarizer] = useState(false);
 	const [, forceUpdate] = useState({});
+	const hasPromptedSummaryRef = useRef(false);
+	const [initialUnreadSnapshot, setInitialUnreadSnapshot] = useState(0);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: reset prompt state when switching channels
+	useEffect(() => {
+		hasPromptedSummaryRef.current = false;
+		setShowSummarizer(false);
+		setInitialUnreadSnapshot(0);
+	}, [channelName]);
 
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
@@ -142,8 +173,16 @@ export function ChatArea({
 	const displayName = isDM && dmDisplayName ? dmDisplayName : channel ? channel.name : channelName;
 
 	// Use real Supabase messages for this channel
-	const { messages, isLoading, error, sendMessage, deleteMessage, editMessage, togglePinMessage } =
-		useMessages(channelName);
+	const {
+		messages,
+		isLoading,
+		error,
+		sendMessage,
+		deleteMessage,
+		editMessage,
+		togglePinMessage,
+		addLocalMessage,
+	} = useMessages(channelName);
 
 	const _handleToggleStar = async () => {
 		if (!channel || !token) return;
@@ -192,6 +231,25 @@ export function ChatArea({
 	}, [messages, lastReadMsgId, user?.id]);
 
 	const effectiveUnreadCount = Math.max(channelUnreadCount, computedUnreadCount);
+	const promptUnreadCount = Math.max(effectiveUnreadCount, initialUnreadSnapshot);
+
+	useEffect(() => {
+		if (channelUnreadCount > 0) {
+			setInitialUnreadSnapshot((prev) => (prev > 0 ? prev : channelUnreadCount));
+		}
+		if (computedUnreadCount > 0) {
+			setInitialUnreadSnapshot((prev) => (prev > 0 ? prev : computedUnreadCount));
+		}
+	}, [channelUnreadCount, computedUnreadCount]);
+
+	// Auto-open summary prompt when entering a channel with unread messages
+	useEffect(() => {
+		if (hasPromptedSummaryRef.current) return;
+		if (promptUnreadCount > 0) {
+			setShowSummarizer(true);
+			hasPromptedSummaryRef.current = true;
+		}
+	}, [promptUnreadCount]);
 
 	// Scroll to unread separator on first load
 	useEffect(() => {
@@ -593,35 +651,6 @@ export function ChatArea({
 		return () => document.removeEventListener("mousedown", handleClickOutside);
 	}, [mentionQuery]);
 
-	const formatMessageTime = (timestamp: string) => {
-		try {
-			// Supabase timestamp fields often miss the 'Z' UTC indicator.
-			// Without it, JS parses the time as local, breaking the timezone offset.
-			let tzString = timestamp;
-			const timePart = tzString.split("T")[1];
-			if (
-				timePart &&
-				!timePart.endsWith("Z") &&
-				!timePart.includes("+") &&
-				!timePart.includes("-")
-			) {
-				tzString += "Z";
-			}
-			return new Date(tzString).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-		} catch {
-			return timestamp;
-		}
-	};
-
-	const getNameFromEmail = (email: string) => {
-		const local = email.split("@")[0] || "";
-		return local
-			.replace(/[._-]/g, " ")
-			.split(" ")
-			.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-			.join(" ");
-	};
-
 	const getDisplayName = (msg: SupabaseMessage) => {
 		if (msg.users) {
 			const name = [msg.users.firstName, msg.users.lastName].filter(Boolean).join(" ");
@@ -642,6 +671,95 @@ export function ChatArea({
 			.toUpperCase()
 			.slice(0, 2);
 	};
+
+	const unreadItems = useMemo<UnreadItem[]>(() => {
+		if (messages.length === 0 || promptUnreadCount === 0) return [];
+		const items: UnreadItem[] = [];
+		const takeMessage = (msg: SupabaseMessage) => {
+			const userData = msg.users || msg.user;
+			const name = userData
+				? [userData.firstName, userData.lastName].filter(Boolean).join(" ") ||
+					userData.username ||
+					getNameFromEmail(userData.email)
+				: "Unknown";
+			const createdAt = msg.created_at || msg.createdAt || new Date().toISOString();
+			const time = formatMessageTime(createdAt);
+			const rawText = (msg.content || "").replace(/<[^>]*>/g, "").trim();
+			let text = rawText;
+			if (!text) {
+				const fileType = msg.file_type || msg.fileType || "";
+				const fileName = msg.file_name || msg.fileName || "";
+				if (fileType.startsWith("audio/")) {
+					text = "Voice message";
+				} else if (fileType.startsWith("image/")) {
+					text = "Image";
+				} else if (fileType.startsWith("video/")) {
+					text = "Video";
+				} else if (msg.file_url || msg.fileUrl) {
+					text = "Document";
+				} else {
+					text = "Message";
+				}
+				if (fileName) text = `${text}: ${fileName}`;
+			}
+			items.push({ id: msg.id, name, time, text });
+		};
+
+		if (lastReadMsgId) {
+			const lastReadIdx = messages.findIndex((m) => m.id === lastReadMsgId);
+			if (lastReadIdx !== -1) {
+				for (let i = lastReadIdx + 1; i < messages.length; i++) {
+					const msg = messages[i];
+					const isOwn = msg.user_id === user?.id || msg.userId === user?.id;
+					if (isOwn) continue;
+					takeMessage(msg);
+				}
+				return items;
+			}
+		}
+
+		let remaining = promptUnreadCount;
+		for (let i = messages.length - 1; i >= 0 && remaining > 0; i--) {
+			const msg = messages[i];
+			const isOwn = msg.user_id === user?.id || msg.userId === user?.id;
+			if (isOwn) continue;
+			takeMessage(msg);
+			remaining -= 1;
+		}
+		return items.reverse();
+	}, [messages, promptUnreadCount, lastReadMsgId, user?.id]);
+
+	const handleSummarySend = useCallback(
+		(result: SummaryResult) => {
+			if (!addLocalMessage) return;
+			const createdAt = new Date().toISOString();
+			const bulletLines = result.lines.map((line) => `<li>${line}</li>`).join("");
+			const content = `
+<p><strong>AI Summary</strong></p>
+<p>Unread overview for <strong>${displayName}</strong></p>
+<ul>${bulletLines}</ul>
+`;
+
+			addLocalMessage({
+				id: `ai-summary-${Date.now()}`,
+				channelId: channelName,
+				channel_id: channelName,
+				userId: "ai-summary",
+				user_id: "ai-summary",
+				content,
+				createdAt,
+				created_at: createdAt,
+				users: {
+					firstName: "AI",
+					lastName: "Summary",
+					username: "AI Summary",
+					imageUrl: null,
+					email: "ai-summary@system.local",
+				},
+			});
+		},
+		[addLocalMessage, channelName, displayName],
+	);
 
 	const isHtmlContent = (content: string) => /<[a-z][\s\S]*>/i.test(content);
 
@@ -722,9 +840,11 @@ export function ChatArea({
 
 			{/* Summarization Panel */}
 			<ChatSummary
-				unreadCount={effectiveUnreadCount}
+				unreadCount={promptUnreadCount}
 				channelName={displayName}
+				unreadItems={unreadItems}
 				forceShow={showSummarizer}
+				onSummarize={handleSummarySend}
 				onClose={() => setShowSummarizer(false)}
 			/>
 
@@ -891,7 +1011,8 @@ export function ChatArea({
 																<>
 																	{/* Quoted parent message */}
 																	{message.parent && (
-																		<div
+																		<button
+																			type="button"
 																			className={`mt-1 mb-2 flex items-start gap-2 pl-2 border-l-[3px] rounded-r py-1 pr-2 max-w-sm cursor-pointer transition-colors ${
 																				isOwnMessage
 																					? "border-white/40 bg-white/10 hover:bg-white/20"
@@ -923,9 +1044,6 @@ export function ChatArea({
 																					);
 																				}
 																			}}
-																			onKeyDown={() => {}}
-																			role="button"
-																			tabIndex={0}
 																		>
 																			<div className="min-w-0 flex-1">
 																				<p
@@ -959,11 +1077,12 @@ export function ChatArea({
 																					</p>
 																				) : null}
 																			</div>
-																		</div>
+																		</button>
 																	)}
 
 																	{message.content &&
 																		(isHtmlContent(message.content) ? (
+																			// biome-ignore lint/a11y/noStaticElementInteractions: rich text messages need click handling for mention navigation
 																			<div
 																				className={`mt-1 leading-relaxed text-[15px] prose prose-sm max-w-none [&_p]:my-0 [&_ul]:my-1 [&_ol]:my-1 ${
 																					isOwnMessage
@@ -1037,13 +1156,7 @@ export function ChatArea({
 
 																	{/* Attachments */}
 																	{message.file_url && (
-																		<div
-																			className="mt-2"
-																			role="presentation"
-																			onClick={(e) => e.stopPropagation()}
-																			onKeyDown={(e) => e.stopPropagation()}
-																			onPointerDown={(e) => e.stopPropagation()}
-																		>
+																		<div className="mt-2" role="presentation">
 																			{message.file_type?.startsWith("audio/") ? (
 																				<VoicePlayer
 																					src={message.file_url}
