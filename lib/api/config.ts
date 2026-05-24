@@ -1,4 +1,6 @@
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002";
+export const SUMMARIZER_BASE_URL =
+	process.env.NEXT_PUBLIC_SUMMARIZER_URL || "https://ai-chat-summarizer-p1ji.onrender.com";
 
 export const API_ENDPOINTS = {
 	// Users
@@ -83,4 +85,8 @@ export const API_ENDPOINTS = {
 	MEETINGS_ACTIVE: "/meetings/active",
 	MEETINGS_HISTORY: "/meetings/history",
 	MEETINGS_BY_ID: (meetingId: string) => `/meetings/${meetingId}`,
+};
+
+export const SUMMARIZER_ENDPOINTS = {
+	SUMMARIZE_THREAD: "/summarize/thread",
 };

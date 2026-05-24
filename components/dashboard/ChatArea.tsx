@@ -89,7 +89,7 @@ import { type Message as SupabaseMessage, useMessages } from "@/hooks/chat/use-m
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useWorkspaceMembers } from "@/hooks/use-workspace-members";
 import { fetchClient } from "@/lib/api/client";
-import { API_ENDPOINTS } from "@/lib/api/config";
+import { API_ENDPOINTS, SUMMARIZER_BASE_URL, SUMMARIZER_ENDPOINTS } from "@/lib/api/config";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { useChannelStore } from "@/stores/channel-store";
@@ -108,6 +108,20 @@ const formatMessageTime = (timestamp: string) => {
 	}
 };
 
+const AI_SUMMARY_MARKER = "<!--ai-summary-->";
+const AI_PROMPT_MARKER = "<!--ai-summary-prompt-->";
+
+const isAiSummaryContent = (content?: string | null) =>
+	Boolean(content?.includes(AI_SUMMARY_MARKER));
+
+const buildAiPromptContent = (unreadCount: number, channelLabel: string) => {
+	const messageLabel = unreadCount === 1 ? "message" : "messages";
+	return `${AI_PROMPT_MARKER}
+<p><strong>AI Assistant</strong></p>
+<p>You have <strong>${unreadCount}</strong> unread ${messageLabel} in <strong>${channelLabel}</strong>.</p>
+<p>Want me to summarize them?</p>`;
+};
+
 const getNameFromEmail = (email: string) => {
 	const local = email.split("@")[0] || "";
 	return local
@@ -123,6 +137,15 @@ interface ChatAreaProps {
 	onToggleDetails: () => void;
 	isDM?: boolean;
 	dmDisplayName?: string;
+}
+
+interface SummarizerThreadSummary {
+	thread_id: string;
+	thread_name: string | null;
+	unread_count: number;
+	summary: string;
+	key_points: string[];
+	action_items: string[];
 }
 
 export function ChatArea({
@@ -147,11 +170,13 @@ export function ChatArea({
 	const [showSummarizer, setShowSummarizer] = useState(false);
 	const [, forceUpdate] = useState({});
 	const hasPromptedSummaryRef = useRef(false);
+	const hasAutoSummarizedRef = useRef(false);
 	const [initialUnreadSnapshot, setInitialUnreadSnapshot] = useState(0);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: reset prompt state when switching channels
 	useEffect(() => {
 		hasPromptedSummaryRef.current = false;
+		hasAutoSummarizedRef.current = false;
 		setShowSummarizer(false);
 		setInitialUnreadSnapshot(0);
 	}, [channelName]);
@@ -246,10 +271,30 @@ export function ChatArea({
 	useEffect(() => {
 		if (hasPromptedSummaryRef.current) return;
 		if (promptUnreadCount > 0) {
+			if (addLocalMessage) {
+				const createdAt = new Date().toISOString();
+				addLocalMessage({
+					id: `ai-summary-prompt-${channelName}`,
+					channelId: channelName,
+					channel_id: channelName,
+					userId: "ai-summary",
+					user_id: "ai-summary",
+					content: buildAiPromptContent(promptUnreadCount, displayName),
+					createdAt,
+					created_at: createdAt,
+					users: {
+						firstName: "AI",
+						lastName: "Assistant",
+						username: "AI Assistant",
+						imageUrl: null,
+						email: "ai-assistant@system.local",
+					},
+				});
+			}
 			setShowSummarizer(true);
 			hasPromptedSummaryRef.current = true;
 		}
-	}, [promptUnreadCount]);
+	}, [addLocalMessage, channelName, displayName, promptUnreadCount]);
 
 	// Scroll to unread separator on first load
 	useEffect(() => {
@@ -651,18 +696,27 @@ export function ChatArea({
 		return () => document.removeEventListener("mousedown", handleClickOutside);
 	}, [mentionQuery]);
 
-	const getDisplayName = (msg: SupabaseMessage) => {
-		if (msg.users) {
-			const name = [msg.users.firstName, msg.users.lastName].filter(Boolean).join(" ");
-			let finalName = name;
-			if (!finalName) finalName = msg.users.username || getNameFromEmail(msg.users.email);
-			return msg.user_id === user?.id ? `${finalName} (you)` : finalName;
-		}
-		return msg.user_id === user?.id ? "You" : "Unknown User";
-	};
+	const getDisplayName = useCallback(
+		(msg: SupabaseMessage) => {
+			if (msg.users) {
+				const name = [msg.users.firstName, msg.users.lastName].filter(Boolean).join(" ");
+				let finalName = name;
+				if (!finalName) finalName = msg.users.username || getNameFromEmail(msg.users.email);
+				return msg.user_id === user?.id ? `${finalName} (you)` : finalName;
+			}
+			return msg.user_id === user?.id ? "You" : "Unknown User";
+		},
+		[user?.id],
+	);
+
+	const getMessageDisplayName = useCallback(
+		(msg: SupabaseMessage) =>
+			isAiSummaryContent(msg.content) ? "AI Summary" : getDisplayName(msg),
+		[getDisplayName],
+	);
 
 	const getInitials = (msg: SupabaseMessage) => {
-		const name = getDisplayName(msg).replace(" (you)", "");
+		const name = getMessageDisplayName(msg).replace(" (you)", "");
 		return name
 			.split(" ")
 			.filter((part) => !part.includes("("))
@@ -672,10 +726,29 @@ export function ChatArea({
 			.slice(0, 2);
 	};
 
+	const getMessageText = useCallback((msg: SupabaseMessage) => {
+		const rawText = (msg.content || "").replace(/<[^>]*>/g, "").trim();
+		if (rawText) return rawText;
+		const fileType = msg.file_type || msg.fileType || "";
+		const fileName = msg.file_name || msg.fileName || "";
+		let text = "Message";
+		if (fileType.startsWith("audio/")) {
+			text = "Voice message";
+		} else if (fileType.startsWith("image/")) {
+			text = "Image";
+		} else if (fileType.startsWith("video/")) {
+			text = "Video";
+		} else if (msg.file_url || msg.fileUrl) {
+			text = "Document";
+		}
+		return fileName ? `${text}: ${fileName}` : text;
+	}, []);
+
 	const unreadItems = useMemo<UnreadItem[]>(() => {
 		if (messages.length === 0 || promptUnreadCount === 0) return [];
 		const items: UnreadItem[] = [];
 		const takeMessage = (msg: SupabaseMessage) => {
+			if (isAiSummaryContent(msg.content)) return;
 			const userData = msg.users || msg.user;
 			const name = userData
 				? [userData.firstName, userData.lastName].filter(Boolean).join(" ") ||
@@ -684,86 +757,166 @@ export function ChatArea({
 				: "Unknown";
 			const createdAt = msg.created_at || msg.createdAt || new Date().toISOString();
 			const time = formatMessageTime(createdAt);
-			const rawText = (msg.content || "").replace(/<[^>]*>/g, "").trim();
-			let text = rawText;
-			if (!text) {
-				const fileType = msg.file_type || msg.fileType || "";
-				const fileName = msg.file_name || msg.fileName || "";
-				if (fileType.startsWith("audio/")) {
-					text = "Voice message";
-				} else if (fileType.startsWith("image/")) {
-					text = "Image";
-				} else if (fileType.startsWith("video/")) {
-					text = "Video";
-				} else if (msg.file_url || msg.fileUrl) {
-					text = "Document";
-				} else {
-					text = "Message";
-				}
-				if (fileName) text = `${text}: ${fileName}`;
+			const text = getMessageText(msg);
+		items.push({ id: msg.id, name, time, text });
+	};
+
+	if (lastReadMsgId) {
+		const lastReadIdx = messages.findIndex((m) => m.id === lastReadMsgId);
+		if (lastReadIdx !== -1) {
+			for (let i = lastReadIdx + 1; i < messages.length; i++) {
+				const msg = messages[i];
+				const isOwn = msg.user_id === user?.id || msg.userId === user?.id;
+				if (isOwn) continue;
+				takeMessage(msg);
 			}
-			items.push({ id: msg.id, name, time, text });
-		};
-
-		if (lastReadMsgId) {
-			const lastReadIdx = messages.findIndex((m) => m.id === lastReadMsgId);
-			if (lastReadIdx !== -1) {
-				for (let i = lastReadIdx + 1; i < messages.length; i++) {
-					const msg = messages[i];
-					const isOwn = msg.user_id === user?.id || msg.userId === user?.id;
-					if (isOwn) continue;
-					takeMessage(msg);
-				}
-				return items;
-			}
+			return items;
 		}
+	}
 
-		let remaining = promptUnreadCount;
-		for (let i = messages.length - 1; i >= 0 && remaining > 0; i--) {
-			const msg = messages[i];
-			const isOwn = msg.user_id === user?.id || msg.userId === user?.id;
-			if (isOwn) continue;
-			takeMessage(msg);
-			remaining -= 1;
-		}
-		return items.reverse();
-	}, [messages, promptUnreadCount, lastReadMsgId, user?.id]);
+	let remaining = promptUnreadCount;
+	for (let i = messages.length - 1; i >= 0 && remaining > 0; i--) {
+		const msg = messages[i];
+		const isOwn = msg.user_id === user?.id || msg.userId === user?.id;
+		if (isOwn) continue;
+		takeMessage(msg);
+		remaining -= 1;
+	}
+	return items.reverse();
+}, [messages, promptUnreadCount, lastReadMsgId, user?.id, getMessageText]);
 
-	const handleSummarySend = useCallback(
-		(result: SummaryResult) => {
-			if (!addLocalMessage) return;
-			const createdAt = new Date().toISOString();
-			const bulletLines = result.lines.map((line) => `<li>${line}</li>`).join("");
-			const content = `
-<p><strong>AI Summary</strong></p>
-<p>Unread overview for <strong>${displayName}</strong></p>
-<ul>${bulletLines}</ul>
-`;
+const unreadMessageIds = useMemo(
+	() => new Set(unreadItems.map((item) => item.id)),
+	[unreadItems],
+);
 
-			addLocalMessage({
-				id: `ai-summary-${Date.now()}`,
-				channelId: channelName,
-				channel_id: channelName,
-				userId: "ai-summary",
-				user_id: "ai-summary",
-				content,
-				createdAt,
-				created_at: createdAt,
-				users: {
-					firstName: "AI",
-					lastName: "Summary",
-					username: "AI Summary",
-					imageUrl: null,
-					email: "ai-summary@system.local",
-				},
-			});
+const handleSummarizeUnread = useCallback(async () => {
+	const candidates = messages
+		.filter((msg) => !isAiSummaryContent(msg.content))
+		.map((msg) => ({
+			id: msg.id,
+			sender: getMessageDisplayName(msg),
+			timestamp: msg.created_at || msg.createdAt || new Date().toISOString(),
+			content: getMessageText(msg),
+			is_read: !unreadMessageIds.has(msg.id),
+		}));
+
+	const firstUnreadIndex = candidates.findIndex((msg) => !msg.is_read);
+	let payloadMessages = candidates;
+	if (firstUnreadIndex !== -1) {
+		const startIndex = Math.max(0, firstUnreadIndex - 3);
+		payloadMessages = candidates.slice(startIndex);
+	} else if (candidates.length > 3) {
+		payloadMessages = candidates.slice(-3);
+	}
+
+	const payload = {
+		thread_id: channelName,
+		thread_name: displayName,
+		messages: payloadMessages,
+	};
+
+	const summary = await fetchClient<SummarizerThreadSummary>(
+		SUMMARIZER_ENDPOINTS.SUMMARIZE_THREAD,
+		{
+			baseUrl: SUMMARIZER_BASE_URL,
+			method: "POST",
+			queryParams: { unread_only: "true" },
+			body: JSON.stringify(payload),
 		},
-		[addLocalMessage, channelName, displayName],
 	);
 
-	const isHtmlContent = (content: string) => /<[a-z][\s\S]*>/i.test(content);
+	const keyPoints = summary.key_points || [];
+	const actionItems = summary.action_items || [];
+	const summaryLine = summary.summary || "No summary available.";
+	const lines = [
+		summaryLine,
+		...keyPoints.map((point) => `• ${point}`),
+		...actionItems.map((item) => `Action: ${item}`),
+	];
 
-	return (
+	return {
+		summary: summaryLine,
+		lines,
+		keyPoints,
+		actionItems,
+		payload: {
+			channelName: displayName,
+			requestedAt: new Date().toISOString(),
+			items: unreadItems,
+		},
+	};
+}, [
+	channelName,
+	displayName,
+	getMessageDisplayName,
+	getMessageText,
+	messages,
+	unreadItems,
+	unreadMessageIds,
+]);
+
+const handleSummarySend = useCallback(
+	async (result: SummaryResult) => {
+		if (!sendMessage || !user?.id) return;
+		const summaryBlock = result.summary
+			? `<p><strong>Summary</strong></p><p>${result.summary}</p>`
+			: "";
+		const keyPointsBlock = result.keyPoints.length
+			? `<p><strong>Key points</strong></p><ul>${result.keyPoints
+					.map((point) => `<li>${point}</li>`)
+					.join("")}</ul>`
+			: "";
+		const actionItemsBlock = result.actionItems.length
+			? `<p><strong>Action items</strong></p><ul>${result.actionItems
+					.map((item) => `<li>${item}</li>`)
+					.join("")}</ul>`
+			: "";
+		const content = `${AI_SUMMARY_MARKER}
+<p><strong>AI Summary</strong></p>
+<p>Unread overview for <strong>${displayName}</strong></p>
+${summaryBlock}
+${keyPointsBlock}
+${actionItemsBlock}`.trim();
+
+		try {
+			await sendMessage(content, user.id);
+		} catch (error) {
+			console.error("Failed to send AI summary message:", error);
+		}
+	},
+	[displayName, sendMessage, user?.id],
+);
+
+// Auto-summarize once when opening a channel/DM with unread messages
+useEffect(() => {
+	if (hasAutoSummarizedRef.current) return;
+	if (promptUnreadCount === 0) return;
+	if (unreadItems.length === 0) return;
+
+	let cancelled = false;
+	const runSummary = async () => {
+		try {
+			const result = await handleSummarizeUnread();
+			if (!cancelled) {
+				hasAutoSummarizedRef.current = true;
+				await handleSummarySend(result);
+			}
+		} catch (error) {
+			console.error("Auto-summarize failed:", error);
+		}
+	};
+
+	void runSummary();
+
+	return () => {
+		cancelled = true;
+	};
+}, [handleSummarizeUnread, handleSummarySend, promptUnreadCount, unreadItems.length]);
+
+const isHtmlContent = (content: string) => /<[a-z][\s\S]*>/i.test(content);
+
+return (
 		<div
 			className="flex-1 flex flex-col bg-white min-w-0 min-h-0 overflow-hidden w-full h-full"
 			style={{
@@ -844,6 +997,7 @@ export function ChatArea({
 				channelName={displayName}
 				unreadItems={unreadItems}
 				forceShow={showSummarizer}
+				onSummarizeUnread={handleSummarizeUnread}
 				onSummarize={handleSummarySend}
 				onClose={() => setShowSummarizer(false)}
 			/>
@@ -874,7 +1028,9 @@ export function ChatArea({
 						) : (
 							messages.map((message, msgIndex) => {
 								const isDeleted = !!(message.deletedAt || message.deleted_at);
-								const isOwnMessage = message.user_id === user?.id || message.userId === user?.id;
+								const isAiSummary = isAiSummaryContent(message.content);
+								const isOwnMessage =
+									!isAiSummary && (message.user_id === user?.id || message.userId === user?.id);
 								const createdTime = new Date(message.created_at || message.createdAt || Date.now());
 								const diffInMinutes = (Date.now() - createdTime.getTime()) / (1000 * 60);
 								const canEdit =
@@ -917,7 +1073,7 @@ export function ChatArea({
 													{/* Name above bubble for others */}
 													{!isOwnMessage && (
 														<span className="text-[11px] text-[#8e8e93] px-2 mb-[2px] font-medium tracking-wide">
-															{getDisplayName(message)}
+															{getMessageDisplayName(message)}
 														</span>
 													)}
 

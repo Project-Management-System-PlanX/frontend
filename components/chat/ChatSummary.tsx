@@ -49,6 +49,8 @@ export interface SummaryPayload {
 export interface SummaryResult {
 	summary: string;
 	lines: string[];
+	keyPoints: string[];
+	actionItems: string[];
 	payload: SummaryPayload;
 }
 
@@ -59,6 +61,7 @@ interface ChatSummaryProps {
 	forceShow?: boolean;
 	onClose?: () => void;
 	onSummarize?: (result: SummaryResult) => void;
+	onSummarizeUnread?: () => Promise<SummaryResult>;
 }
 
 export function ChatSummary({
@@ -68,11 +71,13 @@ export function ChatSummary({
 	forceShow,
 	onClose,
 	onSummarize,
+	onSummarizeUnread,
 }: ChatSummaryProps) {
 	const [showSummary, setShowSummary] = useState(false);
 	const [summaryType, setSummaryType] = useState<keyof typeof DUMMY_SUMMARIES | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
 	const [summaryLines, setSummaryLines] = useState<string[]>([]);
+	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
 	// Capture the initial unread count so the banner doesn't vanish instantly when the store resets it on load
 	const [initialUnreadCount, setInitialUnreadCount] = useState(unreadCount);
@@ -103,31 +108,38 @@ export function ChatSummary({
 				lines.push(`...and ${items.length - 5} more updates.`);
 			}
 			const summary = [headline, ...lines].join("\n");
-			return { summary, lines, payload };
+			return { summary, lines, payload, keyPoints: [], actionItems: [] };
 		},
 		[buildPayload],
 	);
 
 	const handleSummarize = useCallback(
-		(type: keyof typeof DUMMY_SUMMARIES) => {
+		async (type: keyof typeof DUMMY_SUMMARIES) => {
 			setIsLoading(true);
 			setSummaryType(type);
+			setErrorMessage(null);
 
-			// Simulate AI processing delay
-			setTimeout(() => {
-				if (type === "unread") {
+			try {
+				if (type === "unread" && onSummarizeUnread) {
+					const result = await onSummarizeUnread();
+					setSummaryLines(result.lines);
+					onSummarize?.(result);
+				} else if (type === "unread") {
 					const result = buildSummary(unreadItems);
-					console.info("Mock summary payload", result.payload);
 					setSummaryLines(result.lines);
 					onSummarize?.(result);
 				} else {
 					setSummaryLines(DUMMY_SUMMARIES[type]);
 				}
 				setShowSummary(true);
+			} catch (error) {
+				console.error("Failed to summarize:", error);
+				setErrorMessage("Failed to summarize unread messages. Please try again.");
+			} finally {
 				setIsLoading(false);
-			}, 800);
+			}
 		},
-		[buildSummary, onSummarize, unreadItems],
+		[buildSummary, onSummarize, onSummarizeUnread, unreadItems],
 	);
 
 	const getSummaryTitle = () => {
@@ -230,6 +242,8 @@ export function ChatSummary({
 									? "Summarize Unread"
 									: "Summarize Recent Messages"}
 						</button>
+
+						{errorMessage && <p className="mt-2 text-[12px] text-red-500">{errorMessage}</p>}
 
 						{/* Time-based Summary Options */}
 						<div className="flex items-center gap-2 mt-3">
