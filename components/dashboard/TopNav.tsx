@@ -19,11 +19,12 @@ import { useEffect, useRef, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { cn } from "@/lib/utils";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 const UI = {
-	primary: "#2d6a4f",
-	bg: "#0f2318",
-	border: "rgba(255, 255, 255, 0.05)",
+	primary: "#e85d04",
+	bg: "#2d2d44",
+	border: "rgba(232, 93, 4, 0.2)",
 	textPrimary: "#ffffff",
 	textSecondary: "#a0a0b0",
 };
@@ -70,7 +71,7 @@ export function TopNav() {
 					onClick={() => setIsMenuOpen(!isMenuOpen)}
 					className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/10 transition-colors group"
 				>
-					<div className="w-8 h-8 rounded-lg bg-[#2d6a4f] flex items-center justify-center text-white shadow-lg">
+					<div className="w-8 h-8 rounded-lg bg-[#007AFF] flex items-center justify-center text-white shadow-lg">
 						<Zap className="w-5 h-5 fill-white/20" />
 					</div>
 					<span
@@ -168,21 +169,7 @@ export function TopNav() {
 						isDashboardHome ? "bg-gray-200" : "bg-white/10",
 					)}
 				/>
-				<button
-					type="button"
-					className={cn(
-						"p-2 rounded-lg transition-colors relative",
-						isDashboardHome
-							? "hover:bg-gray-100 text-gray-500 hover:text-gray-900"
-							: "hover:bg-white/10 text-white/60 hover:text-white",
-					)}
-				>
-					<Bell className="w-5 h-5" />
-					<div
-						className="absolute top-2 right-2 w-2 h-2 rounded-full border-2 border-[#1E293B]"
-						style={{ backgroundColor: UI.primary }}
-					/>
-				</button>
+				<NotificationBell theme={isDashboardHome ? "light" : "dark"} />
 				<button
 					type="button"
 					className={cn(

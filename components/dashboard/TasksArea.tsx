@@ -183,22 +183,11 @@ export function TasksArea() {
 		updateOptimisticTask,
 	} = usePersonalTasks(activeWorkspaceId, token || undefined);
 
-	// Board vs Inbox Separation: Filter board data to exclude tasks already in Inbox
 	const { liveColumnsFiltered, liveTasksMapFiltered } = useMemo(() => {
-		// During drag, we might want to avoid heavy filtering if it causes lag
-		const inboxIds = new Set(inboxTasks.map((t) => t.id));
-		const filteredMap = { ...liveTasksMap };
-		const filteredCols: Record<string, any> = {};
-
-		for (const colId in liveColumns) {
-			filteredCols[colId] = {
-				...liveColumns[colId],
-				taskIds: liveColumns[colId].taskIds.filter((tid) => !inboxIds.has(tid)),
-			};
-		}
-
-		return { liveColumnsFiltered: filteredCols, liveTasksMapFiltered: filteredMap };
-	}, [liveColumns, liveTasksMap, inboxTasks]);
+		// Return all tasks for the board without filtering out assigned (inbox) tasks,
+		// so that a user who gets assigned a task on a board can still see it on that board.
+		return { liveColumnsFiltered: liveColumns, liveTasksMapFiltered: liveTasksMap };
+	}, [liveColumns, liveTasksMap]);
 
 	// Planner tasks should only be tasks with dates (scheduled)
 	const plannerTasks = useMemo(() => {
@@ -209,6 +198,12 @@ export function TasksArea() {
 	const [isSwitchBoardModalOpen, setIsSwitchBoardModalOpen] = useState(false);
 	const [isAIPanelOpen, setIsAIPanelOpen] = useState(false);
 	const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+	const filteredInboxTasks = useMemo(() => {
+		// Only show tasks in the Inbox if they are NOT already present on the currently selected board.
+		// This follows the user's requirement to avoid duplication while ensuring visibility.
+		return inboxTasks.filter((t) => !liveTasksMap[t.id]);
+	}, [inboxTasks, liveTasksMap]);
+
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -572,13 +567,11 @@ export function TasksArea() {
 					setActiveId(null);
 					return;
 				} else if (liveColumnOrder.includes(overContainer)) {
-					// Moving TO Board — also clear assigneeId so it leaves Inbox on reload
+					// Moving TO Board
 					removeOptimisticTask(id);
-					// Use updateTaskApi (not moveTask) so we can clear assigneeId in the same call
 					updateTaskApi(id, {
 						statusId: overContainer,
 						position: newPosition,
-						assigneeId: null,
 					});
 				}
 			}
@@ -656,7 +649,7 @@ export function TasksArea() {
 								<PanelContainer id={tabId}>
 									{tabId === "inbox" && (
 										<InboxPanel
-											tasks={inboxTasks}
+											tasks={filteredInboxTasks}
 											onToggleTask={toggleTaskCompletion}
 											onAddTask={(title) => addTask("inbox", title)}
 											onTaskClick={handleTaskClick}

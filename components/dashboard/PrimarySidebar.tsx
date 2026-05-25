@@ -24,20 +24,17 @@ import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app-store";
 import { useUnreadStore } from "@/stores/unread-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 const SettingsModal = dynamic(
 	() => import("@/components/modals/SettingsModal").then((mod) => mod.SettingsModal),
-	{
-		ssr: false,
-	},
+	{ ssr: false },
 );
 
 const InviteMembersDialog = dynamic(
 	() =>
 		import("@/components/workspaces/InviteMembersDialog").then((mod) => mod.InviteMembersDialog),
-	{
-		ssr: false,
-	},
+	{ ssr: false },
 );
 
 interface PrimarySidebarProps {
@@ -59,9 +56,8 @@ export function PrimarySidebar({
 	const [inviteOpen, setInviteOpen] = useState(false);
 	const [settingsOpen, setSettingsOpen] = useState(false);
 	const [topSearch, setTopSearch] = useState("");
-
-	// Sync expansion state when entering contextual sections, but allow override
 	const [hasMounted, setHasMounted] = useState(false);
+
 	useEffect(() => {
 		if (hasMounted) {
 			setIsExpanded(!defaultCollapsed);
@@ -70,7 +66,6 @@ export function PrimarySidebar({
 		}
 	}, [defaultCollapsed, hasMounted]);
 
-	// Auto-collapse when navigating into a specific chat or workspace channel
 	useEffect(() => {
 		if (
 			pathname.includes("/channel/") ||
@@ -124,6 +119,7 @@ export function PrimarySidebar({
 		<>
 			{isTop ? (
 				<div className="w-full flex items-center gap-4">
+					{/* Logo */}
 					<div className="flex items-center gap-3">
 						<div className="w-9 h-9 rounded-[10px] bg-gradient-to-b from-[#5AC8FA] to-[#007AFF] flex items-center justify-center text-white shadow-md shadow-blue-500/20 shrink-0">
 							<Zap className="w-4.5 h-4.5 fill-white/20" />
@@ -139,6 +135,7 @@ export function PrimarySidebar({
 						</span>
 					</div>
 
+					{/* Search */}
 					<div className="hidden md:flex flex-1 max-w-[520px]">
 						<div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 border border-white/10 w-full">
 							<input
@@ -150,6 +147,7 @@ export function PrimarySidebar({
 						</div>
 					</div>
 
+					{/* Nav items */}
 					<div className="flex items-center gap-2">
 						{navItems.map((item) => (
 							<PrimaryNavItem
@@ -169,7 +167,9 @@ export function PrimarySidebar({
 						))}
 					</div>
 
+					{/* Right side — Bell + bottom items */}
 					<div className="ml-auto flex items-center gap-2">
+						<NotificationBell />
 						{bottomItems.map((item) => (
 							<PrimaryNavItem
 								key={item.label}
@@ -256,6 +256,11 @@ export function PrimarySidebar({
 
 					{/* Bottom Actions */}
 					<div className={cn("flex flex-col gap-1 px-3 pt-4 border-t border-slate-200/60 mb-6")}>
+						{/* Notification Bell */}
+						<div className={cn("flex mb-1", isExpanded ? "px-1" : "justify-center")}>
+							<NotificationBell />
+						</div>
+
 						{bottomItems.map((item) => (
 							<PrimaryNavItem
 								key={item.label}
@@ -271,7 +276,7 @@ export function PrimarySidebar({
 				</motion.div>
 			)}
 
-			{/* Dialogs — portaled to body so they escape overflow-hidden */}
+			{/* Dialogs */}
 			{hasMounted &&
 				activeWorkspaceId &&
 				createPortal(
@@ -410,7 +415,8 @@ function PrimaryNavItem({
 					sideOffset={12}
 					className="bg-gray-800/90 backdrop-blur-md border-none text-white text-[11px] font-medium tracking-wide px-3 py-1.5 rounded-lg shadow-xl"
 					style={{
-						fontFamily: "'-apple-system', 'BlinkMacSystemFont', 'SF Pro Text', 'Inter', sans-serif",
+						fontFamily:
+							"'-apple-system', 'BlinkMacSystemFont', 'SF Pro Text', 'Inter', sans-serif",
 					}}
 				>
 					{label}
