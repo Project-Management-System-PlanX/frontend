@@ -1,15 +1,11 @@
-'use client'
+"use client";
 
-import {
-  LayoutDashboard,
-  BellRing,
-  SquareCheckBig,
-} from 'lucide-react'
+import { BellRing, LayoutDashboard, SquareCheckBig } from "lucide-react";
 
 export default function ServicesSection() {
-  return (
-    <>
-      <style>{`
+	return (
+		<>
+			<style>{`
         .srv-root {
           background: #f5f7f3;
           padding: 100px 24px;
@@ -334,163 +330,131 @@ export default function ServicesSection() {
         }
       `}</style>
 
-      <section className="srv-root" id="services">
-        {/* HEADER */}
-        <div className="srv-header">
-          <div className="srv-badge">
-            Services
-          </div>
+			<section className="srv-root" id="services">
+				{/* HEADER */}
+				<div className="srv-header">
+					<div className="srv-badge">Services</div>
 
-          <h2 className="srv-title">
-            Latest advanced technologies to ensure everything you need
-          </h2>
+					<h2 className="srv-title">Latest advanced technologies to ensure everything you need</h2>
 
-          <p className="srv-subtitle">
-            Maximize your team’s productivity and security with our
-            affordable, user-friendly contract management system.
-          </p>
-        </div>
+					<p className="srv-subtitle">
+						Maximize your team’s productivity and security with our affordable, user-friendly
+						contract management system.
+					</p>
+				</div>
 
-        {/* LAYOUT */}
-        <div className="srv-layout">
+				{/* LAYOUT */}
+				<div className="srv-layout">
+					{/* TOP LARGE CARD */}
+					<div className="srv-top-card">
+						<div className="srv-top-left">
+							<div className="srv-icon">
+								<LayoutDashboard size={28} />
+							</div>
 
-          {/* TOP LARGE CARD */}
-          <div className="srv-top-card">
+							<h3 className="srv-card-title">Dynamic dashboard</h3>
 
-            <div className="srv-top-left">
-              <div className="srv-icon">
-                <LayoutDashboard size={28} />
-              </div>
+							<p className="srv-card-desc">
+								Clause helps legal teams work faster, smarter and more efficiently, delivering
+								visibility and data-driven insights to mitigate risk and ensure compliance.
+							</p>
 
-              <h3 className="srv-card-title">
-                Dynamic dashboard
-              </h3>
+							<button className="srv-btn">Explore all</button>
+						</div>
 
-              <p className="srv-card-desc">
-                Clause helps legal teams work faster, smarter and more
-                efficiently, delivering visibility and data-driven insights
-                to mitigate risk and ensure compliance.
-              </p>
+						{/* RIGHT CHART */}
+						<div className="srv-chart-card">
+							<div className="srv-chart-header">
+								<div className="srv-company">Acme Inc.</div>
 
-              <button className="srv-btn">
-                Explore all
-              </button>
-            </div>
+								<div className="srv-users">
+									<div className="srv-user" />
+									<div className="srv-user" />
+									<div className="srv-user" />
+								</div>
+							</div>
 
-            {/* RIGHT CHART */}
-            <div className="srv-chart-card">
+							<div className="srv-chart">
+								<div className="srv-bar" style={{ height: "120px" }} />
+								<div className="srv-bar" style={{ height: "190px" }} />
+								<div className="srv-bar" style={{ height: "140px" }} />
+								<div className="srv-bar active" style={{ height: "250px" }} />
+								<div className="srv-bar" style={{ height: "150px" }} />
+								<div className="srv-bar" style={{ height: "210px" }} />
+								<div className="srv-bar" style={{ height: "140px" }} />
+								<div className="srv-bar" style={{ height: "180px" }} />
+							</div>
+						</div>
+					</div>
 
-              <div className="srv-chart-header">
-                <div className="srv-company">
-                  Acme Inc.
-                </div>
+					{/* BOTTOM TWO CARDS */}
+					<div className="srv-bottom-grid">
+						{/* LEFT */}
+						<div className="srv-small-card">
+							<div className="srv-icon">
+								<BellRing size={24} />
+							</div>
 
-                <div className="srv-users">
-                  <div className="srv-user" />
-                  <div className="srv-user" />
-                  <div className="srv-user" />
-                </div>
-              </div>
+							<h3 className="srv-small-title">Smart notifications</h3>
 
-              <div className="srv-chart">
-                <div className="srv-bar" style={{ height: '120px' }} />
-                <div className="srv-bar" style={{ height: '190px' }} />
-                <div className="srv-bar" style={{ height: '140px' }} />
-                <div className="srv-bar active" style={{ height: '250px' }} />
-                <div className="srv-bar" style={{ height: '150px' }} />
-                <div className="srv-bar" style={{ height: '210px' }} />
-                <div className="srv-bar" style={{ height: '140px' }} />
-                <div className="srv-bar" style={{ height: '180px' }} />
-              </div>
+							<p className="srv-small-desc">
+								Easily accessible from the notification center, calendar or email with relevant
+								activities.
+							</p>
 
-            </div>
-          </div>
+							<div className="srv-settings">
+								<div className="srv-setting-row">
+									<span>Email notification</span>
+									<div className="srv-toggle active" />
+								</div>
 
-          {/* BOTTOM TWO CARDS */}
-          <div className="srv-bottom-grid">
+								<div className="srv-setting-row">
+									<span>Social emails</span>
+									<div className="srv-toggle" />
+								</div>
 
-            {/* LEFT */}
-            <div className="srv-small-card">
+								<div className="srv-setting-row">
+									<span>Announcement & Update</span>
+									<div className="srv-toggle active" />
+								</div>
 
-              <div className="srv-icon">
-                <BellRing size={24} />
-              </div>
+								<div className="srv-setting-row">
+									<span>Reminders</span>
+									<div className="srv-toggle" />
+								</div>
+							</div>
+						</div>
 
-              <h3 className="srv-small-title">
-                Smart notifications
-              </h3>
+						{/* RIGHT */}
+						<div className="srv-small-card">
+							<div className="srv-icon">
+								<SquareCheckBig size={24} />
+							</div>
 
-              <p className="srv-small-desc">
-                Easily accessible from the notification center,
-                calendar or email with relevant activities.
-              </p>
+							<h3 className="srv-small-title">Task management</h3>
 
-              <div className="srv-settings">
+							<p className="srv-small-desc">
+								Discuss contract queries, manage tasks, secure approvals, track progress in the
+								workspace.
+							</p>
 
-                <div className="srv-setting-row">
-                  <span>Email notification</span>
-                  <div className="srv-toggle active" />
-                </div>
+							<div className="srv-activity">
+								<div className="srv-message">
+									<strong>Bill Sanders</strong>
 
-                <div className="srv-setting-row">
-                  <span>Social emails</span>
-                  <div className="srv-toggle" />
-                </div>
+									<p>Hello @Ragip Diller, Could you sign the contract before the March 12th?</p>
+								</div>
 
-                <div className="srv-setting-row">
-                  <span>Announcement & Update</span>
-                  <div className="srv-toggle active" />
-                </div>
+								<div className="srv-message">
+									<strong>Jane Cooper</strong>
 
-                <div className="srv-setting-row">
-                  <span>Reminders</span>
-                  <div className="srv-toggle" />
-                </div>
-
-              </div>
-            </div>
-
-            {/* RIGHT */}
-            <div className="srv-small-card">
-
-              <div className="srv-icon">
-                <SquareCheckBig size={24} />
-              </div>
-
-              <h3 className="srv-small-title">
-                Task management
-              </h3>
-
-              <p className="srv-small-desc">
-                Discuss contract queries, manage tasks,
-                secure approvals, track progress in the workspace.
-              </p>
-
-              <div className="srv-activity">
-
-                <div className="srv-message">
-                  <strong>Bill Sanders</strong>
-
-                  <p>
-                    Hello @Ragip Diller, Could you sign the contract
-                    before the March 12th?
-                  </p>
-                </div>
-
-                <div className="srv-message">
-                  <strong>Jane Cooper</strong>
-
-                  <p>
-                    Uploaded new contract
-                  </p>
-                </div>
-
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-    </>
-  )
+									<p>Uploaded new contract</p>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+		</>
+	);
 }

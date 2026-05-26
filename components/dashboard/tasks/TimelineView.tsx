@@ -160,7 +160,7 @@ export function TimelineView({
 													<div
 														key={task.id}
 														onClick={() => onTaskClick(task)}
-															className="absolute inset-x-2 top-2 bottom-2 bg-[#505060] rounded-xl border border-[#606070] p-2.5 flex flex-col gap-1.5 hover:bg-[#5a5a70] hover:border-[#707080] transition-all cursor-pointer shadow-2xl group/task z-10"
+														className="absolute inset-x-2 top-2 bottom-2 bg-[#505060] rounded-xl border border-[#606070] p-2.5 flex flex-col gap-1.5 hover:bg-[#5a5a70] hover:border-[#707080] transition-all cursor-pointer shadow-2xl group/task z-10"
 													>
 														<div className="flex items-center justify-between">
 															<div className="flex gap-1">
@@ -172,7 +172,7 @@ export function TimelineView({
 																	/>
 																))}
 															</div>
-															<div className="w-5 h-5 rounded-full border border-white/10 bg-orange-500 flex items-center justify-center text-[9px] font-black text-white">
+															<div className="w-5 h-5 rounded-full border border-white/10 bg-emerald-500 flex items-center justify-center text-[9px] font-black text-white">
 																{task.assignees?.[0]?.user?.firstName?.[0] || "R"}
 															</div>
 														</div>

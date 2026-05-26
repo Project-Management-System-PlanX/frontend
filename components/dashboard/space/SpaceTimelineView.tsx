@@ -54,19 +54,19 @@ function weekStarts(start: Date, end: Date) {
 ────────────────────────────────────────────── */
 const TASK_PALETTE = [
 	{ bar: "#6366F1", dot: "#4F46E5" }, // indigo
-	{ bar: "#F59E0B", dot: "#D97706" }, // amber
+	{ bar: "#10b981", dot: "#D97706" }, // amber
 	{ bar: "#EC4899", dot: "#DB2777" }, // pink
 	{ bar: "#14B8A6", dot: "#0D9488" }, // teal
 	{ bar: "#8B5CF6", dot: "#7C3AED" }, // violet
-	{ bar: "#F97316", dot: "#EA580C" }, // orange
+	{ bar: "#10b981", dot: "#059669" }, // orange
 	{ bar: "#06B6D4", dot: "#0891B2" }, // cyan
 	{ bar: "#84CC16", dot: "#65A30D" }, // lime
 ];
 
 const PRIORITY_COLORS: Record<string, { bar: string; dot: string }> = {
 	CRITICAL: { bar: "#EF4444", dot: "#DC2626" },
-	HIGH: { bar: "#F97316", dot: "#EA580C" },
-	MEDIUM: { bar: "#F59E0B", dot: "#D97706" },
+	HIGH: { bar: "#10b981", dot: "#059669" },
+	MEDIUM: { bar: "#10b981", dot: "#D97706" },
 	LOW: { bar: "#3B82F6", dot: "#2563EB" },
 };
 
@@ -74,7 +74,7 @@ function taskColor(task: Task): { bar: string; dot: string } {
 	if (task.status?.isDone) return { bar: "#10B981", dot: "#059669" };
 	const s = (task.status?.name ?? "").toLowerCase();
 	if (s.includes("progress")) return { bar: "#3B82F6", dot: "#2563EB" };
-	if (s.includes("review")) return { bar: "#F59E0B", dot: "#D97706" };
+	if (s.includes("review")) return { bar: "#10b981", dot: "#D97706" };
 	if (task.priority && task.priority !== "NONE" && PRIORITY_COLORS[task.priority]) {
 		return PRIORITY_COLORS[task.priority];
 	}

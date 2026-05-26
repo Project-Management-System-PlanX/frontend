@@ -266,7 +266,7 @@ function TableRow({
 									})}
 								</div>
 							) : task.assigneeId ? (
-									<div className="w-5 h-5 rounded-full bg-[#e85d04] flex items-center justify-center text-[10px] font-bold text-white shrink-0 shadow-sm border border-[#3d3d54] uppercase">
+								<div className="w-5 h-5 rounded-full bg-[#e85d04] flex items-center justify-center text-[10px] font-bold text-white shrink-0 shadow-sm border border-[#3d3d54] uppercase">
 									{/* Not showing exact initials since we don't have the user object here, but it signals it's assigned */}
 									U
 								</div>

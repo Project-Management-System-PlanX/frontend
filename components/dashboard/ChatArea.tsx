@@ -758,165 +758,165 @@ export function ChatArea({
 			const createdAt = msg.created_at || msg.createdAt || new Date().toISOString();
 			const time = formatMessageTime(createdAt);
 			const text = getMessageText(msg);
-		items.push({ id: msg.id, name, time, text });
-	};
+			items.push({ id: msg.id, name, time, text });
+		};
 
-	if (lastReadMsgId) {
-		const lastReadIdx = messages.findIndex((m) => m.id === lastReadMsgId);
-		if (lastReadIdx !== -1) {
-			for (let i = lastReadIdx + 1; i < messages.length; i++) {
-				const msg = messages[i];
-				const isOwn = msg.user_id === user?.id || msg.userId === user?.id;
-				if (isOwn) continue;
-				takeMessage(msg);
+		if (lastReadMsgId) {
+			const lastReadIdx = messages.findIndex((m) => m.id === lastReadMsgId);
+			if (lastReadIdx !== -1) {
+				for (let i = lastReadIdx + 1; i < messages.length; i++) {
+					const msg = messages[i];
+					const isOwn = msg.user_id === user?.id || msg.userId === user?.id;
+					if (isOwn) continue;
+					takeMessage(msg);
+				}
+				return items;
 			}
-			return items;
 		}
-	}
 
-	let remaining = promptUnreadCount;
-	for (let i = messages.length - 1; i >= 0 && remaining > 0; i--) {
-		const msg = messages[i];
-		const isOwn = msg.user_id === user?.id || msg.userId === user?.id;
-		if (isOwn) continue;
-		takeMessage(msg);
-		remaining -= 1;
-	}
-	return items.reverse();
-}, [messages, promptUnreadCount, lastReadMsgId, user?.id, getMessageText]);
+		let remaining = promptUnreadCount;
+		for (let i = messages.length - 1; i >= 0 && remaining > 0; i--) {
+			const msg = messages[i];
+			const isOwn = msg.user_id === user?.id || msg.userId === user?.id;
+			if (isOwn) continue;
+			takeMessage(msg);
+			remaining -= 1;
+		}
+		return items.reverse();
+	}, [messages, promptUnreadCount, lastReadMsgId, user?.id, getMessageText]);
 
-const unreadMessageIds = useMemo(
-	() => new Set(unreadItems.map((item) => item.id)),
-	[unreadItems],
-);
-
-const handleSummarizeUnread = useCallback(async () => {
-	const candidates = messages
-		.filter((msg) => !isAiSummaryContent(msg.content))
-		.map((msg) => ({
-			id: msg.id,
-			sender: getMessageDisplayName(msg),
-			timestamp: msg.created_at || msg.createdAt || new Date().toISOString(),
-			content: getMessageText(msg),
-			is_read: !unreadMessageIds.has(msg.id),
-		}));
-
-	const firstUnreadIndex = candidates.findIndex((msg) => !msg.is_read);
-	let payloadMessages = candidates;
-	if (firstUnreadIndex !== -1) {
-		const startIndex = Math.max(0, firstUnreadIndex - 3);
-		payloadMessages = candidates.slice(startIndex);
-	} else if (candidates.length > 3) {
-		payloadMessages = candidates.slice(-3);
-	}
-
-	const payload = {
-		thread_id: channelName,
-		thread_name: displayName,
-		messages: payloadMessages,
-	};
-
-	const summary = await fetchClient<SummarizerThreadSummary>(
-		SUMMARIZER_ENDPOINTS.SUMMARIZE_THREAD,
-		{
-			baseUrl: SUMMARIZER_BASE_URL,
-			method: "POST",
-			queryParams: { unread_only: "true" },
-			body: JSON.stringify(payload),
-		},
+	const unreadMessageIds = useMemo(
+		() => new Set(unreadItems.map((item) => item.id)),
+		[unreadItems],
 	);
 
-	const keyPoints = summary.key_points || [];
-	const actionItems = summary.action_items || [];
-	const summaryLine = summary.summary || "No summary available.";
-	const lines = [
-		summaryLine,
-		...keyPoints.map((point) => `• ${point}`),
-		...actionItems.map((item) => `Action: ${item}`),
-	];
+	const handleSummarizeUnread = useCallback(async () => {
+		const candidates = messages
+			.filter((msg) => !isAiSummaryContent(msg.content))
+			.map((msg) => ({
+				id: msg.id,
+				sender: getMessageDisplayName(msg),
+				timestamp: msg.created_at || msg.createdAt || new Date().toISOString(),
+				content: getMessageText(msg),
+				is_read: !unreadMessageIds.has(msg.id),
+			}));
 
-	return {
-		summary: summaryLine,
-		lines,
-		keyPoints,
-		actionItems,
-		payload: {
-			channelName: displayName,
-			requestedAt: new Date().toISOString(),
-			items: unreadItems,
-		},
-	};
-}, [
-	channelName,
-	displayName,
-	getMessageDisplayName,
-	getMessageText,
-	messages,
-	unreadItems,
-	unreadMessageIds,
-]);
+		const firstUnreadIndex = candidates.findIndex((msg) => !msg.is_read);
+		let payloadMessages = candidates;
+		if (firstUnreadIndex !== -1) {
+			const startIndex = Math.max(0, firstUnreadIndex - 3);
+			payloadMessages = candidates.slice(startIndex);
+		} else if (candidates.length > 3) {
+			payloadMessages = candidates.slice(-3);
+		}
 
-const handleSummarySend = useCallback(
-	async (result: SummaryResult) => {
-		if (!sendMessage || !user?.id) return;
-		const summaryBlock = result.summary
-			? `<p><strong>Summary</strong></p><p>${result.summary}</p>`
-			: "";
-		const keyPointsBlock = result.keyPoints.length
-			? `<p><strong>Key points</strong></p><ul>${result.keyPoints
-					.map((point) => `<li>${point}</li>`)
-					.join("")}</ul>`
-			: "";
-		const actionItemsBlock = result.actionItems.length
-			? `<p><strong>Action items</strong></p><ul>${result.actionItems
-					.map((item) => `<li>${item}</li>`)
-					.join("")}</ul>`
-			: "";
-		const content = `${AI_SUMMARY_MARKER}
+		const payload = {
+			thread_id: channelName,
+			thread_name: displayName,
+			messages: payloadMessages,
+		};
+
+		const summary = await fetchClient<SummarizerThreadSummary>(
+			SUMMARIZER_ENDPOINTS.SUMMARIZE_THREAD,
+			{
+				baseUrl: SUMMARIZER_BASE_URL,
+				method: "POST",
+				queryParams: { unread_only: "true" },
+				body: JSON.stringify(payload),
+			},
+		);
+
+		const keyPoints = summary.key_points || [];
+		const actionItems = summary.action_items || [];
+		const summaryLine = summary.summary || "No summary available.";
+		const lines = [
+			summaryLine,
+			...keyPoints.map((point) => `• ${point}`),
+			...actionItems.map((item) => `Action: ${item}`),
+		];
+
+		return {
+			summary: summaryLine,
+			lines,
+			keyPoints,
+			actionItems,
+			payload: {
+				channelName: displayName,
+				requestedAt: new Date().toISOString(),
+				items: unreadItems,
+			},
+		};
+	}, [
+		channelName,
+		displayName,
+		getMessageDisplayName,
+		getMessageText,
+		messages,
+		unreadItems,
+		unreadMessageIds,
+	]);
+
+	const handleSummarySend = useCallback(
+		async (result: SummaryResult) => {
+			if (!sendMessage || !user?.id) return;
+			const summaryBlock = result.summary
+				? `<p><strong>Summary</strong></p><p>${result.summary}</p>`
+				: "";
+			const keyPointsBlock = result.keyPoints.length
+				? `<p><strong>Key points</strong></p><ul>${result.keyPoints
+						.map((point) => `<li>${point}</li>`)
+						.join("")}</ul>`
+				: "";
+			const actionItemsBlock = result.actionItems.length
+				? `<p><strong>Action items</strong></p><ul>${result.actionItems
+						.map((item) => `<li>${item}</li>`)
+						.join("")}</ul>`
+				: "";
+			const content = `${AI_SUMMARY_MARKER}
 <p><strong>AI Summary</strong></p>
 <p>Unread overview for <strong>${displayName}</strong></p>
 ${summaryBlock}
 ${keyPointsBlock}
 ${actionItemsBlock}`.trim();
 
-		try {
-			await sendMessage(content, user.id);
-		} catch (error) {
-			console.error("Failed to send AI summary message:", error);
-		}
-	},
-	[displayName, sendMessage, user?.id],
-);
-
-// Auto-summarize once when opening a channel/DM with unread messages
-useEffect(() => {
-	if (hasAutoSummarizedRef.current) return;
-	if (promptUnreadCount === 0) return;
-	if (unreadItems.length === 0) return;
-
-	let cancelled = false;
-	const runSummary = async () => {
-		try {
-			const result = await handleSummarizeUnread();
-			if (!cancelled) {
-				hasAutoSummarizedRef.current = true;
-				await handleSummarySend(result);
+			try {
+				await sendMessage(content, user.id);
+			} catch (error) {
+				console.error("Failed to send AI summary message:", error);
 			}
-		} catch (error) {
-			console.error("Auto-summarize failed:", error);
-		}
-	};
+		},
+		[displayName, sendMessage, user?.id],
+	);
 
-	void runSummary();
+	// Auto-summarize once when opening a channel/DM with unread messages
+	useEffect(() => {
+		if (hasAutoSummarizedRef.current) return;
+		if (promptUnreadCount === 0) return;
+		if (unreadItems.length === 0) return;
 
-	return () => {
-		cancelled = true;
-	};
-}, [handleSummarizeUnread, handleSummarySend, promptUnreadCount, unreadItems.length]);
+		let cancelled = false;
+		const runSummary = async () => {
+			try {
+				const result = await handleSummarizeUnread();
+				if (!cancelled) {
+					hasAutoSummarizedRef.current = true;
+					await handleSummarySend(result);
+				}
+			} catch (error) {
+				console.error("Auto-summarize failed:", error);
+			}
+		};
 
-const isHtmlContent = (content: string) => /<[a-z][\s\S]*>/i.test(content);
+		void runSummary();
 
-return (
+		return () => {
+			cancelled = true;
+		};
+	}, [handleSummarizeUnread, handleSummarySend, promptUnreadCount, unreadItems.length]);
+
+	const isHtmlContent = (content: string) => /<[a-z][\s\S]*>/i.test(content);
+
+	return (
 		<div
 			className="flex-1 flex flex-col bg-white min-w-0 min-h-0 overflow-hidden w-full h-full"
 			style={{

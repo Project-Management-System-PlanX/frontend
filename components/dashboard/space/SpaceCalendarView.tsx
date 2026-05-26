@@ -98,19 +98,19 @@ export function SpaceCalendarView({ spaceId }: { spaceId: string }) {
 
 	const CALENDAR_PALETTE = [
 		"#6366F1", // indigo
-		"#F59E0B", // amber
+		"#10b981", // amber
 		"#EC4899", // pink
 		"#14B8A6", // teal
 		"#8B5CF6", // violet
-		"#F97316", // orange
+		"#10b981", // orange
 		"#06B6D4", // cyan
 		"#84CC16", // lime
 	];
 
 	const PRIORITY_COLOR_MAP: Record<string, string> = {
 		CRITICAL: "#EF4444",
-		HIGH: "#F97316",
-		MEDIUM: "#F59E0B",
+		HIGH: "#10b981",
+		MEDIUM: "#10b981",
 		LOW: "#3B82F6",
 	};
 
@@ -118,7 +118,7 @@ export function SpaceCalendarView({ spaceId }: { spaceId: string }) {
 		if (task.status?.isDone) return "#10B981";
 		const s = (task.status?.name || "").toLowerCase();
 		if (s.includes("progress")) return "#3B82F6";
-		if (s.includes("review")) return "#F59E0B";
+		if (s.includes("review")) return "#10b981";
 		if (task.priority && task.priority !== "NONE" && PRIORITY_COLOR_MAP[task.priority]) {
 			return PRIORITY_COLOR_MAP[task.priority];
 		}

@@ -38,7 +38,6 @@ import { supabase } from "@/lib/supabase/client";
 import type { Task, TaskComment, TaskLabel, UserProfile } from "@/lib/types/models";
 import { cn } from "@/lib/utils";
 
-
 interface TaskDetailModalProps {
 	task: Task | null;
 	isOpen: boolean;
@@ -386,93 +385,93 @@ export default function TaskDetailModal({
 							{(localAssignees.length > 0 ||
 								localDueDate ||
 								(localLabels && localLabels.length > 0)) && (
-									<div className="flex flex-wrap gap-8 mb-6 ml-1">
-										{localAssignees && localAssignees.length > 0 && !isInbox && (
-											<div className="flex flex-col gap-1.5">
-												<h3 className="text-[11px] font-bold text-white/50 tracking-wide uppercase">
-													Members
-												</h3>
-												<TaskMemberPopover
-													task={task}
-													workspaceMembers={workspaceMembers}
-													isOpen={isMetaMemberPickerOpen}
-													setIsOpen={setIsMetaMemberPickerOpen}
-													onUpdateAssignees={setLocalAssignees}
-													onUpdateTask={onUpdateTask}
-													workspaceId={workspaceId || undefined}
-													trigger={
-														<div className="flex items-center gap-1.5 cursor-pointer group">
-															<div className="flex -space-x-2">
-																{localAssignees.map((assignee) => (
-																	<div
-																		key={assignee.userId}
-																		className="w-7 h-7 rounded-full bg-[#F59E0B] flex items-center justify-center text-[11px] font-bold text-black shadow-sm uppercase border-2 border-[#1E1F21]"
-																	>
-																		{assignee.user?.firstName?.[0] || "U"}
-																	</div>
-																))}
-															</div>
-															<button className="w-7 h-7 rounded-full bg-white/5 group-hover:bg-white/10 flex items-center justify-center text-white/50 group-hover:text-white transition-colors border border-dashed border-white/20 shrink-0">
-																<Plus className="w-3.5 h-3.5" />
-															</button>
-														</div>
-													}
-												/>
-											</div>
-										)}
-
-										{localLabels && localLabels.length > 0 && (
-											<div className="flex flex-col gap-1.5">
-												<h3 className="text-[11px] font-bold text-white/50 tracking-wide uppercase">
-													Labels
-												</h3>
-												<TaskLabelPopover
-													task={task}
-													isOpen={isMetaLabelPickerOpen}
-													setIsOpen={setIsMetaLabelPickerOpen}
-													onUpdateLabels={setLocalLabels}
-													onUpdateTask={onUpdateTask}
-													trigger={
-														<div className="flex flex-wrap items-center gap-1.5 cursor-pointer group">
-															{localLabels.slice(0, 1).map((label) => (
+								<div className="flex flex-wrap gap-8 mb-6 ml-1">
+									{localAssignees && localAssignees.length > 0 && !isInbox && (
+										<div className="flex flex-col gap-1.5">
+											<h3 className="text-[11px] font-bold text-white/50 tracking-wide uppercase">
+												Members
+											</h3>
+											<TaskMemberPopover
+												task={task}
+												workspaceMembers={workspaceMembers}
+												isOpen={isMetaMemberPickerOpen}
+												setIsOpen={setIsMetaMemberPickerOpen}
+												onUpdateAssignees={setLocalAssignees}
+												onUpdateTask={onUpdateTask}
+												workspaceId={workspaceId || undefined}
+												trigger={
+													<div className="flex items-center gap-1.5 cursor-pointer group">
+														<div className="flex -space-x-2">
+															{localAssignees.map((assignee) => (
 																<div
-																	key={label.id}
-																	className="w-10 h-8 rounded shrink-0 hover:opacity-80 transition-opacity"
-																	style={{ backgroundColor: label.color }}
-																	title={label.name}
-																/>
+																	key={assignee.userId}
+																	className="w-7 h-7 rounded-full bg-[#10b981] flex items-center justify-center text-[11px] font-bold text-black shadow-sm uppercase border-2 border-[#1E1F21]"
+																>
+																	{assignee.user?.firstName?.[0] || "U"}
+																</div>
 															))}
-															<button className="w-8 h-8 rounded bg-white/5 group-hover:bg-white/10 flex items-center justify-center text-white/50 group-hover:text-white transition-colors border border-dashed border-white/20 shrink-0">
-																<Plus className="w-3.5 h-3.5" />
-															</button>
 														</div>
-													}
-												/>
-											</div>
-										)}
-
-										{localDueDate && (
-											<div className="flex flex-col gap-1.5">
-												<h3 className="text-[11px] font-bold text-white/50 tracking-wide uppercase">
-													Due date
-												</h3>
-												<TaskDatePickerPopover
-													task={task}
-													isOpen={isMetaDatePickerOpen}
-													setIsOpen={setIsMetaDatePickerOpen}
-													onUpdateTask={onUpdateTask}
-													onDueDateChange={setLocalDueDate}
-													trigger={
-														<button className="flex items-center gap-2 bg-white/5 hover:bg-white/10 px-2.5 py-1 rounded border border-white/5 transition-colors cursor-pointer text-[12px] font-medium text-white/90 hover:text-white">
-															<span>{format(localDueDate, "MMM d, h:mm a")}</span>
-															<ChevronDown className="w-3.5 h-3.5 text-white/50" />
+														<button className="w-7 h-7 rounded-full bg-white/5 group-hover:bg-white/10 flex items-center justify-center text-white/50 group-hover:text-white transition-colors border border-dashed border-white/20 shrink-0">
+															<Plus className="w-3.5 h-3.5" />
 														</button>
-													}
-												/>
-											</div>
-										)}
-									</div>
-								)}
+													</div>
+												}
+											/>
+										</div>
+									)}
+
+									{localLabels && localLabels.length > 0 && (
+										<div className="flex flex-col gap-1.5">
+											<h3 className="text-[11px] font-bold text-white/50 tracking-wide uppercase">
+												Labels
+											</h3>
+											<TaskLabelPopover
+												task={task}
+												isOpen={isMetaLabelPickerOpen}
+												setIsOpen={setIsMetaLabelPickerOpen}
+												onUpdateLabels={setLocalLabels}
+												onUpdateTask={onUpdateTask}
+												trigger={
+													<div className="flex flex-wrap items-center gap-1.5 cursor-pointer group">
+														{localLabels.slice(0, 1).map((label) => (
+															<div
+																key={label.id}
+																className="w-10 h-8 rounded shrink-0 hover:opacity-80 transition-opacity"
+																style={{ backgroundColor: label.color }}
+																title={label.name}
+															/>
+														))}
+														<button className="w-8 h-8 rounded bg-white/5 group-hover:bg-white/10 flex items-center justify-center text-white/50 group-hover:text-white transition-colors border border-dashed border-white/20 shrink-0">
+															<Plus className="w-3.5 h-3.5" />
+														</button>
+													</div>
+												}
+											/>
+										</div>
+									)}
+
+									{localDueDate && (
+										<div className="flex flex-col gap-1.5">
+											<h3 className="text-[11px] font-bold text-white/50 tracking-wide uppercase">
+												Due date
+											</h3>
+											<TaskDatePickerPopover
+												task={task}
+												isOpen={isMetaDatePickerOpen}
+												setIsOpen={setIsMetaDatePickerOpen}
+												onUpdateTask={onUpdateTask}
+												onDueDateChange={setLocalDueDate}
+												trigger={
+													<button className="flex items-center gap-2 bg-white/5 hover:bg-white/10 px-2.5 py-1 rounded border border-white/5 transition-colors cursor-pointer text-[12px] font-medium text-white/90 hover:text-white">
+														<span>{format(localDueDate, "MMM d, h:mm a")}</span>
+														<ChevronDown className="w-3.5 h-3.5 text-white/50" />
+													</button>
+												}
+											/>
+										</div>
+									)}
+								</div>
+							)}
 
 							{/* Description Section */}
 							<div className="mb-10">
@@ -515,7 +514,7 @@ export default function TaskDetailModal({
 										<div className="w-px h-4 bg-white/10 mx-1" />
 										<ToolbarBtn
 											icon={
-												<div className="w-4 h-4 rounded-full border border-white/40 bg-gradient-to-br from-blue-400 via-purple-400 to-orange-400" />
+												<div className="w-4 h-4 rounded-full border border-white/40 bg-gradient-to-br from-blue-400 via-purple-400 to-emerald-400" />
 											}
 										/>
 										<div className="ml-auto flex items-center gap-2">
@@ -1035,7 +1034,7 @@ export function TaskMemberPopover({
 									className="w-full flex items-center justify-between p-2 rounded hover:bg-white/5 transition-colors text-left group"
 								>
 									<div className="flex items-center gap-3">
-										<div className="w-8 h-8 rounded-full bg-[#F59E0B] flex items-center justify-center text-[12px] font-bold text-black uppercase">
+										<div className="w-8 h-8 rounded-full bg-[#10b981] flex items-center justify-center text-[12px] font-bold text-black uppercase">
 											{initials}
 										</div>
 										<div className="flex flex-col">

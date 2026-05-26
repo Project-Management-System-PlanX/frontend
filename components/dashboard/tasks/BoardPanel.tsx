@@ -221,7 +221,7 @@ export function BoardPanel({
 						{[0, 1, 2].map((i) => (
 							<div
 								key={i}
-								className="w-8 h-8 rounded-full border-2 border-[#1E1E1E] bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-[10px] font-bold text-white shadow-lg"
+								className="w-8 h-8 rounded-full border-2 border-[#1E1E1E] bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-[10px] font-bold text-white shadow-lg"
 							>
 								{i === 0 ? "R" : i === 1 ? "A" : "JS"}
 							</div>

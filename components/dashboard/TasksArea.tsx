@@ -22,6 +22,7 @@ import {
 	Inbox as InboxIcon,
 	Layout,
 	LayoutDashboard,
+	Sparkles,
 	Trash2,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -41,14 +42,13 @@ import { usePersonalTasks } from "@/lib/hooks/usePersonalTasks";
 import type { Task } from "@/lib/types/models";
 import { cn } from "@/lib/utils";
 import { useWorkspaceStore } from "@/stores/workspace-store";
+import { AskAIPanel } from "./space/AskAIPanel";
 import { BoardPanel } from "./tasks/BoardPanel";
 // Modular Components
 import { InboxPanel } from "./tasks/InboxPanel";
 import { PlannerPanel } from "./tasks/PlannerPanel";
 import { SwitchBoardPanel } from "./tasks/SwitchBoardPanel";
 import { TaskCard } from "./tasks/TaskCard";
-import { AskAIPanel } from "./space/AskAIPanel";
-import { Sparkles } from "lucide-react";
 
 const dropAnimation: any = {
 	sideEffects: defaultDropAnimationSideEffects({
@@ -377,9 +377,9 @@ export function TasksArea() {
 			prev.includes(tabId)
 				? prev.filter((t) => t !== tabId)
 				: [...prev, tabId].sort((a, b) => {
-					const order = ["inbox", "planner", "board"];
-					return order.indexOf(a) - order.indexOf(b);
-				}),
+						const order = ["inbox", "planner", "board"];
+						return order.indexOf(a) - order.indexOf(b);
+					}),
 		);
 	};
 
@@ -582,13 +582,13 @@ export function TasksArea() {
 
 	const activeTask = activeId
 		? (() => {
-			const id = activeId.replace(/^(inbox-|board-|planner-)/, "");
-			return (
-				liveTasksMap[id] ||
-				inboxTasks.find((t) => t.id === id) ||
-				plannerTasks.find((t) => t.id === id)
-			);
-		})()
+				const id = activeId.replace(/^(inbox-|board-|planner-)/, "");
+				return (
+					liveTasksMap[id] ||
+					inboxTasks.find((t) => t.id === id) ||
+					plannerTasks.find((t) => t.id === id)
+				);
+			})()
 		: null;
 
 	// ─── Error State ─────────────────────────────────────────────
@@ -735,7 +735,14 @@ export function TasksArea() {
 
 			{/* Floating Bottom Nav (Oldest Design) */}
 			<div className="absolute left-1/2 -translate-x-1/2 bottom-8 z-40">
-				<div className="flex items-center gap-1 px-2 py-1.5 rounded-2xl border shadow-2xl shadow-black/40" style={{ background: "rgba(18,14,32,0.92)", borderColor: "rgba(139,92,246,0.2)", backdropFilter: "blur(20px)" }}>
+				<div
+					className="flex items-center gap-1 px-2 py-1.5 rounded-2xl border shadow-2xl shadow-black/40"
+					style={{
+						background: "rgba(18,14,32,0.92)",
+						borderColor: "rgba(139,92,246,0.2)",
+						backdropFilter: "blur(20px)",
+					}}
+				>
 					<NavButton
 						icon={<InboxIcon className="w-5 h-5" />}
 						label="Inbox"
@@ -891,7 +898,8 @@ export function TasksArea() {
 							initial={{ scale: 0.9, opacity: 0 }}
 							animate={{ scale: 1, opacity: 1 }}
 							exit={{ scale: 0.9, opacity: 0 }}
-							className="w-full max-w-md border border-purple-500/20 rounded-[32px] overflow-hidden shadow-2xl" style={{ background: "linear-gradient(160deg, #1E1535 0%, #2D1B5E 100%)" }}
+							className="w-full max-w-md border border-purple-500/20 rounded-[32px] overflow-hidden shadow-2xl"
+							style={{ background: "linear-gradient(160deg, #1E1535 0%, #2D1B5E 100%)" }}
 						>
 							<div className="p-8">
 								<div className="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center mb-6">

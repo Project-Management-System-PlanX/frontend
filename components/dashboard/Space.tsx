@@ -194,7 +194,7 @@ export function Space({ spaceId }: { spaceId: string }) {
 								/>
 							</div>
 							<div className="flex items-center -space-x-1.5 pl-2">
-								<div className="w-6 h-6 rounded-full bg-orange-500 text-white flex items-center justify-center text-[10px] font-bold ring-2 ring-white z-10 shadow-sm">
+								<div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-bold ring-2 ring-white z-10 shadow-sm">
 									R
 								</div>
 								<div className="w-6 h-6 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center ring-2 ring-white border border-slate-100">

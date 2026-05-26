@@ -49,7 +49,12 @@ export function useRealtimeTasks({
 		} catch (err) {
 			// Handle 403/404 errors gracefully (space may have been deleted)
 			const errorMessage = err instanceof Error ? err.message : String(err);
-			if (errorMessage.includes('403') || errorMessage.includes('404') || errorMessage.includes('not found') || errorMessage.includes('access')) {
+			if (
+				errorMessage.includes("403") ||
+				errorMessage.includes("404") ||
+				errorMessage.includes("not found") ||
+				errorMessage.includes("access")
+			) {
 				// Space doesn't exist or user doesn't have access - clear tasks but don't show error
 				setTasks([]);
 				setError(null);
@@ -60,6 +65,14 @@ export function useRealtimeTasks({
 			setIsLoading(false);
 		}
 	}, [spaceId, token]);
+
+	const fetchTasksTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+	const debouncedFetchTasks = useCallback(() => {
+		if (fetchTasksTimeoutRef.current) clearTimeout(fetchTasksTimeoutRef.current);
+		fetchTasksTimeoutRef.current = setTimeout(() => {
+			fetchTasks();
+		}, 150);
+	}, [fetchTasks]);
 
 	// ─── Initial fetch ───
 
@@ -110,7 +123,7 @@ export function useRealtimeTasks({
 						return prev;
 					});
 					// Trigger full refetch so we get the task with all includes
-					fetchTasks();
+					debouncedFetchTasks();
 				},
 			)
 			.on(
@@ -125,7 +138,7 @@ export function useRealtimeTasks({
 					const rowSpaceId = (row.spaceId ?? row.space_id) as string | undefined;
 					if (rowSpaceId && rowSpaceId !== spaceId) return;
 					// Trigger refetch so updated task has fresh relations
-					fetchTasks();
+					debouncedFetchTasks();
 				},
 			)
 			.on(
@@ -145,7 +158,7 @@ export function useRealtimeTasks({
 		return () => {
 			supabase.removeChannel(channel);
 		};
-	}, [enabled, spaceId, fetchTasks]);
+	}, [enabled, spaceId, debouncedFetchTasks]);
 
 	// ─── Optimistic Mutations ───
 

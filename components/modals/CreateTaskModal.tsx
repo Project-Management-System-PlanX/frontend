@@ -37,13 +37,13 @@ const WORK_TYPES = [
 	{ value: "TASK", label: "Task", icon: "T", color: "bg-green-500" },
 	{ value: "STORY", label: "Story", icon: "S", color: "bg-purple-500" },
 	{ value: "BUG", label: "Bug", icon: "B", color: "bg-red-500" },
-	{ value: "EPIC", label: "Epic", icon: "E", color: "bg-orange-500" },
+	{ value: "EPIC", label: "Epic", icon: "E", color: "bg-emerald-500" },
 	{ value: "SUBTASK", label: "Subtask", icon: "ST", color: "bg-slate-500" },
 ];
 
 const PRIORITIES = [
 	{ value: "CRITICAL", label: "Critical", color: "bg-red-500" },
-	{ value: "HIGH", label: "High", color: "bg-orange-500" },
+	{ value: "HIGH", label: "High", color: "bg-emerald-500" },
 	{ value: "MEDIUM", label: "Medium", color: "bg-blue-500" },
 	{ value: "LOW", label: "Low", color: "bg-slate-400" },
 	{ value: "NONE", label: "None", color: "bg-slate-200" },
@@ -194,11 +194,11 @@ export function CreateTaskModal({
 					defaultStatusId) as string;
 				await Promise.all(
 					subtaskTitles.map((title) =>
-								createTask({
-									spaceId,
-									statusId: subtaskStatusId,
-									title,
-								}),
+						createTask({
+							spaceId,
+							statusId: subtaskStatusId,
+							title,
+						}),
 					),
 				);
 			}
@@ -359,7 +359,7 @@ export function CreateTaskModal({
 										<SelectItem key={m.userId} value={m.userId}>
 											<span className="flex items-center gap-2">
 												<span
-													className={`w-5 h-5 rounded-full ${isMe ? "bg-orange-500" : "bg-slate-500"} text-white flex items-center justify-center text-[9px] font-bold`}
+													className={`w-5 h-5 rounded-full ${isMe ? "bg-emerald-500" : "bg-slate-500"} text-white flex items-center justify-center text-[9px] font-bold`}
 												>
 													{initials}
 												</span>
@@ -591,7 +591,7 @@ export function CreateTaskModal({
 					<div className="grid gap-1.5">
 						<Label className="text-sm font-medium">Reporter</Label>
 						<div className="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-md text-sm">
-							<div className="w-5 h-5 rounded-full bg-orange-500 text-white flex items-center justify-center text-[9px] font-bold">
+							<div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] font-bold">
 								{(() => {
 									// biome-ignore lint/suspicious/noExplicitAny: members API typing
 									const m = (members as any[])?.find(

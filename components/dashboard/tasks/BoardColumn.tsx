@@ -208,7 +208,8 @@ export const BoardColumn = memo(
 									onClick={() => setIsAddingTask(true)}
 									className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-black/20 text-[14px] font-medium text-white/70 w-full transition-colors mt-1 group"
 								>
-									<Plus className="w-4 h-4 transition-transform group-hover:bg-white/10 rounded" /> Add a card
+									<Plus className="w-4 h-4 transition-transform group-hover:bg-white/10 rounded" />{" "}
+									Add a card
 								</button>
 							)}
 						</div>

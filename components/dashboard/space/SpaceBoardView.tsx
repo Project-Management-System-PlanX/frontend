@@ -21,7 +21,7 @@ import type { Task, TaskStatus } from "@/lib/types/models";
 
 const PRIORITY_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
 	CRITICAL: { label: "Critical", color: "text-red-700", bg: "bg-red-50 border-red-200" },
-	HIGH: { label: "High", color: "text-orange-700", bg: "bg-orange-50 border-orange-200" },
+	HIGH: { label: "High", color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200" },
 	MEDIUM: { label: "Medium", color: "text-blue-700", bg: "bg-blue-50 border-blue-200" },
 	LOW: { label: "Low", color: "text-slate-600", bg: "bg-slate-50 border-slate-200" },
 	NONE: { label: "", color: "", bg: "" },
@@ -103,7 +103,7 @@ export function SpaceBoardView({ spaceId }: { spaceId: string }) {
 		fire(0.25, {
 			spread: 26,
 			startVelocity: 55,
-			colors: ["#0B6E4F", "#F59E0B"],
+			colors: ["#0B6E4F", "#10b981"],
 			shapes: ["circle"],
 		});
 		fire(0.2, { spread: 60, colors: ["#3B82F6", "#EF4444"], shapes: ["square"] });

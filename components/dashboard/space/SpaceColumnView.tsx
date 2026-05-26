@@ -270,7 +270,7 @@ export function SpaceColumnView() {
 						</div>
 
 						<div className="flex gap-3">
-							<div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 text-xs font-bold border border-orange-200 shrink-0">
+							<div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 text-xs font-bold border border-emerald-200 shrink-0">
 								RK
 							</div>
 							<div className="flex-1">
@@ -380,8 +380,8 @@ export function SpaceColumnView() {
 							<MetaField label="Priority">
 								<div className="flex items-center gap-2">
 									<div className="flex flex-col gap-[2px]">
-										<div className="w-3 h-[2px] bg-orange-400" />
-										<div className="w-3 h-[2px] bg-orange-400" />
+										<div className="w-3 h-[2px] bg-emerald-400" />
+										<div className="w-3 h-[2px] bg-emerald-400" />
 									</div>
 									<span className="text-[13px] text-slate-700 font-medium">= Medium</span>
 								</div>

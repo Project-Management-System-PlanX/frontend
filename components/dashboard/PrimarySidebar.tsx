@@ -17,6 +17,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
@@ -24,7 +25,6 @@ import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app-store";
 import { useUnreadStore } from "@/stores/unread-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
-import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 const SettingsModal = dynamic(
 	() => import("@/components/modals/SettingsModal").then((mod) => mod.SettingsModal),
@@ -415,8 +415,7 @@ function PrimaryNavItem({
 					sideOffset={12}
 					className="bg-gray-800/90 backdrop-blur-md border-none text-white text-[11px] font-medium tracking-wide px-3 py-1.5 rounded-lg shadow-xl"
 					style={{
-						fontFamily:
-							"'-apple-system', 'BlinkMacSystemFont', 'SF Pro Text', 'Inter', sans-serif",
+						fontFamily: "'-apple-system', 'BlinkMacSystemFont', 'SF Pro Text', 'Inter', sans-serif",
 					}}
 				>
 					{label}

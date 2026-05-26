@@ -1,10 +1,10 @@
-import PortfolioNavbar from '@/components/PortfolioNavbar'
-import BankingScaleHero from '@/components/BankingScaleHero'
-import FeaturesSection from '@/components/FeatureSection'
-import ServicesSection from '@/components/ServiceSection'
-import IntegrationCarousel from '@/components/IntegrationCarousel'
-import StatsAndCTA from '@/components/StatsAndCTA'
-import Footer from '@/components/Footer'
+import BankingScaleHero from "@/components/BankingScaleHero";
+import FeaturesSection from "@/components/FeatureSection";
+import Footer from "@/components/Footer";
+import IntegrationCarousel from "@/components/IntegrationCarousel";
+import PortfolioNavbar from "@/components/PortfolioNavbar";
+import ServicesSection from "@/components/ServiceSection";
+import StatsAndCTA from "@/components/StatsAndCTA";
 
 export default function Page() {
 	return (
@@ -17,5 +17,5 @@ export default function Page() {
 			<StatsAndCTA />
 			<Footer />
 		</>
-	)
+	);
 }

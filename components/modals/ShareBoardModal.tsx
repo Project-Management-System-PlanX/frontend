@@ -46,7 +46,9 @@ export function ShareBoardModal({ isOpen, onClose, boardName }: ShareBoardModalP
 				<div className="px-8 pt-8 pb-6 flex items-center justify-between">
 					<div>
 						<h2 className="text-[26px] font-black text-white tracking-tight">Share board</h2>
-						<p className="text-sm text-white/60 mt-2">Invite people to <span className="font-semibold text-white">{boardName}</span>.</p>
+						<p className="text-sm text-white/60 mt-2">
+							Invite people to <span className="font-semibold text-white">{boardName}</span>.
+						</p>
 					</div>
 					<button
 						onClick={onClose}
@@ -97,8 +99,12 @@ export function ShareBoardModal({ isOpen, onClose, boardName }: ShareBoardModalP
 										<LinkIcon className="w-5 h-5 text-white/60" />
 									</div>
 									<div>
-										<p className="text-[15px] font-bold text-white">Anyone with the link can join as a member</p>
-										<p className="text-[13px] text-white/40 mt-1">Anyone with the link can find and join this board.</p>
+										<p className="text-[15px] font-bold text-white">
+											Anyone with the link can join as a member
+										</p>
+										<p className="text-[13px] text-white/40 mt-1">
+											Anyone with the link can find and join this board.
+										</p>
 									</div>
 								</div>
 								<div className="flex flex-wrap items-center gap-3">
@@ -122,7 +128,7 @@ export function ShareBoardModal({ isOpen, onClose, boardName }: ShareBoardModalP
 											<RoleItem
 												title="Can join as member"
 												description="Board members can view and edit cards, lists, and board settings."
-											active
+												active
 											/>
 											<RoleItem
 												title="Can join as observer"
@@ -140,13 +146,21 @@ export function ShareBoardModal({ isOpen, onClose, boardName }: ShareBoardModalP
 									</div>
 									<div>
 										<p className="text-[14px] font-bold text-white">Board visibility</p>
-										<p className="text-[12px] text-white/40">Workspace members can see and edit this board.</p>
+										<p className="text-[12px] text-white/40">
+											Workspace members can see and edit this board.
+										</p>
 									</div>
 								</div>
 								<Popover>
 									<PopoverTrigger asChild>
 										<button className="mt-4 w-full flex items-center justify-between gap-2 px-4 py-3 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/80 transition-all font-bold text-[14px]">
-											<span>{visibility === "workspace" ? "Workspace" : visibility === "private" ? "Private" : "Public"}</span>
+											<span>
+												{visibility === "workspace"
+													? "Workspace"
+													: visibility === "private"
+														? "Private"
+														: "Public"}
+											</span>
 											<ChevronDown className="w-4 h-4" />
 										</button>
 									</PopoverTrigger>
@@ -156,19 +170,19 @@ export function ShareBoardModal({ isOpen, onClose, boardName }: ShareBoardModalP
 											title="Private"
 											description="Only board members and workspace admins can see and edit."
 											active={visibility === "private"}
-											/>
+										/>
 										<VisibilityItem
 											icon={<Users2 className="w-4 h-4 text-blue-400" />}
 											title="Workspace"
 											description="All members of the workspace can see and edit."
 											active={visibility === "workspace"}
-											/>
+										/>
 										<VisibilityItem
 											icon={<Globe className="w-4 h-4 text-green-400" />}
 											title="Public"
 											description="Anyone on the internet can see this board. Only members can edit."
 											active={visibility === "public"}
-											/>
+										/>
 									</PopoverContent>
 								</Popover>
 							</div>
@@ -176,15 +190,21 @@ export function ShareBoardModal({ isOpen, onClose, boardName }: ShareBoardModalP
 						<div className="rounded-[28px] bg-white/[0.03] border border-white/10 p-5">
 							<div className="flex items-center justify-between gap-4 pb-4 border-b border-white/10">
 								<div>
-									<p className="text-[13px] text-white/40 uppercase tracking-[0.24em] font-bold">Board members</p>
-									<p className="text-[22px] font-black text-white leading-tight">{members.length}</p>
+									<p className="text-[13px] text-white/40 uppercase tracking-[0.24em] font-bold">
+										Board members
+									</p>
+									<p className="text-[22px] font-black text-white leading-tight">
+										{members.length}
+									</p>
 								</div>
 								<div className="flex items-center gap-2">
 									<button
 										onClick={() => setActiveTab("members")}
 										className={cn(
 											"px-3 py-2 rounded-2xl text-[13px] font-bold transition-all",
-											activeTab === "members" ? "bg-white/10 text-white" : "text-white/40 hover:text-white",
+											activeTab === "members"
+												? "bg-white/10 text-white"
+												: "text-white/40 hover:text-white",
 										)}
 									>
 										Members
@@ -193,7 +213,9 @@ export function ShareBoardModal({ isOpen, onClose, boardName }: ShareBoardModalP
 										onClick={() => setActiveTab("requests")}
 										className={cn(
 											"px-3 py-2 rounded-2xl text-[13px] font-bold transition-all",
-											activeTab === "requests" ? "bg-white/10 text-white" : "text-white/40 hover:text-white",
+											activeTab === "requests"
+												? "bg-white/10 text-white"
+												: "text-white/40 hover:text-white",
 										)}
 									>
 										Requests
@@ -253,7 +275,7 @@ function MemberItem({
 	return (
 		<div className="flex items-center justify-between p-3 rounded-2xl hover:bg-white/5 transition-colors group">
 			<div className="flex items-center gap-4">
-				<div className="w-12 h-12 rounded-[18px] bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-black text-[18px] shadow-lg shadow-orange-500/10">
+				<div className="w-12 h-12 rounded-[18px] bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-black text-[18px] shadow-lg shadow-emerald-500/10">
 					{initial}
 				</div>
 				<div>

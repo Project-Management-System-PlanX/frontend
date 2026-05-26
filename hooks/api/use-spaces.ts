@@ -110,7 +110,8 @@ export const useDeleteTaskStatus = (token?: string) => {
 export const useAddDefaultStatusesToAllSpaces = (token?: string) => {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: (workspaceId: string) => spacesService.addDefaultStatusesToAllSpaces(workspaceId, token),
+		mutationFn: (workspaceId: string) =>
+			spacesService.addDefaultStatusesToAllSpaces(workspaceId, token),
 		onSuccess: (_data) => {
 			queryClient.invalidateQueries({ queryKey: spaceKeys.lists() });
 		},

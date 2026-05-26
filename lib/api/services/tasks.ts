@@ -139,7 +139,7 @@ export const taskService = {
 	// ─── Bulk ───
 
 	createBulk: async (data: { tasks: CreateTaskPayload[] }, token?: string) =>
-		apiClient.post<Task[]>("/tasks/bulk", data, { token }),
+		apiClient.post<Task[]>("/tasks/bulk-create", data, { token }),
 
 	// ─── AI ───
 

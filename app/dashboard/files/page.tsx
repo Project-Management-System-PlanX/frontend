@@ -1,5 +1,5 @@
 "use client";
-import { Suspense } from 'react';
+import { Suspense } from "react";
 import { FilesArea } from "@/components/dashboard/FilesArea";
 
 export default function FilesPage() {

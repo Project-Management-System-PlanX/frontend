@@ -23,7 +23,7 @@ import type { Task } from "@/lib/types/models";
 /* ── Priority colour config ── */
 const PRIORITY_STYLE: Record<string, { bg: string; text: string; dot: string }> = {
 	CRITICAL: { bg: "bg-red-50", text: "text-red-700", dot: "bg-red-500" },
-	HIGH: { bg: "bg-orange-50", text: "text-orange-700", dot: "bg-orange-500" },
+	HIGH: { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500" },
 	MEDIUM: { bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-400" },
 	LOW: { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500" },
 	NONE: { bg: "bg-slate-50", text: "text-slate-400", dot: "bg-slate-300" },
@@ -299,7 +299,7 @@ function TaskRow({ task, prefix, onClick }: { task: Task; prefix: string; onClic
 
 			{/* Reporter */}
 			<div className="px-3 py-2.5 flex items-center gap-2 min-w-0">
-				<div className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center text-white shrink-0">
+				<div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-white shrink-0">
 					<span className="text-[10px] font-bold">{getMember(task.reporterId).initials}</span>
 				</div>
 				<span className="text-[13px] text-slate-600 truncate">

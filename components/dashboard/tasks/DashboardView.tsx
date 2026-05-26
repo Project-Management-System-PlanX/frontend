@@ -117,8 +117,8 @@ export function DashboardView({ tasks, columns, columnOrder }: DashboardViewProp
 							<YAxis stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
 							<Tooltip
 								contentStyle={{
-										backgroundColor: "#3d3d54",
-										border: "1px solid #505060",
+									backgroundColor: "#3d3d54",
+									border: "1px solid #505060",
 									borderRadius: "8px",
 								}}
 								itemStyle={{ color: "#fff" }}
@@ -132,15 +132,21 @@ export function DashboardView({ tasks, columns, columnOrder }: DashboardViewProp
 				<ChartCard title="Cards per due date">
 					<ResponsiveContainer width="100%" height={300}>
 						<BarChart data={cardsPerDueDateData} barCategoryGap="20%">
-						<CartesianGrid strokeDasharray="3 3" stroke="#505060" vertical={false} />
-						<XAxis dataKey="name" stroke="#a0a0b0" fontSize={11} tickLine={false} axisLine={false} />
-						<YAxis stroke="#a0a0b0" fontSize={12} tickLine={false} axisLine={false} />
+							<CartesianGrid strokeDasharray="3 3" stroke="#505060" vertical={false} />
+							<XAxis
+								dataKey="name"
+								stroke="#a0a0b0"
+								fontSize={11}
+								tickLine={false}
+								axisLine={false}
+							/>
+							<YAxis stroke="#a0a0b0" fontSize={12} tickLine={false} axisLine={false} />
 							<Tooltip
-							contentStyle={{
-								backgroundColor: "#3d3d54",
-								border: "1px solid #505060",
-								borderRadius: "8px",
-							}}
+								contentStyle={{
+									backgroundColor: "#3d3d54",
+									border: "1px solid #505060",
+									borderRadius: "8px",
+								}}
 								itemStyle={{ color: "#fff" }}
 							/>
 							<Bar dataKey="count" radius={[4, 4, 0, 0]}>
@@ -266,7 +272,9 @@ function ChartCard({
 	className?: string;
 }) {
 	return (
-			<div className={cn("bg-[#3d3d54] rounded-2xl p-6 border border-[#505060] shadow-xl", className)}>
+		<div
+			className={cn("bg-[#3d3d54] rounded-2xl p-6 border border-[#505060] shadow-xl", className)}
+		>
 			<div className="flex items-center justify-between mb-8">
 				<h3 className="text-[16px] font-bold text-white tracking-tight">{title}</h3>
 				<button className="p-1 hover:bg-white/5 rounded-md transition-colors text-white/40 hover:text-white">

@@ -40,7 +40,7 @@ function getUserInitial(user: FileMessage["user"]): string {
 
 function getRandomGradient(char: string) {
 	const gradients = [
-		"linear-gradient(135deg,#f59e0b,#ef4444)",
+		"linear-gradient(135deg,#10b981,#ef4444)",
 		"linear-gradient(135deg,#6366f1,#8b5cf6)",
 		"linear-gradient(135deg,#ec4899,#ef4444)",
 		"linear-gradient(135deg,#3b82f6,#6366f1)",
@@ -410,7 +410,7 @@ export function FilesArea() {
 									if (isImg)
 										iconStyle = { bg: "rgba(34,197,94,.1)", stroke: "#22c55e" }; // green
 									else if (isPdf)
-										iconStyle = { bg: "rgba(245,158,11,.1)", stroke: "#f59e0b" }; // orange
+										iconStyle = { bg: "rgba(16,185,129,.1)", stroke: "#10b981" }; // orange
 									else if (isDoc) iconStyle = { bg: "rgba(99,102,241,.1)", stroke: "#6366f1" }; // indigo
 
 									return (
@@ -544,7 +544,7 @@ export function FilesArea() {
 
 								let iconStyle = { bg: "rgba(59,130,246,.1)", stroke: "#3b82f6" };
 								if (isImg) iconStyle = { bg: "rgba(34,197,94,.1)", stroke: "#22c55e" };
-								else if (isPdf) iconStyle = { bg: "rgba(245,158,11,.1)", stroke: "#f59e0b" };
+								else if (isPdf) iconStyle = { bg: "rgba(16,185,129,.1)", stroke: "#10b981" };
 								else if (isDoc) iconStyle = { bg: "rgba(99,102,241,.1)", stroke: "#6366f1" };
 
 								return (

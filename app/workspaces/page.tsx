@@ -423,7 +423,7 @@ export default function WorkspacesPage() {
 											label: "Members",
 											value: String(totalMembers),
 											color: "#FF9500",
-											bg: "bg-orange-50",
+											bg: "bg-emerald-50",
 										},
 									].map((item) => (
 										<div key={item.label} className="flex items-center gap-3">
