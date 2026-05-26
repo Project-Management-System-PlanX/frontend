@@ -92,15 +92,25 @@ export function useRealtimeTasks({
 					event: "INSERT",
 					schema: "public",
 					table: "tasks",
-					filter: `spaceId=eq.${spaceId}`,
+					// NOTE: No column filter here — Supabase Realtime doesn't support
+					// camelCase column names (stored as quoted identifiers in PG).
+					// We filter by spaceId in the callback instead.
 				},
 				(payload) => {
-					const newTask = payload.new as Task;
+					const row = payload.new as Record<string, unknown>;
+					// Filter: only accept tasks that belong to this space
+					const rowSpaceId = (row.spaceId ?? row.space_id) as string | undefined;
+					if (rowSpaceId && rowSpaceId !== spaceId) return;
+					const newTask = row as unknown as Task;
 					setTasks((prev) => {
-						// Avoid duplicates from optimistic updates and ensure spaceId matches
-						if (prev.some((t) => t.id === newTask.id) || newTask.spaceId !== spaceId) return prev;
-						return [...prev, newTask];
+						if (prev.some((t) => t.id === newTask.id)) return prev;
+						// New task from Realtime won't have relations — trigger a refetch
+						// to get the full task with assignees, labels, etc.
+						setTasks(prev); // no-op to avoid double update
+						return prev;
 					});
+					// Trigger full refetch so we get the task with all includes
+					fetchTasks();
 				},
 			)
 			.on(
@@ -109,11 +119,13 @@ export function useRealtimeTasks({
 					event: "UPDATE",
 					schema: "public",
 					table: "tasks",
-					filter: `spaceId=eq.${spaceId}`,
 				},
 				(payload) => {
-					const updated = payload.new as Task;
-					setTasks((prev) => prev.map((t) => (t.id === updated.id ? { ...t, ...updated } : t)));
+					const row = payload.new as Record<string, unknown>;
+					const rowSpaceId = (row.spaceId ?? row.space_id) as string | undefined;
+					if (rowSpaceId && rowSpaceId !== spaceId) return;
+					// Trigger refetch so updated task has fresh relations
+					fetchTasks();
 				},
 			)
 			.on(
@@ -122,7 +134,6 @@ export function useRealtimeTasks({
 					event: "DELETE",
 					schema: "public",
 					table: "tasks",
-					filter: `spaceId=eq.${spaceId}`,
 				},
 				(payload) => {
 					const deleted = payload.old as { id: string };
@@ -134,7 +145,7 @@ export function useRealtimeTasks({
 		return () => {
 			supabase.removeChannel(channel);
 		};
-	}, [enabled, spaceId]);
+	}, [enabled, spaceId, fetchTasks]);
 
 	// ─── Optimistic Mutations ───
 

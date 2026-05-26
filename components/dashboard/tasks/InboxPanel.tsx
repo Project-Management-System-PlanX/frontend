@@ -126,10 +126,10 @@ export function InboxPanel({
 		setDueRange(null);
 	};
 
-	const backgrounds = ["#5C2A10", "#6B3A1F", "#7A3A1E", "#8B4A2A", "#4A2010", "#3D1808", "#9A5030"];
+	const backgrounds = ["#3d3d54", "#4a4a62", "#505060", "#5a5a70", "#656578", "#707080", "#7a7a8c"];
 
 	return (
-		<div className="h-full flex relative overflow-hidden" style={{ background: inboxColor }}>
+		<div className="h-full flex relative overflow-hidden" style={{ backgroundColor: inboxColor }}>
 			{/* Main Inbox Content */}
 			<div
 				className={cn(
@@ -137,7 +137,7 @@ export function InboxPanel({
 					showFilter && "mr-[320px]",
 				)}
 			>
-				<div className="px-5 py-4 flex items-center justify-between border-b" style={{ background: "rgba(42,18,8,0.5)", borderColor: "rgba(255,255,255,0.06)" }}>
+				<div className="px-5 py-4 flex items-center justify-between border-b border-white/5 bg-black/20">
 					<div className="flex items-center gap-2">
 						<InboxIcon className="w-5.5 h-5.5 text-white/90" />
 						<span className="text-[18px] font-bold text-white">Inbox</span>
@@ -284,42 +284,39 @@ export function InboxPanel({
 				<div className="p-4 flex-1 overflow-auto custom-scrollbar">
 					<div className="space-y-3 min-w-fit">
 						{isAdding ? (
-							<div className="mb-3 animate-in fade-in slide-in-from-top-1 duration-200">
-								<div className="bg-[#22272B] rounded-lg shadow-sm border border-transparent px-3 py-2.5 mb-2">
-									<input
-										className="w-full bg-transparent border-none outline-none text-white/90 text-[14px] placeholder:text-white/40"
-										placeholder="Enter a title for this card..."
-										value={newTaskTitle}
-										onChange={(e) => setNewTaskTitle(e.target.value)}
-										onKeyDown={(e) => {
-											if (e.key === "Enter") handleAdd();
-											if (e.key === "Escape") setIsAdding(false);
-										}}
-										autoFocus
-									/>
-								</div>
-								<div className="flex items-center gap-2 mt-1">
+							<div className="rounded-xl py-2 px-3 shadow-2xl bg-black/40 border border-white/10 mb-4 animate-in fade-in slide-in-from-top-1 duration-200">
+								<input
+									className="w-full bg-transparent border-none outline-none py-1.5 text-white font-bold text-[16px] placeholder:text-white/20"
+									placeholder="What's on your mind?"
+									value={newTaskTitle}
+									onChange={(e) => setNewTaskTitle(e.target.value)}
+									onKeyDown={(e) => {
+										if (e.key === "Enter") handleAdd();
+										if (e.key === "Escape") setIsAdding(false);
+									}}
+								/>
+								<div className="flex items-center gap-2 mt-1 pb-1">
 									<button
 										onClick={handleAdd}
-										className="px-3 py-1.5 bg-[#579DFF] hover:bg-[#85B8FF] text-[#1D2125] rounded-[3px] text-[14px] font-semibold transition-colors"
+										className="px-3 py-1 bg-white/10 hover:bg-white/20 text-white rounded-md text-[12px] font-bold"
 									>
-										Add card
+										Add Task
 									</button>
 									<button
 										onClick={() => setIsAdding(false)}
-										className="p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded transition-colors"
+										className="text-white/40 hover:text-white"
 									>
-										<X className="w-5 h-5" />
+										<Plus className="w-4 h-4 rotate-45" />
 									</button>
 								</div>
 							</div>
 						) : (
 							<div
 								onClick={() => setIsAdding(true)}
-								className="rounded-lg py-2 px-3 transition-colors hover:bg-black/20 cursor-pointer mb-3 group border border-transparent"
+								className="rounded-xl py-2.5 px-4.5 shadow-2xl bg-black/20 transition-all hover:bg-black/30 cursor-text mb-4 group border border-transparent hover:border-white/5"
 							>
-								<span className="text-[14px] font-medium text-white/70 flex items-center gap-2">
-									<Plus className="w-4 h-4 transition-transform group-hover:bg-white/10 rounded" />
+								<span className="text-[16px] text-white/40 flex items-center gap-2">
+									<Plus className="w-4 h-4 transition-transform group-hover:rotate-90" />
 									Add a card
 								</span>
 							</div>
@@ -364,10 +361,9 @@ export function InboxPanel({
 			{/* Filter Panel */}
 			<div
 				className={cn(
-					"absolute top-0 right-0 bottom-0 w-[320px] shadow-2xl transition-transform duration-300 z-50 overflow-y-auto custom-scrollbar flex flex-col",
+					"absolute top-0 right-0 bottom-0 w-[320px] bg-[#3d3d54] border-l border-[#505060] shadow-2xl transition-transform duration-300 z-50 overflow-y-auto custom-scrollbar flex flex-col",
 					showFilter ? "translate-x-0" : "translate-x-full",
 				)}
-				style={{ background: "rgba(42,18,8,0.97)", borderLeft: "1px solid rgba(255,140,80,0.12)" }}
 			>
 				<div className="p-6 flex items-center justify-between border-b border-white/5">
 					<h3 className="text-[16px] font-bold text-white">Filter</h3>
