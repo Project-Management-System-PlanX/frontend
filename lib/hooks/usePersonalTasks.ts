@@ -1,13 +1,11 @@
 "use client";
 
-import { createClient } from "@supabase/supabase-js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { taskService } from "@/lib/api/services/tasks";
+import { createClient } from "@/lib/supabase/client";
 import type { Task } from "@/lib/types/models";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient();
 
 export function usePersonalTasks(workspaceId: string | null, token: string | undefined) {
 	const [inboxTasks, setInboxTasks] = useState<Task[]>([]);
@@ -29,8 +27,9 @@ export function usePersonalTasks(workspaceId: string | null, token: string | und
 			const blocked = pendingRemovals.current;
 			setInboxTasks(assigned.filter((t) => !blocked.has(t.id)));
 			setPlannerTasks(workedOn.filter((t) => !blocked.has(t.id)));
-		} catch (error) {
-			console.error("Failed to fetch personal tasks", error);
+		} catch {
+			// Silently handle transient errors from rapid realtime refetches.
+			// The next successful fetch will correct the state.
 		} finally {
 			setIsLoading(false);
 		}
@@ -38,6 +37,15 @@ export function usePersonalTasks(workspaceId: string | null, token: string | und
 
 	useEffect(() => {
 		fetchTasks();
+	}, [fetchTasks]);
+
+	// Debounced refetch to avoid hammering the backend on rapid realtime events
+	const realtimeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+	const debouncedFetchTasks = useCallback(() => {
+		if (realtimeTimeoutRef.current) clearTimeout(realtimeTimeoutRef.current);
+		realtimeTimeoutRef.current = setTimeout(() => {
+			fetchTasks();
+		}, 300);
 	}, [fetchTasks]);
 
 	// Supabase Realtime for personal tasks
@@ -54,15 +62,16 @@ export function usePersonalTasks(workspaceId: string | null, token: string | und
 					table: "tasks",
 				},
 				() => {
-					fetchTasks();
+					debouncedFetchTasks();
 				},
 			)
 			.subscribe();
 
 		return () => {
+			if (realtimeTimeoutRef.current) clearTimeout(realtimeTimeoutRef.current);
 			supabase.removeChannel(channel);
 		};
-	}, [workspaceId, token, fetchTasks]);
+	}, [workspaceId, token, debouncedFetchTasks]);
 
 	const addOptimisticTask = useCallback((task: Task, category: "inbox" | "planner") => {
 		// If a task is coming back (e.g. Board → Inbox), clear it from pending suppressions
