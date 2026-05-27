@@ -62,6 +62,7 @@ interface ChatSummaryProps {
 	onClose?: () => void;
 	onSummarize?: (result: SummaryResult) => void;
 	onSummarizeUnread?: () => Promise<SummaryResult>;
+	onSummarizeRange?: (range: "unread" | "10min" | "1hour" | "today") => Promise<SummaryResult>;
 }
 
 export function ChatSummary({
@@ -72,6 +73,7 @@ export function ChatSummary({
 	onClose,
 	onSummarize,
 	onSummarizeUnread,
+	onSummarizeRange,
 }: ChatSummaryProps) {
 	const [showSummary, setShowSummary] = useState(false);
 	const [summaryType, setSummaryType] = useState<keyof typeof DUMMY_SUMMARIES | null>(null);
@@ -120,7 +122,11 @@ export function ChatSummary({
 			setErrorMessage(null);
 
 			try {
-				if (type === "unread" && onSummarizeUnread) {
+				if (onSummarizeRange) {
+					const result = await onSummarizeRange(type);
+					setSummaryLines(result.lines);
+					onSummarize?.(result);
+				} else if (type === "unread" && onSummarizeUnread) {
 					const result = await onSummarizeUnread();
 					setSummaryLines(result.lines);
 					onSummarize?.(result);
@@ -139,7 +145,7 @@ export function ChatSummary({
 				setIsLoading(false);
 			}
 		},
-		[buildSummary, onSummarize, onSummarizeUnread, unreadItems],
+		[buildSummary, onSummarize, onSummarizeUnread, onSummarizeRange, unreadItems],
 	);
 
 	const getSummaryTitle = () => {
@@ -324,9 +330,7 @@ export function ChatSummary({
 
 							{/* Footer */}
 							<div className="mt-4 pt-3 border-t border-gray-100">
-								<p className="text-[10px] text-gray-400 italic">
-									This is a placeholder summary — AI integration coming soon
-								</p>
+								<p className="text-[10px] text-gray-400 italic">AI-generated realtime summary</p>
 							</div>
 
 							{/* Try other time ranges */}
