@@ -42,6 +42,7 @@ const MentionNode = Node.create({
 });
 
 import DOMPurify from "dompurify";
+import { motion } from "framer-motion";
 import {
 	Bold,
 	Edit2,
@@ -109,18 +110,9 @@ const formatMessageTime = (timestamp: string) => {
 };
 
 const AI_SUMMARY_MARKER = "<!--ai-summary-->";
-const AI_PROMPT_MARKER = "<!--ai-summary-prompt-->";
 
 const isAiSummaryContent = (content?: string | null) =>
 	Boolean(content?.includes(AI_SUMMARY_MARKER));
-
-const buildAiPromptContent = (unreadCount: number, channelLabel: string) => {
-	const messageLabel = unreadCount === 1 ? "message" : "messages";
-	return `${AI_PROMPT_MARKER}
-<p><strong>AI Assistant</strong></p>
-<p>You have <strong>${unreadCount}</strong> unread ${messageLabel} in <strong>${channelLabel}</strong>.</p>
-<p>Want me to summarize them?</p>`;
-};
 
 const getNameFromEmail = (email: string) => {
 	const local = email.split("@")[0] || "";
@@ -168,6 +160,8 @@ export function ChatArea({
 	const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
 	const [isRecording, setIsRecording] = useState(false);
 	const [showSummarizer, setShowSummarizer] = useState(false);
+	const [showAiPrompt, setShowAiPrompt] = useState(false);
+	const [isSummarizing, setIsSummarizing] = useState(false);
 	const [, forceUpdate] = useState({});
 	const hasPromptedSummaryRef = useRef(false);
 	const hasAutoSummarizedRef = useRef(false);
@@ -179,6 +173,8 @@ export function ChatArea({
 		hasAutoSummarizedRef.current = false;
 		setShowSummarizer(false);
 		setInitialUnreadSnapshot(0);
+		setShowAiPrompt(false);
+		setIsSummarizing(false);
 	}, [channelName]);
 
 	const scrollRef = useRef<HTMLDivElement>(null);
@@ -198,16 +194,8 @@ export function ChatArea({
 	const displayName = isDM && dmDisplayName ? dmDisplayName : channel ? channel.name : channelName;
 
 	// Use real Supabase messages for this channel
-	const {
-		messages,
-		isLoading,
-		error,
-		sendMessage,
-		deleteMessage,
-		editMessage,
-		togglePinMessage,
-		addLocalMessage,
-	} = useMessages(channelName);
+	const { messages, isLoading, error, sendMessage, deleteMessage, editMessage, togglePinMessage } =
+		useMessages(channelName);
 
 	const _handleToggleStar = async () => {
 		if (!channel || !token) return;
@@ -258,6 +246,32 @@ export function ChatArea({
 	const effectiveUnreadCount = Math.max(channelUnreadCount, computedUnreadCount);
 	const promptUnreadCount = Math.max(effectiveUnreadCount, initialUnreadSnapshot);
 
+	const displayMessages = useMemo(() => {
+		if (!showAiPrompt || promptUnreadCount === 0) return messages;
+
+		const promptMsg: SupabaseMessage = {
+			id: `ai-summary-prompt-${channelName}`,
+			channelId: channelName,
+			channel_id: channelName,
+			userId: "ai-summary-prompt",
+			user_id: "ai-summary-prompt",
+			content: "",
+			createdAt: new Date().toISOString(),
+			created_at: new Date().toISOString(),
+			users: {
+				firstName: "AI",
+				lastName: "Assistant",
+				username: "AI Assistant",
+				imageUrl: null,
+				email: "ai-assistant@system.local",
+			},
+		} as unknown as SupabaseMessage;
+
+		if (messages.some((m) => m.id === promptMsg.id)) return messages;
+
+		return [...messages, promptMsg];
+	}, [messages, showAiPrompt, promptUnreadCount, channelName]);
+
 	useEffect(() => {
 		if (channelUnreadCount > 0) {
 			setInitialUnreadSnapshot((prev) => (prev > 0 ? prev : channelUnreadCount));
@@ -271,30 +285,11 @@ export function ChatArea({
 	useEffect(() => {
 		if (hasPromptedSummaryRef.current) return;
 		if (promptUnreadCount > 0) {
-			if (addLocalMessage) {
-				const createdAt = new Date().toISOString();
-				addLocalMessage({
-					id: `ai-summary-prompt-${channelName}`,
-					channelId: channelName,
-					channel_id: channelName,
-					userId: "ai-summary",
-					user_id: "ai-summary",
-					content: buildAiPromptContent(promptUnreadCount, displayName),
-					createdAt,
-					created_at: createdAt,
-					users: {
-						firstName: "AI",
-						lastName: "Assistant",
-						username: "AI Assistant",
-						imageUrl: null,
-						email: "ai-assistant@system.local",
-					},
-				});
-			}
+			setShowAiPrompt(true);
 			setShowSummarizer(true);
 			hasPromptedSummaryRef.current = true;
 		}
-	}, [addLocalMessage, channelName, displayName, promptUnreadCount]);
+	}, [promptUnreadCount]);
 
 	// Scroll to unread separator on first load
 	useEffect(() => {
@@ -888,6 +883,19 @@ ${actionItemsBlock}`.trim();
 		[displayName, sendMessage, user?.id],
 	);
 
+	const handleSummarizeFromPrompt = useCallback(async () => {
+		setIsSummarizing(true);
+		try {
+			const result = await handleSummarizeUnread();
+			await handleSummarySend(result);
+			setShowAiPrompt(false);
+		} catch (error) {
+			console.error("Failed to summarize from prompt:", error);
+		} finally {
+			setIsSummarizing(false);
+		}
+	}, [handleSummarizeUnread, handleSummarySend]);
+
 	// Auto-summarize once when opening a channel/DM with unread messages
 	useEffect(() => {
 		if (hasAutoSummarizedRef.current) return;
@@ -1018,7 +1026,7 @@ ${actionItemsBlock}`.trim();
 							<div className="flex items-center justify-center py-16">
 								<p className="text-[13px] text-[#ff3b30]">{error}</p>
 							</div>
-						) : messages.length === 0 ? (
+						) : displayMessages.length === 0 ? (
 							<div className="flex flex-col items-center justify-center py-12 text-center select-none">
 								<p className="text-[12px] font-semibold text-[#8e8e93] tracking-wide">iMessage</p>
 								<p className="text-[11px] text-[#8e8e93] font-medium mt-1">
@@ -1026,7 +1034,7 @@ ${actionItemsBlock}`.trim();
 								</p>
 							</div>
 						) : (
-							messages.map((message, msgIndex) => {
+							displayMessages.map((message, msgIndex) => {
 								const isDeleted = !!(message.deletedAt || message.deleted_at);
 								const isAiSummary = isAiSummaryContent(message.content);
 								const isOwnMessage =
@@ -1037,9 +1045,88 @@ ${actionItemsBlock}`.trim();
 									isOwnMessage && !isDeleted && diffInMinutes <= 15 && !message.file_url;
 
 								// Show unread separator before this message if the previous message was the last read
-								const prevMessage = msgIndex > 0 ? messages[msgIndex - 1] : null;
+								const prevMessage = msgIndex > 0 ? displayMessages[msgIndex - 1] : null;
 								const showUnreadSep =
 									lastReadMsgId && prevMessage?.id === lastReadMsgId && !isOwnMessage;
+
+								if (message.userId === "ai-summary-prompt") {
+									return (
+										<div key={message.id}>
+											{showUnreadSep && (
+												<div ref={unreadSeparatorRef}>
+													<UnreadSeparator />
+												</div>
+											)}
+											<motion.div
+												initial={{ opacity: 0, scale: 0.95, y: 10 }}
+												animate={{ opacity: 1, scale: 1, y: 0 }}
+												className="my-4 mx-auto max-w-md bg-gradient-to-br from-purple-50/90 to-indigo-50/90 backdrop-blur-md border border-purple-100/80 rounded-2xl p-5 shadow-lg shadow-purple-500/[0.05] relative overflow-hidden"
+												style={{
+													fontFamily:
+														"'-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Inter', sans-serif",
+												}}
+											>
+												<div className="absolute -right-12 -bottom-12 w-32 h-32 bg-purple-200/30 rounded-full blur-2xl pointer-events-none" />
+												<button
+													type="button"
+													onClick={() => setShowAiPrompt(false)}
+													className="absolute top-3.5 right-3.5 p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100/50 transition-all focus:outline-none"
+												>
+													<X className="w-4 h-4" />
+												</button>
+
+												<div className="flex items-start gap-3.5">
+													<div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center shrink-0 shadow-md shadow-purple-500/20">
+														<Sparkles className="w-4.5 h-4.5 text-white" />
+													</div>
+													<div className="flex-1 min-w-0">
+														<h4 className="text-[14px] font-bold text-slate-900 leading-tight">
+															AI Summary Assistant
+														</h4>
+														<p className="text-[13px] text-slate-600 mt-1.5 leading-relaxed">
+															You have{" "}
+															<span className="font-semibold text-slate-800">
+																{promptUnreadCount}
+															</span>{" "}
+															unread message{promptUnreadCount !== 1 ? "s" : ""} in{" "}
+															<span className="font-semibold text-slate-800">#{displayName}</span>.
+															Would you like a quick AI summary?
+														</p>
+
+														<div className="flex items-center gap-2 mt-4">
+															<button
+																type="button"
+																disabled={isSummarizing}
+																onClick={handleSummarizeFromPrompt}
+																className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[12px] font-bold shadow-md shadow-purple-500/20 hover:shadow-lg hover:shadow-purple-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-70 disabled:pointer-events-none"
+															>
+																{isSummarizing ? (
+																	<>
+																		<Loader2 className="w-3.5 h-3.5 animate-spin" />
+																		Summarizing...
+																	</>
+																) : (
+																	<>
+																		<Sparkles className="w-3.5 h-3.5" />
+																		Summarize
+																	</>
+																)}
+															</button>
+															<button
+																type="button"
+																disabled={isSummarizing}
+																onClick={() => setShowAiPrompt(false)}
+																className="px-3.5 py-2 rounded-xl border border-slate-200 bg-white/80 hover:bg-white text-slate-600 hover:text-slate-800 text-[12px] font-semibold transition-all focus:outline-none"
+															>
+																Maybe later
+															</button>
+														</div>
+													</div>
+												</div>
+											</motion.div>
+										</div>
+									);
+								}
 
 								return (
 									<div key={message.id}>
