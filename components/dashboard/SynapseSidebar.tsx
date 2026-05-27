@@ -149,14 +149,14 @@ export function SynapseSidebar() {
 				fontFamily: "'-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Inter', sans-serif",
 			}}
 		>
-			<div className="px-6 pt-[26px] pb-6 flex flex-col gap-1.5 min-h-[88px] justify-center">
-				<h2 className="text-[19px] font-bold text-white tracking-tight">
+			<div className="px-6 pt-4 pb-2 flex flex-col gap-1 min-h-[70px] justify-center">
+				<h2 className="text-[17px] font-bold text-white tracking-tight">
 					{isChat ? "Messages" : isTask ? "Projects" : isFiles ? "Directories" : "Documents"}
 				</h2>
 				<div className="h-0.5 w-5 bg-blue-500/40 rounded-full" />
 			</div>
 
-			<div className="px-4 mb-4">
+			<div className="px-4 mb-2">
 				<div className="relative group">
 					<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 group-focus-within:text-[#007AFF] transition-colors" />
 					<input
@@ -170,141 +170,105 @@ export function SynapseSidebar() {
 			</div>
 
 			<ScrollArea className="flex-1 px-3">
-				<div className="space-y-6 pb-8">
+				<div className="space-y-4 pb-8">
 					{/* ALWAYS SHOW CHANNELS & DMs */}
-					<SidebarSection
-						title="Channels"
-						expanded={channelsExpanded}
-						onToggle={() => setChannelsExpanded(!channelsExpanded)}
-						action={
-							<button
-								type="button"
-								onClick={() => setCreateChannelOpen(true)}
-								className="p-1 hover:bg-white/10 rounded-lg text-white/40 transition-colors"
-							>
-								<Plus className="w-4 h-4" />
-							</button>
-						}
-					>
-						{!channelsLoaded ? (
-							<div className="flex justify-center py-4">
-								<Loader2 className="w-5 h-5 animate-spin text-slate-300" />
-							</div>
-						) : (
-							filteredChannels.map((channel) => (
-								<ChannelItem
-									key={channel.id}
-									channel={channel}
-									active={pathname === `/dashboard/chat/channel/${channel.id}`}
-									starred={!!channel.isStarred}
-									unread={!!channel.unread}
-									unreadCount={unreadCounts[channel.id] || 0}
-									onToggleStar={() => handleToggleChannelStar(channel.id, !channel.isStarred)}
-								/>
-							))
-						)}
-					</SidebarSection>
-
-					<SidebarSection
-						title="Direct Messages"
-						expanded={dmsExpanded}
-						onToggle={() => setDmsExpanded(!dmsExpanded)}
-					>
-						{members.map((member) => {
-							const displayName = getMemberDisplayName(member);
-							const isActive = pathname === `/dashboard/chat/dm/${member.slug}`;
-							const expectedDmName = user?.id
-								? `dm-${[user.id, member.userId].sort().join("-")}`
-								: "";
-							const dmChannel = channels.find(
-								(c) => c.type === "DIRECT_MESSAGE" && c.name === expectedDmName,
-							);
-							const dmUnreadCount = dmChannel ? unreadCounts[dmChannel.id] || 0 : 0;
-							const hasDmUnread = dmUnreadCount > 0;
-							return (
-								<Link key={member.id} href={`/dashboard/chat/dm/${member.slug}`}>
-									<div
-										className={cn(
-											"flex items-center gap-3 px-3 py-2 rounded-xl transition-all group",
-											isActive
-												? "bg-white/10 text-white font-semibold shadow-sm shadow-black/20"
-												: hasDmUnread
-													? "text-white font-semibold hover:bg-white/5"
-													: "text-white/60 hover:bg-white/5",
-										)}
+					{isChat && (
+						<>
+							<SidebarSection
+								title="Channels"
+								expanded={channelsExpanded}
+								onToggle={() => setChannelsExpanded(!channelsExpanded)}
+								action={
+									<button
+										type="button"
+										onClick={() => setCreateChannelOpen(true)}
+										className="p-1 hover:bg-white/10 rounded-lg text-white/40 transition-colors"
 									>
-										<div className="relative">
-											<Avatar className="w-8 h-8 rounded-lg shadow-md">
-												<AvatarImage
-													src={member.profile?.imageUrl || undefined}
-													referrerPolicy="no-referrer"
-												/>
-												<AvatarFallback className="bg-blue-500/20 text-blue-400 text-[10px] font-bold border border-blue-500/20">
-													{displayName.substring(0, 2).toUpperCase()}
-												</AvatarFallback>
-											</Avatar>
-											{member.online && (
-												<span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-[#34C759] rounded-full border-2 border-[#0F172A]" />
-											)}
-										</div>
-										<span className="truncate flex-1">{displayName}</span>
-										{hasDmUnread && !isActive && (
-											<span
-												className="min-w-[20px] h-5 flex items-center justify-center text-[10px] font-bold text-white bg-[#007AFF] rounded-full px-1.5 shadow-sm shadow-blue-500/30"
-												style={{
-													fontFamily:
-														"'-apple-system', 'BlinkMacSystemFont', 'SF Pro Text', sans-serif",
-													fontVariantNumeric: "tabular-nums",
-												}}
+										<Plus className="w-4 h-4" />
+									</button>
+								}
+							>
+								{!channelsLoaded ? (
+									<div className="flex justify-center py-4">
+										<Loader2 className="w-5 h-5 animate-spin text-slate-300" />
+									</div>
+								) : (
+									filteredChannels.map((channel) => (
+										<ChannelItem
+											key={channel.id}
+											channel={channel}
+											active={pathname === `/dashboard/chat/channel/${channel.id}`}
+											starred={!!channel.isStarred}
+											unread={!!channel.unread}
+											unreadCount={unreadCounts[channel.id] || 0}
+											onToggleStar={() => handleToggleChannelStar(channel.id, !channel.isStarred)}
+										/>
+									))
+								)}
+							</SidebarSection>
+
+							<SidebarSection
+								title="Direct Messages"
+								expanded={dmsExpanded}
+								onToggle={() => setDmsExpanded(!dmsExpanded)}
+							>
+								{members.map((member) => {
+									const displayName = getMemberDisplayName(member);
+									const isActive = pathname === `/dashboard/chat/dm/${member.slug}`;
+									const expectedDmName = user?.id
+										? `dm-${[user.id, member.userId].sort().join("-")}`
+										: "";
+									const dmChannel = channels.find(
+										(c) => c.type === "DIRECT_MESSAGE" && c.name === expectedDmName,
+									);
+									const dmUnreadCount = dmChannel ? unreadCounts[dmChannel.id] || 0 : 0;
+									const hasDmUnread = dmUnreadCount > 0;
+									return (
+										<Link key={member.id} href={`/dashboard/chat/dm/${member.slug}`}>
+											<div
+												className={cn(
+													"flex items-center gap-3 px-3 py-2 rounded-xl transition-all group",
+													isActive
+														? "bg-white/10 text-white font-semibold shadow-sm shadow-black/20"
+														: hasDmUnread
+															? "text-white font-semibold hover:bg-white/5"
+															: "text-white/60 hover:bg-white/5",
+												)}
 											>
-												{dmUnreadCount > 99 ? "99+" : dmUnreadCount}
-											</span>
-										)}
-									</div>
-								</Link>
-							);
-						})}
-					</SidebarSection>
-
-					{/* ALWAYS SHOW SPACES (BOARDS) */}
-					<SidebarSection
-						title="Spaces"
-						expanded={spacesExpanded}
-						onToggle={() => setSpacesExpanded(!spacesExpanded)}
-						action={
-							<button
-								type="button"
-								onClick={() => setCreateSpaceOpen(true)}
-								className="p-1 hover:bg-white/10 rounded-lg text-white/40 transition-colors"
-							>
-								<Plus className="w-4 h-4" />
-							</button>
-						}
-					>
-						{spaces?.length === 0 ? (
-							<div className="px-3 py-2 text-[12px] text-white/20 italic">
-								No boards created yet
-							</div>
-						) : (
-							spaces?.map((space: { id: string; name: string }) => (
-								<Link key={space.id} href={`/dashboard/task/space/${space.id}`}>
-									<div
-										className={cn(
-											"flex items-center gap-3 px-3 py-2 rounded-xl transition-all",
-											pathname === `/dashboard/task/space/${space.id}`
-												? "bg-white/10 text-white font-semibold shadow-sm shadow-black/20"
-												: "text-white/60 hover:bg-white/5",
-										)}
-									>
-										<div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white/80 font-bold text-xs">
-											{space.name[0].toUpperCase()}
-										</div>
-										<span className="truncate">{space.name}</span>
-									</div>
-								</Link>
-							))
-						)}
-					</SidebarSection>
+												<div className="relative">
+													<Avatar className="w-8 h-8 rounded-lg shadow-md">
+														<AvatarImage
+															src={member.profile?.imageUrl || undefined}
+															referrerPolicy="no-referrer"
+														/>
+														<AvatarFallback className="bg-blue-500/20 text-blue-400 text-[10px] font-bold border border-blue-500/20">
+															{displayName.substring(0, 2).toUpperCase()}
+														</AvatarFallback>
+													</Avatar>
+													{member.online && (
+														<span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-[#34C759] rounded-full border-2 border-[#0F172A]" />
+													)}
+												</div>
+												<span className="truncate flex-1">{displayName}</span>
+												{hasDmUnread && !isActive && (
+													<span
+														className="min-w-[20px] h-5 flex items-center justify-center text-[10px] font-bold text-white bg-[#007AFF] rounded-full px-1.5 shadow-sm shadow-blue-500/30"
+														style={{
+															fontFamily:
+																"'-apple-system', 'BlinkMacSystemFont', 'SF Pro Text', sans-serif",
+															fontVariantNumeric: "tabular-nums",
+														}}
+													>
+														{dmUnreadCount > 99 ? "99+" : dmUnreadCount}
+													</span>
+												)}
+											</div>
+										</Link>
+									);
+								})}
+							</SidebarSection>
+						</>
+					)}
 
 					{isFiles && (
 						<SidebarSection
@@ -370,7 +334,7 @@ interface SidebarSectionProps {
 function SidebarSection({ title, expanded, onToggle, action, children }: SidebarSectionProps) {
 	return (
 		<div className="space-y-1">
-			<div className="flex items-center justify-between px-3 py-2">
+			<div className="flex items-center justify-between px-3 py-1">
 				<button
 					type="button"
 					onClick={onToggle}

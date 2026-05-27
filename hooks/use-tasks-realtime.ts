@@ -1,14 +1,11 @@
 "use client";
 
-import { createClient } from "@supabase/supabase-js";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { taskKeys } from "@/hooks/api/use-tasks";
+import { createClient } from "@/lib/supabase/client";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient();
 
 /**
  * Subscribes to Supabase Realtime for task changes in a space (or globally).

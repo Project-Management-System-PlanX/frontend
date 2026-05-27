@@ -199,10 +199,10 @@ export function TasksArea() {
 	const [isAIPanelOpen, setIsAIPanelOpen] = useState(false);
 	const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 	const filteredInboxTasks = useMemo(() => {
-		// Only show tasks in the Inbox if they are NOT already present on the currently selected board.
-		// This follows the user's requirement to avoid duplication while ensuring visibility.
-		return inboxTasks.filter((t) => !liveTasksMap[t.id]);
-	}, [inboxTasks, liveTasksMap]);
+		// Dragged and dropped tasks should immediately appear in the Inbox
+		// and remain synchronized, so we don't filter them out.
+		return inboxTasks;
+	}, [inboxTasks]);
 
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
