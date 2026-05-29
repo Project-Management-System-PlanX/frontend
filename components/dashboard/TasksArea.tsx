@@ -16,6 +16,7 @@ import {
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { AnimatePresence, motion } from "framer-motion";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
 	AlertCircle,
 	Calendar as CalendarIcon,
@@ -62,21 +63,56 @@ const dropAnimation: any = {
 
 export function TasksArea() {
 	const { token, user, isLoading: isAuthLoading } = useSupabaseAuth();
-	const { activeWorkspaceId } = useWorkspaceStore();
+	const searchParams = useSearchParams();
+	const router = useRouter();
+	const { activeWorkspaceId, setActiveWorkspace } = useWorkspaceStore();
+
+	// Sync workspaceId from URL to store
+	useEffect(() => {
+		const urlWorkspaceId = searchParams.get("workspaceId");
+		if (urlWorkspaceId && urlWorkspaceId !== activeWorkspaceId) {
+			// We don't have the name from URL, so we just set the ID. 
+			// The sidebar/header should fetch the name eventually.
+			setActiveWorkspace(urlWorkspaceId, "");
+		}
+	}, [searchParams, activeWorkspaceId, setActiveWorkspace]);
+
 	const { data: spaces, isLoading: isLoadingSpaces } = useSpaces(activeWorkspaceId || "", token);
 
+	// For the "Board" view, we need a space. We'll pick the one from URL or first one by default.
+	const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
+
+	// Sync selectedSpaceId to URL parameters
+	const syncSpaceToUrl = useCallback((spaceId: string) => {
+		const params = new URLSearchParams(window.location.search);
+		params.set("spaceId", spaceId);
+		router.replace(`${window.location.pathname}?${params.toString()}`);
+	}, [router]);
+
+	// Sync spaceId from URL
+	useEffect(() => {
+		const urlSpaceId = searchParams.get("spaceId");
+		if (urlSpaceId && urlSpaceId !== selectedSpaceId) {
+			setSelectedSpaceId(urlSpaceId);
+		}
+	}, [searchParams, selectedSpaceId]);
 	const createStatus = useCreateTaskStatus(token);
 	const updateStatus = useUpdateTaskStatus(token);
 	const createSpace = useCreateSpace(token);
 	const updateSpace = useUpdateSpace(token);
 	const deleteSpace = useDeleteSpace(token);
 
-	// For the "Board" view, we need a space. We'll pick the first one by default.
-	const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
-
 	useEffect(() => {
 		if (spaces && spaces.length > 0 && !selectedSpaceId) {
-			setSelectedSpaceId(spaces[0].id);
+			const urlSpaceId = searchParams.get("spaceId");
+			if (urlSpaceId) {
+				setSelectedSpaceId(urlSpaceId);
+			} else {
+				// Pick the first one and sync to URL
+				const defaultId = spaces[0].id;
+				setSelectedSpaceId(defaultId);
+				syncSpaceToUrl(defaultId);
+			}
 		} else if (
 			spaces &&
 			spaces.length === 0 &&
@@ -91,7 +127,7 @@ export function TasksArea() {
 				prefix: "WS",
 			});
 		}
-	}, [spaces, selectedSpaceId, isLoadingSpaces, activeWorkspaceId, createSpace]);
+	}, [spaces, selectedSpaceId, isLoadingSpaces, activeWorkspaceId, createSpace, searchParams]);
 
 	const selectedSpace = useMemo(() => {
 		return spaces?.find((s) => s.id === selectedSpaceId);
@@ -377,9 +413,9 @@ export function TasksArea() {
 			prev.includes(tabId)
 				? prev.filter((t) => t !== tabId)
 				: [...prev, tabId].sort((a, b) => {
-						const order = ["inbox", "planner", "board"];
-						return order.indexOf(a) - order.indexOf(b);
-					}),
+					const order = ["inbox", "planner", "board"];
+					return order.indexOf(a) - order.indexOf(b);
+				}),
 		);
 	};
 
@@ -582,13 +618,13 @@ export function TasksArea() {
 
 	const activeTask = activeId
 		? (() => {
-				const id = activeId.replace(/^(inbox-|board-|planner-)/, "");
-				return (
-					liveTasksMap[id] ||
-					inboxTasks.find((t) => t.id === id) ||
-					plannerTasks.find((t) => t.id === id)
-				);
-			})()
+			const id = activeId.replace(/^(inbox-|board-|planner-)/, "");
+			return (
+				liveTasksMap[id] ||
+				inboxTasks.find((t) => t.id === id) ||
+				plannerTasks.find((t) => t.id === id)
+			);
+		})()
 		: null;
 
 	// ─── Error State ─────────────────────────────────────────────
@@ -683,6 +719,9 @@ export function TasksArea() {
 											}}
 											onUpdateTask={updateTaskApi}
 											boardName={selectedSpace?.name}
+											workspaceId={activeWorkspaceId}
+											spaceId={selectedSpaceId}
+
 											onRenameBoard={(newName) => {
 												if (selectedSpaceId) {
 													updateSpace.mutate({

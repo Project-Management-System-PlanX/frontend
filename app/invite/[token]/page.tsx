@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase/client";
 interface InviteData {
 	id: string;
 	workspaceId: string;
+	spaceId?: string | null;
 	token: string;
 	expiresAt: string;
 	workspace: {
@@ -401,12 +402,19 @@ export default function InvitePage() {
 								</div>
 								<button
 									type="button"
-									onClick={() => router.push("/workspaces")}
+									onClick={() => {
+										if (invite.spaceId) {
+											router.push(`/dashboard?workspaceId=${invite.workspaceId}&spaceId=${invite.spaceId}`);
+										} else {
+											router.push("/workspaces");
+										}
+									}}
 									className="w-full flex items-center justify-center gap-2 bg-[#0B6E4F] text-white px-6 py-3.5 rounded-xl font-medium hover:bg-[#013220] transition-all"
 								>
-									Go to Workspaces
+									{invite.spaceId ? "Go to Board" : "Go to Workspaces"}
 									<ArrowRight className="w-4 h-4" />
 								</button>
+
 							</motion.div>
 						)}
 					</AnimatePresence>

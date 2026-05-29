@@ -1,11 +1,10 @@
-"use client";
-
+import { useQueryClient } from "@tanstack/react-query";
+import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { taskService } from "@/lib/api/services/tasks";
-import { createClient } from "@/lib/supabase/client";
+import { supabase } from "@/lib/supabase/client";
 import type { Task } from "@/lib/types/models";
-
-const supabase = createClient();
+import { spaceKeys } from "@/hooks/api/use-spaces";
 
 interface UseRealtimeTasksOptions {
 	spaceId: string | null;
@@ -29,6 +28,7 @@ export function useRealtimeTasks({
 	token,
 	enabled = true,
 }: UseRealtimeTasksOptions): UseRealtimeTasksReturn {
+	const queryClient = useQueryClient();
 	const [tasks, setTasks] = useState<Task[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<Error | null>(null);
@@ -94,7 +94,8 @@ export function useRealtimeTasks({
 			return;
 		}
 
-		const channel = supabase
+		// Channel for task changes
+		const tasksChannel = supabase
 			.channel(`space-tasks-${spaceId}`)
 			.on(
 				"postgres_changes",
@@ -102,23 +103,13 @@ export function useRealtimeTasks({
 					event: "INSERT",
 					schema: "public",
 					table: "tasks",
-					// NOTE: No column filter here — Supabase Realtime doesn't support
-					// camelCase column names (stored as quoted identifiers in PG).
-					// We filter by spaceId in the callback instead.
 				},
-				(payload) => {
+				(payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
 					const row = payload.new as Record<string, unknown>;
 					// Filter: only accept tasks that belong to this space
 					const rowSpaceId = (row.spaceId ?? row.space_id) as string | undefined;
 					if (rowSpaceId && rowSpaceId !== spaceId) return;
-					const newTask = row as unknown as Task;
-					setTasks((prev) => {
-						if (prev.some((t) => t.id === newTask.id)) return prev;
-						// New task from Realtime won't have relations — trigger a refetch
-						// to get the full task with assignees, labels, etc.
-						setTasks(prev); // no-op to avoid double update
-						return prev;
-					});
+
 					// Trigger full refetch so we get the task with all includes
 					debouncedFetchTasks();
 				},
@@ -130,7 +121,7 @@ export function useRealtimeTasks({
 					schema: "public",
 					table: "tasks",
 				},
-				(payload) => {
+				(payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
 					const row = payload.new as Record<string, unknown>;
 					const rowSpaceId = (row.spaceId ?? row.space_id) as string | undefined;
 					if (rowSpaceId && rowSpaceId !== spaceId) return;
@@ -145,17 +136,56 @@ export function useRealtimeTasks({
 					schema: "public",
 					table: "tasks",
 				},
-				(payload) => {
+				(payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
 					const deleted = payload.old as { id: string };
 					setTasks((prev) => prev.filter((t) => t.id !== deleted.id));
 				},
 			)
 			.subscribe();
 
+		// Channel for metadata changes (columns/statuses and space itself)
+		const metadataChannel = supabase
+			.channel(`space-metadata-${spaceId}`)
+			.on(
+				"postgres_changes",
+				{
+					event: "*",
+					schema: "public",
+					table: "task_statuses",
+				},
+				(payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
+					const row = (payload.new || payload.old) as Record<string, unknown>;
+					const rowSpaceId = (row.spaceId ?? row.space_id) as string | undefined;
+					if (rowSpaceId && rowSpaceId !== spaceId) return;
+
+					// Invalidate board metadata queries
+					queryClient.invalidateQueries({ queryKey: spaceKeys.lists() });
+					queryClient.invalidateQueries({ queryKey: spaceKeys.detail(spaceId) });
+				},
+			)
+			.on(
+				"postgres_changes",
+				{
+					event: "UPDATE",
+					schema: "public",
+					table: "spaces",
+				},
+				(payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
+					const row = payload.new as { id: string };
+					if (row.id !== spaceId) return;
+
+					// Invalidate board metadata queries
+					queryClient.invalidateQueries({ queryKey: spaceKeys.lists() });
+					queryClient.invalidateQueries({ queryKey: spaceKeys.detail(spaceId) });
+				},
+			)
+			.subscribe();
+
 		return () => {
-			supabase.removeChannel(channel);
+			supabase.removeChannel(tasksChannel);
+			supabase.removeChannel(metadataChannel);
 		};
-	}, [enabled, spaceId, debouncedFetchTasks]);
+	}, [enabled, spaceId, debouncedFetchTasks, queryClient]);
 
 	// ─── Optimistic Mutations ───
 

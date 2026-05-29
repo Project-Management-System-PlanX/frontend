@@ -18,6 +18,8 @@ import { ShareBoardModal } from "@/components/modals/ShareBoardModal";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Task } from "@/lib/types/models";
 import { cn } from "@/lib/utils";
+import { useWorkspaceMembers } from "@/hooks/use-workspace-members";
+
 import { BoardColumn } from "./BoardColumn";
 import { CalendarView } from "./CalendarView";
 import { DashboardView } from "./DashboardView";
@@ -70,6 +72,8 @@ export function BoardPanel({
 	onUpdateTask,
 	boardName = "My Board",
 	onRenameBoard,
+	workspaceId,
+	spaceId,
 }: {
 	columnOrder: string[];
 	columns: Record<string, Column>;
@@ -83,6 +87,8 @@ export function BoardPanel({
 	onUpdateTask?: (id: string, data: Partial<Task>) => void;
 	boardName?: string;
 	onRenameBoard?: (newName: string) => void;
+	workspaceId?: string | null;
+	spaceId?: string | null;
 }) {
 	const [isAdding, setIsAdding] = useState(false);
 	const [newListName, setNewListName] = useState("");
@@ -118,6 +124,13 @@ export function BoardPanel({
 			setIsAdding(false);
 		}
 	};
+
+	const { members: otherMembers, currentUserProfile } = useWorkspaceMembers();
+
+	const allMembers = [
+		...(currentUserProfile ? [currentUserProfile] : []),
+		...otherMembers.map((m) => m.profile).filter(Boolean),
+	];
 
 	return (
 		<div className="h-full flex flex-col overflow-hidden" style={{ background: UI.board.bg }}>
@@ -218,18 +231,26 @@ export function BoardPanel({
 				</div>
 				<div className="flex items-center gap-4">
 					<div className="flex items-center -space-x-2 mr-2">
-						{[0, 1, 2].map((i) => (
+						{allMembers.slice(0, 3).map((profile, i) => (
 							<div
-								key={i}
-								className="w-8 h-8 rounded-full border-2 border-[#1E1E1E] bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-[10px] font-bold text-white shadow-lg"
+								key={profile?.id || i}
+								className="w-8 h-8 rounded-full border-2 border-[#1E1E1E] bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-[10px] font-bold text-white shadow-lg overflow-hidden"
+								title={profile ? `${profile.firstName} ${profile.lastName}` : "Member"}
 							>
-								{i === 0 ? "R" : i === 1 ? "A" : "JS"}
+								{profile?.imageUrl ? (
+									<img src={profile.imageUrl} alt="" className="w-full h-full object-cover" />
+								) : (
+									profile?.firstName?.[0] || "M"
+								)}
 							</div>
 						))}
-						<div className="w-8 h-8 rounded-full border-2 border-[#1E1E1E] bg-white/5 flex items-center justify-center text-[10px] font-bold text-white/40">
-							+1
-						</div>
+						{allMembers.length > 3 && (
+							<div className="w-8 h-8 rounded-full border-2 border-[#1E1E1E] bg-white/5 flex items-center justify-center text-[10px] font-bold text-white/40">
+								+{allMembers.length - 3}
+							</div>
+						)}
 					</div>
+
 					<button
 						onClick={() => setIsShareModalOpen(true)}
 						className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white text-black font-bold text-[14px] hover:bg-white/90 transition-all active:scale-95 shadow-lg shadow-white/10"
@@ -330,7 +351,10 @@ export function BoardPanel({
 				isOpen={isShareModalOpen}
 				onClose={() => setIsShareModalOpen(false)}
 				boardName={boardName}
+				workspaceId={workspaceId}
+				spaceId={spaceId}
 			/>
+
 		</div>
 	);
 }

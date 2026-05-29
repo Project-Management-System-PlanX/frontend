@@ -2,14 +2,20 @@
 
 import { motion } from "framer-motion";
 import { ChevronDown, Globe, Link as LinkIcon, Lock, Users2, X } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
+import { useWorkspaceMembers } from "@/hooks/use-workspace-members";
+import { workspaceService } from "@/lib/api/services/workspaces";
 
 interface ShareBoardModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	boardName: string;
+	workspaceId?: string | null;
+	spaceId?: string | null;
 }
 
 interface Member {
@@ -20,18 +26,116 @@ interface Member {
 	initial: string;
 }
 
-export function ShareBoardModal({ isOpen, onClose, boardName }: ShareBoardModalProps) {
+export function ShareBoardModal({
+	isOpen,
+	onClose,
+	boardName,
+	workspaceId,
+	spaceId,
+}: ShareBoardModalProps) {
 	const [activeTab, setActiveTab] = useState<"members" | "requests">("members");
 	const [visibility, setVisibility] = useState<"private" | "workspace" | "public">("workspace");
-	const members: Member[] = [
-		{
-			name: "ravikrishnaj25 (you)",
-			handle: "@ravikrishnaj25",
-			role: "Workspace admin",
-			isWorkspaceAdmin: true,
-			initial: "R",
-		},
-	];
+	const [isCopying, setIsCopying] = useState(false);
+	const [copied, setCopied] = useState(false);
+	const [emailInput, setEmailInput] = useState("");
+	const [isSharing, setIsSharing] = useState(false);
+
+	const { token, user } = useSupabaseAuth();
+	const { members: otherMembers, currentUserProfile, isLoading } = useWorkspaceMembers();
+
+	const members = useMemo(() => {
+		const all: Member[] = [];
+		if (currentUserProfile) {
+			all.push({
+				name: `${currentUserProfile.firstName} ${currentUserProfile.lastName}`.trim() || currentUserProfile.email || "You",
+				handle: currentUserProfile.username ? `@${currentUserProfile.username}` : currentUserProfile.email,
+				role: "Admin",
+				isWorkspaceAdmin: true,
+				initial: currentUserProfile.firstName?.[0] || currentUserProfile.email?.[0]?.toUpperCase() || "U",
+			});
+		}
+		otherMembers.forEach((m) => {
+			all.push({
+				name: `${m.profile?.firstName} ${m.profile?.lastName}`.trim() || m.profile?.email || m.userId,
+				handle: m.profile?.username ? `@${m.profile?.username}` : m.profile?.email || "",
+				role: m.role.charAt(0) + m.role.slice(1).toLowerCase(),
+				isWorkspaceAdmin: m.role === "OWNER" || m.role === "ADMIN",
+				initial: m.profile?.firstName?.[0] || m.profile?.email?.[0]?.toUpperCase() || "M",
+			});
+		});
+		return all;
+	}, [otherMembers, currentUserProfile]);
+
+	const copyToClipboard = async (text: string) => {
+		try {
+			if (navigator.clipboard && window.isSecureContext) {
+				await navigator.clipboard.writeText(text);
+				return true;
+			}
+			throw new Error("Clipboard API unavailable");
+		} catch (err) {
+			// Fallback: use a hidden textarea
+			try {
+				const textArea = document.createElement("textarea");
+				textArea.value = text;
+				// Ensure textarea is not visible but part of DOM
+				textArea.style.position = "fixed";
+				textArea.style.left = "-9999px";
+				textArea.style.top = "0";
+				document.body.appendChild(textArea);
+				textArea.focus();
+				textArea.select();
+				const successful = document.execCommand("copy");
+				document.body.removeChild(textArea);
+				return successful;
+			} catch (fallbackErr) {
+				console.error("Fallback copy failed:", fallbackErr);
+				return false;
+			}
+		}
+	};
+
+	const handleCopyLink = async () => {
+		if (!workspaceId || !token) return;
+		setIsCopying(true);
+		try {
+			const data = await workspaceService.createInvite(workspaceId, spaceId || undefined, token);
+			const link = `${window.location.origin}/invite/${data.token}`;
+
+			const success = await copyToClipboard(link);
+			if (success) {
+				setCopied(true);
+				setTimeout(() => setCopied(false), 2000);
+			} else {
+				toast.error("Failed to copy link to clipboard");
+			}
+		} catch (err) {
+			console.error("Failed to copy link:", err);
+			toast.error("An error occurred while generating the invite link");
+		} finally {
+			setIsCopying(false);
+		}
+	};
+
+	const handleShare = async () => {
+		if (!workspaceId || !token || !emailInput.trim()) return;
+		setIsSharing(true);
+		try {
+			await workspaceService.inviteByEmail(
+				workspaceId,
+				{
+					emails: [emailInput.trim()],
+					spaceId: spaceId || undefined,
+				},
+				token,
+			);
+			setEmailInput("");
+		} catch (err) {
+			console.error("Failed to share:", err);
+		} finally {
+			setIsSharing(false);
+		}
+	};
 
 	if (!isOpen) return null;
 
@@ -66,6 +170,9 @@ export function ShareBoardModal({ isOpen, onClose, boardName }: ShareBoardModalP
 									<input
 										type="text"
 										placeholder="Email address or name"
+										value={emailInput}
+										onChange={(e) => setEmailInput(e.target.value)}
+										onKeyDown={(e) => e.key === "Enter" && handleShare()}
 										className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white text-[15px] outline-none focus:border-blue-500/50 transition-all placeholder:text-white/20"
 									/>
 								</div>
@@ -88,8 +195,12 @@ export function ShareBoardModal({ isOpen, onClose, boardName }: ShareBoardModalP
 										/>
 									</PopoverContent>
 								</Popover>
-								<button className="px-8 py-4 rounded-2xl bg-blue-500 hover:bg-blue-600 text-white font-black text-[15px] shadow-lg shadow-blue-500/20 transition-all active:scale-95">
-									Share
+								<button
+									onClick={handleShare}
+									disabled={isSharing || !emailInput.trim()}
+									className="px-8 py-4 rounded-2xl bg-blue-500 hover:bg-blue-600 text-white font-black text-[15px] shadow-lg shadow-blue-500/20 transition-all active:scale-95 disabled:opacity-50"
+								>
+									{isSharing ? "Sharing..." : "Share"}
 								</button>
 							</div>
 
@@ -108,8 +219,12 @@ export function ShareBoardModal({ isOpen, onClose, boardName }: ShareBoardModalP
 									</div>
 								</div>
 								<div className="flex flex-wrap items-center gap-3">
-									<button className="text-[12px] font-black text-blue-400 hover:text-blue-300 transition-colors uppercase tracking-widest">
-										Copy link
+									<button
+										onClick={handleCopyLink}
+										disabled={isCopying}
+										className="text-[12px] font-black text-blue-400 hover:text-blue-300 transition-colors uppercase tracking-widest"
+									>
+										{copied ? "Link copied!" : isCopying ? "Generating..." : "Copy link"}
 									</button>
 									<span className="w-1 h-1 rounded-full bg-white/10" />
 									<button className="text-[12px] font-black text-red-400/60 hover:text-red-400 transition-colors uppercase tracking-widest">

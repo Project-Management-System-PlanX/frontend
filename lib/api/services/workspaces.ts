@@ -95,10 +95,10 @@ export const workspaceService = {
 		}),
 
 	// Invite Management
-	createInvite: async (workspaceId: string, token?: string) =>
+	createInvite: async (workspaceId: string, spaceId?: string, token?: string) =>
 		apiClient.post<{ token: string; expires_at: string }>(
 			API_ENDPOINTS.CREATE_INVITE(workspaceId),
-			undefined,
+			{ spaceId },
 			{ token },
 		),
 
@@ -113,12 +113,13 @@ export const workspaceService = {
 			id: string;
 			token: string;
 			workspaceId: string;
+			spaceId: string | null;
 			expiresAt: string;
 			workspace: { id: string; name: string; slug: string; avatar: string | null };
 		}>(API_ENDPOINTS.GET_INVITE(inviteToken)),
 
 	acceptInvite: async (inviteToken: string, token?: string) =>
-		apiClient.post<{ success: boolean; workspaceId: string }>(
+		apiClient.post<{ success: boolean; workspaceId: string; spaceId: string | null }>(
 			API_ENDPOINTS.ACCEPT_INVITE(inviteToken),
 			undefined,
 			{ token },
@@ -126,7 +127,7 @@ export const workspaceService = {
 
 	inviteByEmail: async (
 		workspaceId: string,
-		data: { emails: string[]; channelIds?: string[] },
+		data: { emails: string[]; channelIds?: string[]; spaceId?: string },
 		token?: string,
 	) =>
 		apiClient.post<{
