@@ -153,18 +153,18 @@ export function SynapseSidebar() {
 				<h2 className="text-[17px] font-bold text-white tracking-tight">
 					{isChat ? "Messages" : isTask ? "Projects" : isFiles ? "Directories" : "Documents"}
 				</h2>
-				<div className="h-0.5 w-5 bg-blue-500/40 rounded-full" />
+				<div className="h-0.5 w-5 bg-green-500/40 rounded-full" />
 			</div>
 
 			<div className="px-4 mb-2">
 				<div className="relative group">
-					<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 group-focus-within:text-[#007AFF] transition-colors" />
+					<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 group-focus-within:text-[#2d6a4f] transition-colors" />
 					<input
 						type="text"
 						value={searchQuery}
 						onChange={(e) => setSearchQuery(e.target.value)}
 						placeholder="Search..."
-						className="w-full bg-white/5 border border-white/5 rounded-[10px] py-1.5 pl-8 pr-4 text-[13.5px] text-white placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500/20 focus:bg-white/10 transition-all outline-none"
+						className="w-full bg-white/5 border border-white/5 rounded-[10px] py-1.5 pl-8 pr-4 text-[13.5px] text-white placeholder:text-gray-500 focus:ring-2 focus:ring-green-500/20 focus:bg-white/10 transition-all outline-none"
 					/>
 				</div>
 			</div>
@@ -241,7 +241,7 @@ export function SynapseSidebar() {
 															src={member.profile?.imageUrl || undefined}
 															referrerPolicy="no-referrer"
 														/>
-														<AvatarFallback className="bg-blue-500/20 text-blue-400 text-[10px] font-bold border border-blue-500/20">
+														<AvatarFallback className="bg-green-500/20 text-green-400 text-[10px] font-bold border border-green-500/20">
 															{displayName.substring(0, 2).toUpperCase()}
 														</AvatarFallback>
 													</Avatar>
@@ -252,7 +252,7 @@ export function SynapseSidebar() {
 												<span className="truncate flex-1">{displayName}</span>
 												{hasDmUnread && !isActive && (
 													<span
-														className="min-w-[20px] h-5 flex items-center justify-center text-[10px] font-bold text-white bg-[#007AFF] rounded-full px-1.5 shadow-sm shadow-blue-500/30"
+														className="min-w-[20px] h-5 flex items-center justify-center text-[10px] font-bold text-white bg-[#2d6a4f] rounded-full px-1.5 shadow-sm shadow-green-500/30"
 														style={{
 															fontFamily:
 																"'-apple-system', 'BlinkMacSystemFont', 'SF Pro Text', sans-serif",
@@ -299,7 +299,7 @@ export function SynapseSidebar() {
 												: "text-white/60 hover:bg-white/5",
 										)}
 									>
-										<div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-xs">
+										<div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center text-green-400 font-bold text-xs">
 											<dir.icon className="w-4 h-4" />
 										</div>
 										<span className="truncate">{dir.name}</span>
@@ -314,7 +314,7 @@ export function SynapseSidebar() {
 			<CreateChannelDialog
 				open={createChannelOpen}
 				onOpenChange={setCreateChannelOpen}
-				onChannelCreated={() => {}} // Integration logic kept in store
+				onChannelCreated={() => { }} // Integration logic kept in store
 				workspaceName={activeWorkspaceName || "Workspace"}
 			/>
 
@@ -396,7 +396,7 @@ function ChannelItem({
 				<span className="truncate flex-1">{channel.name}</span>
 				{hasUnread && !active && unreadCount > 0 && (
 					<span
-						className="min-w-[20px] h-5 flex items-center justify-center text-[10px] font-bold text-white bg-[#007AFF] rounded-full px-1.5 shadow-sm shadow-blue-500/30"
+						className="min-w-[20px] h-5 flex items-center justify-center text-[10px] font-bold text-white bg-[#2d6a4f] rounded-full px-1.5 shadow-sm shadow-green-500/30"
 						style={{
 							fontFamily: "'-apple-system', 'BlinkMacSystemFont', 'SF Pro Text', sans-serif",
 							fontVariantNumeric: "tabular-nums",
@@ -406,7 +406,7 @@ function ChannelItem({
 					</span>
 				)}
 				{hasUnread && !active && unreadCount === 0 && (
-					<div className="w-2 h-2 rounded-full bg-[#007AFF]" />
+					<div className="w-2 h-2 rounded-full bg-[#2d6a4f]" />
 				)}
 				<button
 					type="button"

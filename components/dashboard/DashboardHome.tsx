@@ -176,7 +176,7 @@ export function DashboardHome() {
 	}, [analytics, filterType]);
 
 	return (
-		<div className="flex-1 flex flex-col bg-transparent min-w-0 min-h-0 overflow-y-auto selection:bg-blue-200">
+		<div className="flex-1 flex flex-col bg-transparent min-w-0 min-h-0 overflow-y-auto selection:bg-green-200">
 			<div
 				className="min-h-full p-6 md:p-8 lg:p-10 mx-auto w-full max-w-[1400px]"
 				style={{
@@ -195,9 +195,8 @@ export function DashboardHome() {
 										key={tab}
 										type="button"
 										onClick={() => setActiveTab(tab)}
-										className={`relative z-10 px-4 py-1.5 text-[13px] font-semibold transition-colors duration-200 ${
-											isActive ? "text-gray-900" : "text-gray-500 hover:text-gray-700"
-										}`}
+										className={`relative z-10 px-4 py-1.5 text-[13px] font-semibold transition-colors duration-200 ${isActive ? "text-gray-900" : "text-gray-500 hover:text-gray-700"
+											}`}
 									>
 										{isActive && (
 											<motion.div
@@ -224,7 +223,7 @@ export function DashboardHome() {
 									setShowDatePicker(!showDatePicker);
 									setShowFilter(false);
 								}}
-								className="flex items-center gap-2 bg-white/70 hover:bg-white backdrop-blur-xl border border-white rounded-xl px-3.5 py-2 text-[13px] font-medium text-gray-700 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+								className="flex items-center gap-2 bg-white/70 hover:bg-white backdrop-blur-xl border border-white rounded-xl px-3.5 py-2 text-[13px] font-medium text-gray-700 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-green-500/20"
 							>
 								<Calendar className="w-4 h-4 text-gray-500" />
 								{dateRange}
@@ -240,14 +239,13 @@ export function DashboardHome() {
 												setDateRange(range);
 												setShowDatePicker(false);
 											}}
-											className={`w-full text-left px-4 py-2 text-[13px] font-medium transition-colors ${
-												dateRange === range
-													? "text-gray-900 bg-gray-100"
-													: "text-gray-600 hover:bg-gray-50"
-											}`}
+											className={`w-full text-left px-4 py-2 text-[13px] font-medium transition-colors ${dateRange === range
+												? "text-gray-900 bg-gray-100"
+												: "text-gray-600 hover:bg-gray-50"
+												}`}
 										>
 											{range}
-											{dateRange === range && <span className="float-right text-[#007AFF]">✓</span>}
+											{dateRange === range && <span className="float-right text-[#2d6a4f]">✓</span>}
 										</button>
 									))}
 								</div>
@@ -262,11 +260,10 @@ export function DashboardHome() {
 									setShowFilter(!showFilter);
 									setShowDatePicker(false);
 								}}
-								className={`flex items-center gap-2 backdrop-blur-xl border rounded-xl px-3.5 py-2 text-[13px] font-medium shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
-									filterType !== "all"
-										? "bg-[#007AFF]/10 border-[#007AFF]/20 text-[#007AFF]"
-										: "bg-white/70 hover:bg-white border-white text-gray-700"
-								}`}
+								className={`flex items-center gap-2 backdrop-blur-xl border rounded-xl px-3.5 py-2 text-[13px] font-medium shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-green-500/20 ${filterType !== "all"
+									? "bg-[#2d6a4f]/10 border-[#2d6a4f]/20 text-[#2d6a4f]"
+									: "bg-white/70 hover:bg-white border-white text-gray-700"
+									}`}
 							>
 								<Filter className="w-4 h-4" />
 								{filterType === "all"
@@ -283,14 +280,13 @@ export function DashboardHome() {
 												setFilterType(type);
 												setShowFilter(false);
 											}}
-											className={`w-full text-left px-4 py-2 text-[13px] font-medium transition-colors ${
-												filterType === type
-													? "text-gray-900 bg-gray-100"
-													: "text-gray-600 hover:bg-gray-50"
-											}`}
+											className={`w-full text-left px-4 py-2 text-[13px] font-medium transition-colors ${filterType === type
+												? "text-gray-900 bg-gray-100"
+												: "text-gray-600 hover:bg-gray-50"
+												}`}
 										>
 											{type === "all" ? "All Types" : type.charAt(0).toUpperCase() + type.slice(1)}
-											{filterType === type && <span className="float-right text-[#007AFF]">✓</span>}
+											{filterType === type && <span className="float-right text-[#2d6a4f]">✓</span>}
 										</button>
 									))}
 								</div>
@@ -401,9 +397,8 @@ function OverviewTab({
 							</div>
 							<div className="flex items-center gap-1.5 mt-3">
 								<span
-									className={`text-[12px] font-semibold px-1.5 py-0.5 rounded-md ${
-										m.positive ? "bg-[#34C759]/10 text-[#34C759]" : "bg-[#FF3B30]/10 text-[#FF3B30]"
-									}`}
+									className={`text-[12px] font-semibold px-1.5 py-0.5 rounded-md ${m.positive ? "bg-[#34C759]/10 text-[#34C759]" : "bg-[#FF3B30]/10 text-[#FF3B30]"
+										}`}
 								>
 									{m.positive ? "↑" : "↓"} {m.change}
 								</span>
@@ -463,11 +458,11 @@ function OverviewTab({
 										type="monotone"
 										dataKey="messages"
 										name="Messages"
-										stroke="#007AFF"
+										stroke="#2d6a4f"
 										strokeWidth={3}
 										dot={false}
-										activeDot={{ r: 6, strokeWidth: 0, fill: "#007AFF" }}
-										style={{ filter: "drop-shadow(0px 4px 6px rgba(0, 122, 255, 0.3))" }}
+										activeDot={{ r: 6, strokeWidth: 0, fill: "#2d6a4f" }}
+										style={{ filter: "drop-shadow(0px 4px 6px rgba(45, 106, 79, 0.3))" }}
 									/>
 									<Line
 										type="monotone"
@@ -495,7 +490,7 @@ function OverviewTab({
 					</div>
 					<div className="flex items-center justify-center gap-6 mt-6">
 						{[
-							{ color: "#007AFF", label: "Messages" },
+							{ color: "#2d6a4f", label: "Messages" },
 							{ color: "#FF9500", label: "Tasks" },
 							{ color: "#34C759", label: "Files" },
 						].map((l) => (
@@ -546,8 +541,8 @@ function OverviewTab({
 										tickMargin={10}
 									/>
 									<Tooltip content={<CustomTooltip />} cursor={{ fill: "transparent" }} />
-									<Bar dataKey="active" name="Active" fill="#007AFF" radius={[3, 3, 0, 0]} />
-									<Bar dataKey="completed" name="Completed" fill="#5AC8FA" radius={[3, 3, 0, 0]} />
+									<Bar dataKey="active" name="Active" fill="#2d6a4f" radius={[3, 3, 0, 0]} />
+									<Bar dataKey="completed" name="Completed" fill="#34C759" radius={[3, 3, 0, 0]} />
 									<Bar dataKey="pending" name="Pending" fill="#AF52DE" radius={[3, 3, 0, 0]} />
 								</BarChart>
 							</ResponsiveContainer>
@@ -597,7 +592,7 @@ function OverviewTab({
 									className="flex items-center justify-between group p-2 -mx-2 rounded-xl hover:bg-white/50 transition-colors"
 								>
 									<div className="flex items-center gap-3">
-										<div className="w-8 h-8 rounded-[10px] bg-blue-50 text-blue-500 flex items-center justify-center font-bold text-sm group-hover:bg-blue-500 group-hover:text-white transition-colors shadow-sm">
+										<div className="w-8 h-8 rounded-[10px] bg-green-50 text-green-600 flex items-center justify-center font-bold text-sm group-hover:bg-green-600 group-hover:text-white transition-colors shadow-sm">
 											#
 										</div>
 										<span className="text-[14px] font-semibold text-gray-800">{c.name}</span>
@@ -663,7 +658,7 @@ function ActivityTab({ analytics, isLoaded, filteredActivity }: any) {
 									alt={msg.user.firstName || msg.user.email}
 									referrerPolicy="no-referrer"
 								/>
-								<AvatarFallback className="bg-gradient-to-tr from-blue-500 to-indigo-500 text-white text-[11px] font-bold">
+								<AvatarFallback className="bg-gradient-to-tr from-green-500 to-green-700 text-white text-[11px] font-bold">
 									{(msg.user.firstName || msg.user.email)[0].toUpperCase()}
 								</AvatarFallback>
 							</Avatar>
@@ -743,10 +738,10 @@ function AnalyticsTab({ analytics, isLoaded, weeklyActivityData, overviewData }:
 									type="monotone"
 									dataKey="messages"
 									name="Messages"
-									stroke="#007AFF"
+									stroke="#2d6a4f"
 									strokeWidth={3}
-									dot={{ r: 5, fill: "#007AFF", strokeWidth: 0 }}
-									activeDot={{ r: 7, strokeWidth: 0, fill: "#007AFF" }}
+									dot={{ r: 5, fill: "#2d6a4f", strokeWidth: 0 }}
+									activeDot={{ r: 7, strokeWidth: 0, fill: "#2d6a4f" }}
 								/>
 								<Line
 									type="monotone"
@@ -933,7 +928,7 @@ function AudienceTab({ members, isLoaded, analytics }: any) {
 						{members.map((member: any) => {
 							const name = member.profile
 								? [member.profile.firstName, member.profile.lastName].filter(Boolean).join(" ") ||
-									member.profile.email
+								member.profile.email
 								: member.userId.slice(0, 8);
 							const initials = name.substring(0, 2).toUpperCase();
 							return (

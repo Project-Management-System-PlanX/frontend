@@ -69,7 +69,7 @@ export function NotificationBell({ theme = "light" }: { theme?: "light" | "dark"
 								<button
 									type="button"
 									onClick={markAllRead}
-									className="flex items-center gap-1 text-[12px] text-blue-500 hover:text-blue-700 font-medium"
+									className="flex items-center gap-1 text-[12px] text-green-600 hover:text-green-700 font-medium"
 								>
 									<CheckCheck className="w-3.5 h-3.5" />
 									Mark all read
@@ -91,7 +91,7 @@ export function NotificationBell({ theme = "light" }: { theme?: "light" | "dark"
 										onClick={() => !n.isRead && markRead(n.id)}
 										className={cn(
 											"flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors",
-											n.isRead ? "bg-white hover:bg-slate-50" : "bg-blue-50/60 hover:bg-blue-50",
+											n.isRead ? "bg-white hover:bg-slate-50" : "bg-green-50/60 hover:bg-green-50",
 										)}
 									>
 										{/* Icon */}
@@ -119,7 +119,7 @@ export function NotificationBell({ theme = "light" }: { theme?: "light" | "dark"
 
 										{/* Unread dot */}
 										{!n.isRead && (
-											<div className="w-2 h-2 rounded-full bg-blue-500 shrink-0 mt-1.5" />
+											<div className="w-2 h-2 rounded-full bg-green-600 shrink-0 mt-1.5" />
 										)}
 									</div>
 								))

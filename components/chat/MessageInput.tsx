@@ -117,7 +117,7 @@ export function MessageInput({ onSendMessage, disabled, channelName }: MessageIn
 			}),
 			Underline,
 			TextAlign.configure({ types: ["paragraph"] }),
-			Link.configure({ openOnClick: false, HTMLAttributes: { class: "text-blue-500 underline" } }),
+			Link.configure({ openOnClick: false, HTMLAttributes: { class: "text-green-600 underline" } }),
 			MentionNode,
 		],
 		onUpdate: ({ editor: ed }) => {
@@ -339,11 +339,10 @@ export function MessageInput({ onSendMessage, disabled, channelName }: MessageIn
 			type="button"
 			onClick={onClick}
 			title={title}
-			className={`p-1 rounded transition-colors ${
-				isActive
+			className={`p-1 rounded transition-colors ${isActive
 					? "bg-[#0B6E4F]/20 text-[#0B6E4F] shadow-sm"
 					: "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-			}`}
+				}`}
 		>
 			{children}
 		</button>
@@ -351,7 +350,7 @@ export function MessageInput({ onSendMessage, disabled, channelName }: MessageIn
 
 	return (
 		<div className="p-4 border-t border-gray-100 bg-white">
-			<div className="max-w-4xl mx-auto bg-gray-50 border border-gray-200 rounded-2xl focus-within:ring-2 focus-within:ring-[#50C878]/30 focus-within:border-[#50C878] transition-all overflow-hidden">
+			<div className="max-w-4xl mx-auto bg-gray-50 border border-gray-200 rounded-2xl focus-within:ring-2 focus-within:ring-green-500/30 focus-within:border-green-500 transition-all overflow-hidden">
 				{/* Formatting Toolbar */}
 				<div className="flex items-center gap-0.5 px-3 py-1.5 border-b border-gray-200/60">
 					<ToolbarButton
@@ -459,16 +458,14 @@ export function MessageInput({ onSendMessage, disabled, channelName }: MessageIn
 											e.preventDefault();
 											insertMention(member);
 										}}
-										className={`w-full flex items-center gap-3 px-2 py-1.5 text-left rounded-lg transition-colors ${
-											i === mentionIndex
+										className={`w-full flex items-center gap-3 px-2 py-1.5 text-left rounded-lg transition-colors ${i === mentionIndex
 												? "bg-[#0B6E4F] text-white"
 												: "text-gray-900 hover:bg-gray-100"
-										}`}
+											}`}
 									>
 										<div
-											className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-medium shrink-0 ${
-												i === mentionIndex ? "bg-white/20 text-white" : "bg-gray-200 text-gray-500"
-											}`}
+											className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-medium shrink-0 ${i === mentionIndex ? "bg-white/20 text-white" : "bg-gray-200 text-gray-500"
+												}`}
 										>
 											{initials}
 										</div>
@@ -506,11 +503,10 @@ export function MessageInput({ onSendMessage, disabled, channelName }: MessageIn
 							<button
 								type="button"
 								onClick={() => setShowEmoji((prev) => !prev)}
-								className={`p-1.5 rounded-lg transition-colors ${
-									showEmoji
+								className={`p-1.5 rounded-lg transition-colors ${showEmoji
 										? "text-[#0B6E4F] bg-emerald-50"
 										: "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-								}`}
+									}`}
 								title="Emoji"
 								disabled={disabled}
 							>

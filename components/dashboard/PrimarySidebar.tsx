@@ -121,7 +121,7 @@ export function PrimarySidebar({
 				<div className="w-full flex items-center gap-4">
 					{/* Logo */}
 					<div className="flex items-center gap-3">
-						<div className="w-9 h-9 rounded-[10px] bg-gradient-to-b from-[#5AC8FA] to-[#007AFF] flex items-center justify-center text-white shadow-md shadow-blue-500/20 shrink-0">
+						<div className="w-9 h-9 rounded-[10px] bg-gradient-to-b from-green-400 to-green-600 flex items-center justify-center text-white shadow-md shadow-green-500/20 shrink-0">
 							<Zap className="w-4.5 h-4.5 fill-white/20" />
 						</div>
 						<span
@@ -200,7 +200,7 @@ export function PrimarySidebar({
 							className="flex items-center gap-3 transition-transform hover:scale-[1.02] active:scale-[0.98] group outline-none"
 							title={isExpanded ? "Collapse Sidebar" : "Expand Sidebar"}
 						>
-							<div className="w-10 h-10 rounded-[12px] bg-gradient-to-b from-[#5AC8FA] to-[#007AFF] flex items-center justify-center text-white shadow-md shadow-blue-500/20 shrink-0 transition-all group-hover:shadow-blue-500/30">
+							<div className="w-10 h-10 rounded-[12px] bg-gradient-to-b from-green-400 to-green-600 flex items-center justify-center text-white shadow-md shadow-green-500/20 shrink-0 transition-all group-hover:shadow-green-500/30">
 								<Zap className="w-5.5 h-5.5 fill-white/20" />
 							</div>
 							<AnimatePresence>
@@ -354,7 +354,7 @@ function PrimaryNavItem({
 					)}
 				>
 					<AvatarImage src={imageUrl} alt={label} referrerPolicy="no-referrer" />
-					<AvatarFallback className="text-[8px] bg-gradient-to-tr from-blue-500 to-indigo-500 text-white font-bold">
+					<AvatarFallback className="text-[8px] bg-gradient-to-tr from-green-500 to-green-700 text-white font-bold">
 						{initials}
 					</AvatarFallback>
 				</Avatar>

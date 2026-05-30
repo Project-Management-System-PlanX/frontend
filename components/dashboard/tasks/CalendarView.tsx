@@ -59,7 +59,7 @@ export function CalendarView({
 						<Popover>
 							<PopoverTrigger asChild>
 								<div className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-white/10 cursor-pointer transition-colors group">
-									<span className="text-[16px] font-bold text-white group-hover:text-blue-400 transition-colors">
+									<span className="text-[16px] font-bold text-white group-hover:text-green-400 transition-colors">
 										{format(currentDate, "MMMM")}
 									</span>
 									<ChevronDown className="w-3.5 h-3.5 text-white/40" />
@@ -74,7 +74,7 @@ export function CalendarView({
 											className={cn(
 												"px-3 py-1.5 rounded-lg text-[13px] font-bold transition-colors text-left",
 												currentDate.getMonth() === i
-													? "bg-blue-600 text-white"
+													? "bg-[#2D6A4F] text-white"
 													: "hover:bg-white/5 text-white/60",
 											)}
 										>
@@ -106,7 +106,7 @@ export function CalendarView({
 												className={cn(
 													"px-3 py-1.5 rounded-lg text-[13px] font-bold transition-colors text-left",
 													currentDate.getFullYear() === year
-														? "bg-blue-600 text-white"
+														? "bg-[#2D6A4F] text-white"
 														: "hover:bg-white/5 text-white/60",
 												)}
 											>
@@ -173,7 +173,7 @@ export function CalendarView({
 									className={cn(
 										"border-r border-b border-white/10 p-4 transition-colors relative group hover:bg-white/[0.02] flex flex-col",
 										!isCurrentMonth && "bg-black/20",
-										isToday && "bg-blue-600/[0.08]",
+										isToday && "bg-green-600/[0.08]",
 									)}
 								>
 									<div className="flex justify-between items-start mb-3">
@@ -181,7 +181,7 @@ export function CalendarView({
 											className={cn(
 												"text-[14px] font-black tracking-tight",
 												isToday
-													? "text-blue-400 bg-blue-400/10 px-2 py-1 rounded-md"
+													? "text-green-400 bg-green-400/10 px-2 py-1 rounded-md"
 													: isCurrentMonth
 														? "text-white/60"
 														: "text-white/10",
@@ -212,7 +212,7 @@ export function CalendarView({
 																	/>
 																))
 															) : (
-																<div className="h-1.5 w-6 rounded-full bg-blue-500/50" />
+																<div className="h-1.5 w-6 rounded-full bg-green-500/50" />
 															)}
 														</div>
 

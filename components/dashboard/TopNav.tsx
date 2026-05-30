@@ -22,7 +22,7 @@ import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { cn } from "@/lib/utils";
 
 const UI = {
-	primary: "#e85d04",
+	primary: "#2d6a4f",
 	bg: "#2d2d44",
 	border: "rgba(232, 93, 4, 0.2)",
 	textPrimary: "#ffffff",
@@ -71,7 +71,7 @@ export function TopNav() {
 					onClick={() => setIsMenuOpen(!isMenuOpen)}
 					className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/10 transition-colors group"
 				>
-					<div className="w-8 h-8 rounded-lg bg-[#007AFF] flex items-center justify-center text-white shadow-lg">
+					<div className="w-8 h-8 rounded-lg bg-[#2d6a4f] flex items-center justify-center text-white shadow-lg">
 						<Zap className="w-5 h-5 fill-white/20" />
 					</div>
 					<span
@@ -136,7 +136,7 @@ export function TopNav() {
 			<div className="hidden md:flex flex-1 max-w-[520px] ml-4">
 				<div
 					className={cn(
-						"flex items-center gap-2.5 px-3 py-2 rounded-lg border w-full transition-colors focus-within:ring-2 focus-within:ring-blue-500/20",
+						"flex items-center gap-2.5 px-3 py-2 rounded-lg border w-full transition-colors focus-within:ring-2 focus-within:ring-green-500/20",
 						isDashboardHome ? "bg-gray-100 border-gray-200" : "bg-white/5 border-white/10",
 					)}
 				>
@@ -155,20 +155,6 @@ export function TopNav() {
 
 			{/* Right Actions */}
 			<div className="ml-auto flex items-center gap-2">
-				<button
-					type="button"
-					className="hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-lg text-white text-[13px] font-bold shadow-lg transition-transform active:scale-95"
-					style={{ backgroundColor: UI.primary }}
-				>
-					<Plus className="w-4 h-4" />
-					Create
-				</button>
-				<div
-					className={cn(
-						"w-[1px] h-6 mx-2 hidden sm:block",
-						isDashboardHome ? "bg-gray-200" : "bg-white/10",
-					)}
-				/>
 				<NotificationBell theme={isDashboardHome ? "light" : "dark"} />
 				<button
 					type="button"
@@ -184,7 +170,7 @@ export function TopNav() {
 				<button type="button" className="ml-2">
 					<Avatar className="w-8 h-8 ring-2 ring-white/5">
 						<AvatarImage src={imageUrl} />
-						<AvatarFallback className="bg-indigo-600 text-[10px] text-white font-bold">
+						<AvatarFallback className="bg-green-600 text-[10px] text-white font-bold">
 							{initials}
 						</AvatarFallback>
 					</Avatar>
