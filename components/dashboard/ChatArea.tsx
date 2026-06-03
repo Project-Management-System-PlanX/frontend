@@ -160,8 +160,6 @@ export function ChatArea({
 	const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
 	const [isRecording, setIsRecording] = useState(false);
 	const [showSummarizer, setShowSummarizer] = useState(false);
-	const [showAiPrompt, setShowAiPrompt] = useState(false);
-	const [isSummarizing, setIsSummarizing] = useState(false);
 	const [, forceUpdate] = useState({});
 	const hasPromptedSummaryRef = useRef(false);
 	const hasAutoSummarizedRef = useRef(false);
@@ -173,8 +171,6 @@ export function ChatArea({
 		hasAutoSummarizedRef.current = false;
 		setShowSummarizer(false);
 		setInitialUnreadSnapshot(0);
-		setShowAiPrompt(false);
-		setIsSummarizing(false);
 	}, [channelName]);
 
 	const scrollRef = useRef<HTMLDivElement>(null);
@@ -245,32 +241,14 @@ export function ChatArea({
 
 	const effectiveUnreadCount = Math.max(channelUnreadCount, computedUnreadCount);
 	const promptUnreadCount = Math.max(effectiveUnreadCount, initialUnreadSnapshot);
-
 	const displayMessages = useMemo(() => {
-		if (!showAiPrompt || promptUnreadCount === 0) return messages;
-
-		const promptMsg: SupabaseMessage = {
-			id: `ai-summary-prompt-${channelName}`,
-			channelId: channelName,
-			channel_id: channelName,
-			userId: "ai-summary-prompt",
-			user_id: "ai-summary-prompt",
-			content: "",
-			createdAt: new Date().toISOString(),
-			created_at: new Date().toISOString(),
-			users: {
-				firstName: "AI",
-				lastName: "Assistant",
-				username: "AI Assistant",
-				imageUrl: null,
-				email: "ai-assistant@system.local",
-			},
-		} as unknown as SupabaseMessage;
-
-		if (messages.some((m) => m.id === promptMsg.id)) return messages;
-
-		return [...messages, promptMsg];
-	}, [messages, showAiPrompt, promptUnreadCount, channelName]);
+		return messages.filter((msg) => {
+			if (isAiSummaryContent(msg.content)) {
+				return msg.user_id === user?.id || msg.userId === user?.id;
+			}
+			return true;
+		});
+	}, [messages, user?.id]);
 
 	useEffect(() => {
 		if (channelUnreadCount > 0) {
@@ -285,7 +263,6 @@ export function ChatArea({
 	useEffect(() => {
 		if (hasPromptedSummaryRef.current) return;
 		if (promptUnreadCount > 0) {
-			setShowAiPrompt(true);
 			setShowSummarizer(true);
 			hasPromptedSummaryRef.current = true;
 		}
@@ -799,8 +776,9 @@ export function ChatArea({
 		const firstUnreadIndex = candidates.findIndex((msg) => !msg.is_read);
 		let payloadMessages = candidates;
 		if (firstUnreadIndex !== -1) {
-			const startIndex = Math.max(0, firstUnreadIndex - 3);
-			payloadMessages = candidates.slice(startIndex);
+			const beforeMessages = candidates.slice(Math.max(0, firstUnreadIndex - 3), firstUnreadIndex);
+			const unreadMessages = candidates.slice(firstUnreadIndex).filter((msg) => !msg.is_read);
+			payloadMessages = [...beforeMessages, ...unreadMessages];
 		} else if (candidates.length > 3) {
 			payloadMessages = candidates.slice(-3);
 		}
@@ -816,7 +794,6 @@ export function ChatArea({
 			{
 				baseUrl: SUMMARIZER_BASE_URL,
 				method: "POST",
-				queryParams: { unread_only: "true" },
 				body: JSON.stringify(payload),
 			},
 		);
@@ -851,76 +828,18 @@ export function ChatArea({
 		unreadMessageIds,
 	]);
 
-	const handleSummarySend = useCallback(
-		async (result: SummaryResult) => {
-			if (!sendMessage || !user?.id) return;
-			const summaryBlock = result.summary
-				? `<p><strong>Summary</strong></p><p>${result.summary}</p>`
-				: "";
-			const keyPointsBlock = result.keyPoints.length
-				? `<p><strong>Key points</strong></p><ul>${result.keyPoints
-						.map((point) => `<li>${point}</li>`)
-						.join("")}</ul>`
-				: "";
-			const actionItemsBlock = result.actionItems.length
-				? `<p><strong>Action items</strong></p><ul>${result.actionItems
-						.map((item) => `<li>${item}</li>`)
-						.join("")}</ul>`
-				: "";
-			const content = `${AI_SUMMARY_MARKER}
-<p><strong>AI Summary</strong></p>
-<p>Unread overview for <strong>${displayName}</strong></p>
-${summaryBlock}
-${keyPointsBlock}
-${actionItemsBlock}`.trim();
-
+	const handleSaveSummary = useCallback(
+		async (lines: string[]) => {
+			if (!user?.id) return;
+			const html = `${AI_SUMMARY_MARKER}<br/><strong>AI Summary</strong><br/><ul>${lines.map((l) => `<li>${l}</li>`).join("")}</ul>`;
 			try {
-				await sendMessage(content, user.id);
-			} catch (error) {
-				console.error("Failed to send AI summary message:", error);
+				await sendMessage(html, user.id);
+			} catch (err) {
+				console.error("Failed to save summary:", err);
 			}
 		},
-		[displayName, sendMessage, user?.id],
+		[user?.id, sendMessage],
 	);
-
-	const handleSummarizeFromPrompt = useCallback(async () => {
-		setIsSummarizing(true);
-		try {
-			const result = await handleSummarizeUnread();
-			await handleSummarySend(result);
-			setShowAiPrompt(false);
-		} catch (error) {
-			console.error("Failed to summarize from prompt:", error);
-		} finally {
-			setIsSummarizing(false);
-		}
-	}, [handleSummarizeUnread, handleSummarySend]);
-
-	// Auto-summarize once when opening a channel/DM with unread messages
-	useEffect(() => {
-		if (hasAutoSummarizedRef.current) return;
-		if (promptUnreadCount === 0) return;
-		if (unreadItems.length === 0) return;
-
-		let cancelled = false;
-		const runSummary = async () => {
-			try {
-				const result = await handleSummarizeUnread();
-				if (!cancelled) {
-					hasAutoSummarizedRef.current = true;
-					await handleSummarySend(result);
-				}
-			} catch (error) {
-				console.error("Auto-summarize failed:", error);
-			}
-		};
-
-		void runSummary();
-
-		return () => {
-			cancelled = true;
-		};
-	}, [handleSummarizeUnread, handleSummarySend, promptUnreadCount, unreadItems.length]);
 
 	const isHtmlContent = (content: string) => /<[a-z][\s\S]*>/i.test(content);
 
@@ -1006,7 +925,7 @@ ${actionItemsBlock}`.trim();
 				unreadItems={unreadItems}
 				forceShow={showSummarizer}
 				onSummarizeUnread={handleSummarizeUnread}
-				onSummarize={handleSummarySend}
+				onSave={handleSaveSummary}
 				onClose={() => setShowSummarizer(false)}
 			/>
 
@@ -1048,85 +967,6 @@ ${actionItemsBlock}`.trim();
 								const prevMessage = msgIndex > 0 ? displayMessages[msgIndex - 1] : null;
 								const showUnreadSep =
 									lastReadMsgId && prevMessage?.id === lastReadMsgId && !isOwnMessage;
-
-								if (message.userId === "ai-summary-prompt") {
-									return (
-										<div key={message.id}>
-											{showUnreadSep && (
-												<div ref={unreadSeparatorRef}>
-													<UnreadSeparator />
-												</div>
-											)}
-											<motion.div
-												initial={{ opacity: 0, scale: 0.95, y: 10 }}
-												animate={{ opacity: 1, scale: 1, y: 0 }}
-												className="my-4 mx-auto max-w-md bg-gradient-to-br from-purple-50/90 to-indigo-50/90 backdrop-blur-md border border-purple-100/80 rounded-2xl p-5 shadow-lg shadow-purple-500/[0.05] relative overflow-hidden"
-												style={{
-													fontFamily:
-														"'-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Inter', sans-serif",
-												}}
-											>
-												<div className="absolute -right-12 -bottom-12 w-32 h-32 bg-purple-200/30 rounded-full blur-2xl pointer-events-none" />
-												<button
-													type="button"
-													onClick={() => setShowAiPrompt(false)}
-													className="absolute top-3.5 right-3.5 p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100/50 transition-all focus:outline-none"
-												>
-													<X className="w-4 h-4" />
-												</button>
-
-												<div className="flex items-start gap-3.5">
-													<div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center shrink-0 shadow-md shadow-purple-500/20">
-														<Sparkles className="w-4.5 h-4.5 text-white" />
-													</div>
-													<div className="flex-1 min-w-0">
-														<h4 className="text-[14px] font-bold text-slate-900 leading-tight">
-															AI Summary Assistant
-														</h4>
-														<p className="text-[13px] text-slate-600 mt-1.5 leading-relaxed">
-															You have{" "}
-															<span className="font-semibold text-slate-800">
-																{promptUnreadCount}
-															</span>{" "}
-															unread message{promptUnreadCount !== 1 ? "s" : ""} in{" "}
-															<span className="font-semibold text-slate-800">#{displayName}</span>.
-															Would you like a quick AI summary?
-														</p>
-
-														<div className="flex items-center gap-2 mt-4">
-															<button
-																type="button"
-																disabled={isSummarizing}
-																onClick={handleSummarizeFromPrompt}
-																className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[12px] font-bold shadow-md shadow-purple-500/20 hover:shadow-lg hover:shadow-purple-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-70 disabled:pointer-events-none"
-															>
-																{isSummarizing ? (
-																	<>
-																		<Loader2 className="w-3.5 h-3.5 animate-spin" />
-																		Summarizing...
-																	</>
-																) : (
-																	<>
-																		<Sparkles className="w-3.5 h-3.5" />
-																		Summarize
-																	</>
-																)}
-															</button>
-															<button
-																type="button"
-																disabled={isSummarizing}
-																onClick={() => setShowAiPrompt(false)}
-																className="px-3.5 py-2 rounded-xl border border-slate-200 bg-white/80 hover:bg-white text-slate-600 hover:text-slate-800 text-[12px] font-semibold transition-all focus:outline-none"
-															>
-																Maybe later
-															</button>
-														</div>
-													</div>
-												</div>
-											</motion.div>
-										</div>
-									);
-								}
 
 								return (
 									<div key={message.id}>

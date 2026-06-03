@@ -125,17 +125,22 @@ export function SynapseSidebar() {
 		}
 	};
 
-	// Mark channel as read when opened
+	// Mark channel as read when opened (delayed to allow summary prompt to capture unread count)
 	useEffect(() => {
 		if (!activeChannelId) return;
-		const activeChannel = channels.find((channel) => channel.id === activeChannelId);
-		if (activeChannel?.unread) {
-			updateChannel(activeChannelId, { unread: false });
-		}
-		// Also mark as read via backend
-		if (unreadCounts[activeChannelId] > 0) {
-			markChannelAsRead(activeChannelId);
-		}
+
+		const timer = setTimeout(() => {
+			const activeChannel = channels.find((channel) => channel.id === activeChannelId);
+			if (activeChannel?.unread) {
+				updateChannel(activeChannelId, { unread: false });
+			}
+			// Also mark as read via backend
+			if (unreadCounts[activeChannelId] > 0) {
+				markChannelAsRead(activeChannelId);
+			}
+		}, 1500);
+
+		return () => clearTimeout(timer);
 	}, [activeChannelId, channels, updateChannel, unreadCounts, markChannelAsRead]);
 
 	const isChat = pathname.startsWith("/dashboard/chat");

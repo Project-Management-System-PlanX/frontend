@@ -1,37 +1,9 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Clock, Sparkles, X } from "lucide-react";
+import { Sparkles, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-
-const DUMMY_SUMMARIES = {
-	unread: [
-		"Deployment failed on production — team investigating",
-		"DevOps restarted the server successfully",
-		"Payment module bug identified in checkout flow",
-		"Ravi assigned to fix the critical issue",
-		"Design team shared new mockups for review",
-	],
-	"10min": [
-		"Quick sync on API design decisions",
-		"Backend rate limit configuration updated",
-		"Frontend hotfix deployed to staging",
-	],
-	"1hour": [
-		"Team discussed new API architecture design",
-		"Backend rate limit issue found and resolved",
-		"Frontend fix deployed to production",
-		"Sprint retrospective action items shared",
-	],
-	today: [
-		"Morning standup — all blockers cleared",
-		"New feature branch created for auth module",
-		"Database migration completed successfully",
-		"QA team reported 3 new issues",
-		"Design review meeting scheduled for tomorrow",
-		"Performance optimization PR merged",
-	],
-};
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 
 export interface UnreadItem {
 	id: string;
@@ -62,7 +34,7 @@ interface ChatSummaryProps {
 	onClose?: () => void;
 	onSummarize?: (result: SummaryResult) => void;
 	onSummarizeUnread?: () => Promise<SummaryResult>;
-	onSummarizeRange?: (range: "unread" | "10min" | "1hour" | "today") => Promise<SummaryResult>;
+	onSave?: (lines: string[]) => void;
 }
 
 export function ChatSummary({
@@ -73,97 +45,89 @@ export function ChatSummary({
 	onClose,
 	onSummarize,
 	onSummarizeUnread,
-	onSummarizeRange,
+	onSave,
 }: ChatSummaryProps) {
+	const { user } = useSupabaseAuth();
 	const [showSummary, setShowSummary] = useState(false);
-	const [summaryType, setSummaryType] = useState<keyof typeof DUMMY_SUMMARIES | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
 	const [summaryLines, setSummaryLines] = useState<string[]>([]);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
+	const [storedSummary, setStoredSummary] = useState<SummaryResult | null>(null);
+	const [dismissed, setDismissed] = useState(false);
 
 	// Capture the initial unread count so the banner doesn't vanish instantly when the store resets it on load
 	const [initialUnreadCount, setInitialUnreadCount] = useState(unreadCount);
 
-	// Instead of depending completely on the parent's unreadCount dropping to 0, if the parent's count is higher, we update it.
+	// Sync unreadCount changes
 	useEffect(() => {
 		if (unreadCount > initialUnreadCount) {
 			setInitialUnreadCount(unreadCount);
 		}
 	}, [unreadCount, initialUnreadCount]);
 
-	const buildPayload = useCallback((): SummaryPayload => {
-		return {
-			channelName,
-			requestedAt: new Date().toISOString(),
-			items: unreadItems,
-		};
-	}, [channelName, unreadItems]);
-
-	const buildSummary = useCallback(
-		(items: UnreadItem[]): SummaryResult => {
-			const payload = buildPayload();
-			const headline = `Summary of ${items.length} unread message${items.length === 1 ? "" : "s"}`;
-			const lines = items.length
-				? items.slice(0, 5).map((item) => `${item.name}: ${item.text}`)
-				: ["No unread messages to summarize."];
-			if (items.length > 5) {
-				lines.push(`...and ${items.length - 5} more updates.`);
-			}
-			const summary = [headline, ...lines].join("\n");
-			return { summary, lines, payload, keyPoints: [], actionItems: [] };
-		},
-		[buildPayload],
-	);
-
-	const handleSummarize = useCallback(
-		async (type: keyof typeof DUMMY_SUMMARIES) => {
-			setIsLoading(true);
-			setSummaryType(type);
-			setErrorMessage(null);
-
-			try {
-				if (onSummarizeRange) {
-					const result = await onSummarizeRange(type);
-					setSummaryLines(result.lines);
-					onSummarize?.(result);
-				} else if (type === "unread" && onSummarizeUnread) {
-					const result = await onSummarizeUnread();
-					setSummaryLines(result.lines);
-					onSummarize?.(result);
-				} else if (type === "unread") {
-					const result = buildSummary(unreadItems);
-					setSummaryLines(result.lines);
-					onSummarize?.(result);
-				} else {
-					setSummaryLines(DUMMY_SUMMARIES[type]);
+	// Load stored summary from localStorage on mount/channel change
+	useEffect(() => {
+		setDismissed(false);
+		setErrorMessage(null);
+		if (user?.id) {
+			const key = `ai-summary:${user.id}:${channelName}`;
+			const cached = localStorage.getItem(key);
+			if (cached) {
+				try {
+					const parsed: SummaryResult = JSON.parse(cached);
+					setStoredSummary(parsed);
+					setSummaryLines(parsed.lines || []);
+					setShowSummary(true);
+				} catch {
+					setStoredSummary(null);
+					setSummaryLines([]);
+					setShowSummary(false);
 				}
-				setShowSummary(true);
-			} catch (error) {
-				console.error("Failed to summarize:", error);
-				setErrorMessage("Failed to summarize unread messages. Please try again.");
-			} finally {
-				setIsLoading(false);
+			} else {
+				setStoredSummary(null);
+				setSummaryLines([]);
+				setShowSummary(false);
 			}
-		},
-		[buildSummary, onSummarize, onSummarizeUnread, onSummarizeRange, unreadItems],
-	);
-
-	const getSummaryTitle = () => {
-		switch (summaryType) {
-			case "unread":
-				return "Unread Messages Summary";
-			case "10min":
-				return "Last 10 Minutes";
-			case "1hour":
-				return "Last 1 Hour";
-			case "today":
-				return "Today's Summary";
-			default:
-				return "Summary";
 		}
-	};
+	}, [channelName, user?.id]);
 
-	if (initialUnreadCount === 0 && !showSummary && !forceShow) return null;
+	const handleTriggerSummarize = useCallback(async () => {
+		if (!onSummarizeUnread || !user?.id) return;
+		setIsLoading(true);
+		setErrorMessage(null);
+		try {
+			const result = await onSummarizeUnread();
+			setSummaryLines(result.lines);
+			setStoredSummary(result);
+			setShowSummary(true);
+
+			// Persist in localStorage
+			const key = `ai-summary:${user.id}:${channelName}`;
+			localStorage.setItem(key, JSON.stringify(result));
+
+			// Call parent callbacks if present
+			onSummarize?.(result);
+		} catch (error) {
+			console.error("Failed to summarize:", error);
+			setErrorMessage("Unable to generate summary right now.");
+		} finally {
+			setIsLoading(false);
+		}
+	}, [onSummarizeUnread, onSummarize, user?.id, channelName]);
+
+	const handleClearSummary = useCallback(() => {
+		setStoredSummary(null);
+		setSummaryLines([]);
+		setShowSummary(false);
+		setDismissed(true);
+		if (user?.id) {
+			const key = `ai-summary:${user.id}:${channelName}`;
+			localStorage.removeItem(key);
+		}
+		onClose?.();
+	}, [user?.id, channelName, onClose]);
+
+	const showPromptBanner = (initialUnreadCount > 0 || forceShow) && !dismissed && !showSummary;
 
 	return (
 		<div className="px-4 pb-2">
@@ -173,10 +137,10 @@ export function ChatSummary({
 				transition={{ type: "spring", stiffness: 300, damping: 28 }}
 				className="max-w-4xl mx-auto w-full"
 			>
-				{/* Unread Count Banner or Forced Toggle */}
-				{(initialUnreadCount > 0 || forceShow) && !showSummary && (
+				{/* Unread Message Prompt Banner */}
+				{showPromptBanner && (
 					<div
-						className="rounded-2xl bg-white/80 backdrop-blur-xl border border-gray-200/60 shadow-lg shadow-black/[0.03] p-4"
+						className="rounded-2xl bg-white/80 backdrop-blur-xl border border-gray-200/60 shadow-lg shadow-black/[0.03] p-4 mb-4"
 						style={{
 							fontFamily:
 								"'-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Inter', sans-serif",
@@ -184,100 +148,51 @@ export function ChatSummary({
 					>
 						<div className="flex items-center justify-between mb-3">
 							<p className="text-[13px] text-gray-500">
-								{initialUnreadCount > 0 ? (
-									<>
-										You have <span className="font-bold text-gray-900">{initialUnreadCount}</span>{" "}
-										unread message{initialUnreadCount !== 1 ? "s" : ""} in{" "}
-									</>
-								) : (
-									<>Get an AI summary of </>
-								)}
-								<span className="font-semibold text-gray-700">#{channelName}</span>
+								You have <span className="font-bold text-gray-900">{initialUnreadCount}</span>{" "}
+								unread message{initialUnreadCount !== 1 ? "s" : ""} in{" "}
+								<span className="font-semibold text-gray-700">#{channelName}</span>. Would you like
+								an AI summary?
 							</p>
-							{forceShow && (
-								<button
-									type="button"
-									onClick={onClose}
-									className="p-1 rounded-full hover:bg-gray-100 text-gray-400"
-								>
-									<X className="w-4 h-4" />
-								</button>
-							)}
+							<button
+								type="button"
+								onClick={() => setDismissed(true)}
+								className="p-1 rounded-full hover:bg-gray-100 text-gray-400"
+							>
+								<X className="w-4 h-4" />
+							</button>
 						</div>
 
-						{/* Unread Preview */}
-						{unreadItems.length > 0 && (
-							<div className="mb-3 rounded-xl bg-white/70 border border-gray-200/60 p-3">
-								<p className="text-[11px] uppercase tracking-wider text-gray-400 font-semibold mb-2">
-									Unread Preview
-								</p>
-								<ul className="space-y-1.5">
-									{unreadItems.slice(0, 4).map((item) => (
-										<li key={item.id} className="text-[12px] text-gray-600">
-											<span className="text-gray-400">{item.time}</span>
-											<span className="mx-1">•</span>
-											<span className="font-medium text-gray-700">{item.name}</span>
-											<span className="mx-1">—</span>
-											{item.text}
-										</li>
-									))}
-									{unreadItems.length > 4 && (
-										<li className="text-[11px] text-gray-400">
-											+ {unreadItems.length - 4} more unread messages
-										</li>
-									)}
-								</ul>
-							</div>
-						)}
-
-						{/* Summarize Unread Button */}
-						<button
-							type="button"
-							onClick={() => handleSummarize("unread")}
-							disabled={isLoading}
-							className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#007AFF] to-[#5856D6] text-white text-[13px] font-semibold shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30 active:scale-[0.98] transition-all disabled:opacity-60"
-						>
-							{isLoading ? (
-								<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-							) : (
-								<Sparkles className="w-4 h-4" />
-							)}
-							{isLoading
-								? "Summarizing..."
-								: initialUnreadCount > 0
-									? "Summarize Unread"
-									: "Summarize Recent Messages"}
-						</button>
+						{/* Action Buttons */}
+						<div className="flex gap-2">
+							<button
+								type="button"
+								onClick={handleTriggerSummarize}
+								disabled={isLoading}
+								className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#007AFF] to-[#5856D6] text-white text-[13px] font-semibold shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30 active:scale-[0.98] transition-all disabled:opacity-60"
+							>
+								{isLoading ? (
+									<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+								) : (
+									<Sparkles className="w-4 h-4" />
+								)}
+								{isLoading ? "Generating summary..." : "Summarize"}
+							</button>
+							<button
+								type="button"
+								onClick={() => setDismissed(true)}
+								className="px-4 py-2.5 rounded-xl border border-gray-200 bg-white/80 hover:bg-white text-gray-600 hover:text-gray-800 text-[13px] font-semibold transition-all focus:outline-none"
+							>
+								Not Now
+							</button>
+						</div>
 
 						{errorMessage && <p className="mt-2 text-[12px] text-red-500">{errorMessage}</p>}
-
-						{/* Time-based Summary Options */}
-						<div className="flex items-center gap-2 mt-3">
-							<Clock className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-							<div className="flex gap-1.5 flex-1">
-								{[
-									{ key: "10min" as const, label: "Last 10 min" },
-									{ key: "1hour" as const, label: "Last 1 hour" },
-									{ key: "today" as const, label: "Today" },
-								].map((option) => (
-									<button
-										type="button"
-										key={option.key}
-										onClick={() => handleSummarize(option.key)}
-										disabled={isLoading}
-										className="flex-1 px-2.5 py-1.5 text-[11px] font-medium text-gray-500 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-lg transition-all active:scale-[0.97] disabled:opacity-50"
-									>
-										{option.label}
-									</button>
-								))}
-							</div>
-						</div>
 					</div>
 				)}
 
 				{/* Summary Result Panel */}
 				<AnimatePresence>
-					{showSummary && summaryType && (
+					{showSummary && (
 						<motion.div
 							initial={{ opacity: 0, y: -12, scale: 0.96 }}
 							animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -289,15 +204,12 @@ export function ChatSummary({
 									"'-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Inter', sans-serif",
 							}}
 						>
-							{/* Close button */}
+							{/* Close/Clear button */}
 							<button
 								type="button"
-								onClick={() => {
-									setShowSummary(false);
-									setSummaryType(null);
-									onClose?.();
-								}}
+								onClick={handleClearSummary}
 								className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+								title="Clear Summary"
 							>
 								<X className="w-4 h-4" />
 							</button>
@@ -308,16 +220,17 @@ export function ChatSummary({
 									<Sparkles className="w-3.5 h-3.5 text-white" />
 								</div>
 								<div>
-									<h4 className="text-[13px] font-bold text-gray-900">{getSummaryTitle()}</h4>
+									<h4 className="text-[13px] font-bold text-gray-900">Unread Messages Summary</h4>
 									<p className="text-[10px] text-gray-400">AI-powered summary</p>
 								</div>
 							</div>
 
 							{/* Summary Items */}
 							<ul className="space-y-2">
-								{summaryLines.map((item) => (
+								{summaryLines.map((item, index) => (
 									<motion.li
-										key={item}
+										// biome-ignore lint/correctness/useJsxKeyInIterable: index is safe here
+										key={index}
 										initial={{ opacity: 0, x: -8 }}
 										animate={{ opacity: 1, x: 0 }}
 										className="flex items-start gap-2.5 text-[13px] text-gray-600 leading-relaxed"
@@ -328,26 +241,25 @@ export function ChatSummary({
 								))}
 							</ul>
 
-							{/* Footer */}
-							<div className="mt-4 pt-3 border-t border-gray-100">
-								<p className="text-[10px] text-gray-400 italic">AI-generated realtime summary</p>
-							</div>
-
-							{/* Try other time ranges */}
-							<div className="flex items-center gap-2 mt-3">
-								<span className="text-[11px] text-gray-400">Try:</span>
-								{(["10min", "1hour", "today"] as const)
-									.filter((k) => k !== summaryType)
-									.map((key) => (
-										<button
-											type="button"
-											key={key}
-											onClick={() => handleSummarize(key)}
-											className="px-2 py-1 text-[10px] font-medium text-[#007AFF] hover:bg-[#007AFF]/10 rounded-md transition-colors"
-										>
-											{key === "10min" ? "Last 10 min" : key === "1hour" ? "Last 1 hour" : "Today"}
-										</button>
-									))}
+							{/* Actions */}
+							<div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
+								<button
+									type="button"
+									onClick={() => {
+										if (onSave) onSave(summaryLines);
+										handleClearSummary();
+									}}
+									className="flex-1 px-4 py-2 bg-gradient-to-r from-[#007AFF] to-[#5856D6] hover:opacity-90 text-white rounded-xl text-[13px] font-semibold transition-all shadow-sm"
+								>
+									Save to Chat
+								</button>
+								<button
+									type="button"
+									onClick={handleClearSummary}
+									className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-[13px] font-semibold transition-all"
+								>
+									Cancel
+								</button>
 							</div>
 						</motion.div>
 					)}
