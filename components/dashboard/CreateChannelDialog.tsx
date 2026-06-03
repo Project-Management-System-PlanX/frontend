@@ -86,7 +86,7 @@ export function CreateChannelDialog({
 				<div className="relative px-8 pt-8 pb-0">
 					<div className="flex items-start justify-between">
 						<div className="flex items-center gap-3">
-							<div className="w-10 h-10 rounded-[14px] bg-gradient-to-br from-[#007AFF] to-[#5856D6] flex items-center justify-center shadow-md shadow-blue-500/20">
+							<div className="w-10 h-10 rounded-[14px] bg-gradient-to-br from-[#2D6A4F] to-[#1A3D2B] flex items-center justify-center shadow-md shadow-green-500/20">
 								<Hash className="w-5 h-5 text-white" />
 							</div>
 							<div>
@@ -115,13 +115,13 @@ export function CreateChannelDialog({
 						<div
 							className={cn(
 								"h-[3px] rounded-full transition-all duration-300 flex-1",
-								step >= 1 ? "bg-[#007AFF]" : "bg-gray-100",
+								step >= 1 ? "bg-[#2D6A4F]" : "bg-gray-100",
 							)}
 						/>
 						<div
 							className={cn(
 								"h-[3px] rounded-full transition-all duration-300 flex-1",
-								step >= 2 ? "bg-[#007AFF]" : "bg-gray-100",
+								step >= 2 ? "bg-[#2D6A4F]" : "bg-gray-100",
 							)}
 						/>
 					</div>
@@ -146,8 +146,8 @@ export function CreateChannelDialog({
 									Name
 								</label>
 								<div className="relative">
-									<div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl focus-within:bg-white focus-within:border-[#007AFF] focus-within:ring-4 focus-within:ring-[#007AFF]/10 transition-all duration-200 group">
-										<span className="pl-4 text-gray-300 group-focus-within:text-[#007AFF] transition-colors">
+									<div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl focus-within:bg-white focus-within:border-[#2D6A4F] focus-within:ring-4 focus-within:ring-[#2D6A4F]/10 transition-all duration-200 group">
+										<span className="pl-4 text-gray-300 group-focus-within:text-[#2D6A4F] transition-colors">
 											<Hash className="w-4 h-4" />
 										</span>
 										<input
@@ -196,7 +196,7 @@ export function CreateChannelDialog({
 										className={cn(
 											"w-full flex items-start gap-4 p-4 rounded-xl border-2 transition-all duration-200 text-left",
 											visibility === "public"
-												? "border-[#007AFF] bg-[#007AFF]/5"
+												? "border-[#2D6A4F] bg-[#2D6A4F]/5"
 												: "border-gray-200 hover:border-gray-300 hover:bg-gray-50",
 										)}
 									>
@@ -204,7 +204,7 @@ export function CreateChannelDialog({
 											className={cn(
 												"w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors",
 												visibility === "public"
-													? "bg-[#007AFF] text-white shadow-md shadow-blue-500/20"
+													? "bg-[#2D6A4F] text-white shadow-md shadow-green-500/20"
 													: "bg-gray-100 text-gray-400",
 											)}
 										>
@@ -214,7 +214,7 @@ export function CreateChannelDialog({
 											<p
 												className={cn(
 													"text-[14px] font-semibold transition-colors",
-													visibility === "public" ? "text-[#007AFF]" : "text-gray-700",
+													visibility === "public" ? "text-[#2D6A4F]" : "text-gray-700",
 												)}
 											>
 												Public
@@ -227,11 +227,11 @@ export function CreateChannelDialog({
 										<div
 											className={cn(
 												"w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all",
-												visibility === "public" ? "border-[#007AFF]" : "border-gray-300",
+												visibility === "public" ? "border-[#2D6A4F]" : "border-gray-300",
 											)}
 										>
 											{visibility === "public" && (
-												<div className="w-2.5 h-2.5 bg-[#007AFF] rounded-full animate-[scaleIn_0.15s_ease-out]" />
+												<div className="w-2.5 h-2.5 bg-[#2D6A4F] rounded-full animate-[scaleIn_0.15s_ease-out]" />
 											)}
 										</div>
 									</button>
@@ -243,7 +243,7 @@ export function CreateChannelDialog({
 										className={cn(
 											"w-full flex items-start gap-4 p-4 rounded-xl border-2 transition-all duration-200 text-left",
 											visibility === "private"
-												? "border-[#007AFF] bg-[#007AFF]/5"
+												? "border-[#2D6A4F] bg-[#2D6A4F]/5"
 												: "border-gray-200 hover:border-gray-300 hover:bg-gray-50",
 										)}
 									>
@@ -251,7 +251,7 @@ export function CreateChannelDialog({
 											className={cn(
 												"w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors",
 												visibility === "private"
-													? "bg-[#007AFF] text-white shadow-md shadow-blue-500/20"
+													? "bg-[#2D6A4F] text-white shadow-md shadow-green-500/20"
 													: "bg-gray-100 text-gray-400",
 											)}
 										>
@@ -261,7 +261,7 @@ export function CreateChannelDialog({
 											<p
 												className={cn(
 													"text-[14px] font-semibold transition-colors",
-													visibility === "private" ? "text-[#007AFF]" : "text-gray-700",
+													visibility === "private" ? "text-[#2D6A4F]" : "text-gray-700",
 												)}
 											>
 												Private
@@ -273,11 +273,11 @@ export function CreateChannelDialog({
 										<div
 											className={cn(
 												"w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all",
-												visibility === "private" ? "border-[#007AFF]" : "border-gray-300",
+												visibility === "private" ? "border-[#2D6A4F]" : "border-gray-300",
 											)}
 										>
 											{visibility === "private" && (
-												<div className="w-2.5 h-2.5 bg-[#007AFF] rounded-full animate-[scaleIn_0.15s_ease-out]" />
+												<div className="w-2.5 h-2.5 bg-[#2D6A4F] rounded-full animate-[scaleIn_0.15s_ease-out]" />
 											)}
 										</div>
 									</button>

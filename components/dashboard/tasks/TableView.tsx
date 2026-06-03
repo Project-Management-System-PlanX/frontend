@@ -87,9 +87,9 @@ export function TableView({
 	const SortIcon = ({ column }: { column: SortKey }) => {
 		if (sortConfig.key !== column) return <ChevronDown className="w-3.5 h-3.5 opacity-20" />;
 		return sortConfig.order === "asc" ? (
-			<ChevronUp className="w-3.5 h-3.5 text-blue-400" />
+			<ChevronUp className="w-3.5 h-3.5 text-green-400" />
 		) : (
-			<ChevronDown className="w-3.5 h-3.5 text-blue-400" />
+			<ChevronDown className="w-3.5 h-3.5 text-green-400" />
 		);
 	};
 
@@ -257,7 +257,7 @@ function TableRow({
 										return (
 											<div
 												key={a.userId}
-												className="w-5 h-5 rounded-full bg-[#e85d04] flex items-center justify-center text-[10px] font-bold text-white shrink-0 shadow-sm border border-[#3d3d54] uppercase"
+												className="w-5 h-5 rounded-full bg-[#2D6A4F] flex items-center justify-center text-[10px] font-bold text-white shrink-0 shadow-sm border border-[#3d3d54] uppercase"
 												title={a.user?.firstName || a.user?.email || a.userId}
 											>
 												{initial}
@@ -266,7 +266,7 @@ function TableRow({
 									})}
 								</div>
 							) : task.assigneeId ? (
-								<div className="w-5 h-5 rounded-full bg-[#e85d04] flex items-center justify-center text-[10px] font-bold text-white shrink-0 shadow-sm border border-[#3d3d54] uppercase">
+								<div className="w-5 h-5 rounded-full bg-[#2D6A4F] flex items-center justify-center text-[10px] font-bold text-white shrink-0 shadow-sm border border-[#3d3d54] uppercase">
 									{/* Not showing exact initials since we don't have the user object here, but it signals it's assigned */}
 									U
 								</div>

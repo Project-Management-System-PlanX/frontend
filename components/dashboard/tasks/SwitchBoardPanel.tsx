@@ -25,8 +25,8 @@ export function SwitchBoardPanel({
 		<div className="h-full flex flex-col bg-[#0D0D0D] rounded-3xl overflow-hidden border border-white/10 shadow-2xl">
 			<div className="px-6 py-5 flex items-center justify-between border-b border-white/5">
 				<div className="flex items-center gap-3">
-					<div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
-						<Layout className="w-5 h-5 text-blue-400" />
+					<div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center border border-green-500/20">
+						<Layout className="w-5 h-5 text-green-400" />
 					</div>
 					<div>
 						<h2 className="text-[18px] font-black text-white tracking-tight">Switch Board</h2>

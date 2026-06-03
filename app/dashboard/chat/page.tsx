@@ -9,7 +9,7 @@ export default function ChatPage() {
 			<div className="flex flex-col items-center text-center max-w-md px-8">
 				{/* Animated Logo */}
 				<div className="relative mb-8">
-					<div className="w-20 h-20 rounded-[24px] bg-gradient-to-br from-indigo-500 to-blue-500 flex items-center justify-center shadow-lg shadow-indigo-100">
+					<div className="w-20 h-20 rounded-[24px] bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-lg shadow-green-100">
 						<MessageSquare className="w-10 h-10 text-white" />
 					</div>
 					<div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-4 border-white animate-pulse" />
@@ -33,22 +33,22 @@ export default function ChatPage() {
 							icon: Hash,
 							label: "Channels",
 							desc: "Join public or private channels",
-							color: "text-blue-600",
-							bg: "bg-blue-50",
+							color: "text-green-600",
+							bg: "bg-green-50",
 						},
 						{
 							icon: Users,
 							label: "Direct Messages",
 							desc: "Chat privately with teammates",
-							color: "text-violet-600",
-							bg: "bg-violet-50",
+							color: "text-emerald-600",
+							bg: "bg-emerald-50",
 						},
 						{
 							icon: Lock,
 							label: "End-to-end secure",
 							desc: "Your messages are safe and private",
-							color: "text-emerald-600",
-							bg: "bg-emerald-50",
+							color: "text-green-700",
+							bg: "bg-green-100",
 						},
 					].map((item) => {
 						const Icon = item.icon;

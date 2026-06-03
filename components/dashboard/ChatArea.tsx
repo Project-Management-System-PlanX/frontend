@@ -338,7 +338,7 @@ export function ChatArea({
 			}),
 			Underline,
 			TextAlign.configure({ types: ["paragraph"] }),
-			Link.configure({ openOnClick: false, HTMLAttributes: { class: "text-blue-500 underline" } }),
+			Link.configure({ openOnClick: false, HTMLAttributes: { class: "text-green-600 underline" } }),
 			MentionNode,
 		],
 		onUpdate: ({ editor: ed }) => {
@@ -724,8 +724,8 @@ export function ChatArea({
 			const userData = msg.users || msg.user;
 			const name = userData
 				? [userData.firstName, userData.lastName].filter(Boolean).join(" ") ||
-					userData.username ||
-					getNameFromEmail(userData.email)
+				userData.username ||
+				getNameFromEmail(userData.email)
 				: "Unknown";
 			const createdAt = msg.created_at || msg.createdAt || new Date().toISOString();
 			const time = formatMessageTime(createdAt);
@@ -968,6 +968,7 @@ export function ChatArea({
 								const showUnreadSep =
 									lastReadMsgId && prevMessage?.id === lastReadMsgId && !isOwnMessage;
 
+
 								return (
 									<div key={message.id}>
 										{showUnreadSep && (
@@ -1038,7 +1039,7 @@ export function ChatArea({
 																			editor?.commands.setContent(message.content || "");
 																			editor?.commands.focus();
 																		}}
-																		className="p-1.5 rounded-full hover:bg-[#f2f2f7]/80 text-[#8e8e93] hover:text-[#007aff] transition-colors focus:outline-none"
+																		className="p-1.5 rounded-full hover:bg-[#f2f2f7]/80 text-[#8e8e93] hover:text-[#2d6a4f] transition-colors focus:outline-none"
 																		title="Edit message"
 																	>
 																		<Edit2 className="w-[15px] h-[15px]" strokeWidth={2} />
@@ -1066,7 +1067,7 @@ export function ChatArea({
 																<button
 																	type="button"
 																	onClick={() => setReplyTo(message)}
-																	className="p-1.5 rounded-full hover:bg-[#f2f2f7]/80 text-[#8e8e93] hover:text-[#007aff] transition-colors focus:outline-none"
+																	className="p-1.5 rounded-full hover:bg-[#f2f2f7]/80 text-[#8e8e93] hover:text-[#2d6a4f] transition-colors focus:outline-none"
 																	title="Reply"
 																>
 																	<Reply className="w-[15px] h-[15px]" strokeWidth={2} />
@@ -1075,13 +1076,12 @@ export function ChatArea({
 														)}
 
 														<div
-															className={`relative px-[16px] py-[8px] text-[15px] break-words leading-[1.4] transition-opacity hover:opacity-[0.95] max-w-full ${
-																isDeleted
-																	? "bg-transparent text-[#8e8e93] italic border border-[#e5e5ea] rounded-2xl"
-																	: isOwnMessage
-																		? "bg-[#007aff] text-white rounded-[18px] rounded-br-[4px]"
-																		: "bg-[#e5e5ea] text-black rounded-[18px] rounded-bl-[4px]"
-															}`}
+															className={`relative px-[16px] py-[8px] text-[15px] break-words leading-[1.4] transition-opacity hover:opacity-[0.95] max-w-full ${isDeleted
+																? "bg-transparent text-[#8e8e93] italic border border-[#e5e5ea] rounded-2xl"
+																: isOwnMessage
+																	? "bg-[#2d6a4f] text-white rounded-[18px] rounded-br-[4px]"
+																	: "bg-[#e5e5ea] text-black rounded-[18px] rounded-bl-[4px]"
+																}`}
 															title={formatMessageTime(
 																message.created_at || message.createdAt || new Date().toISOString(),
 															)}
@@ -1096,11 +1096,10 @@ export function ChatArea({
 																	{message.parent && (
 																		<button
 																			type="button"
-																			className={`mt-1 mb-2 flex items-start gap-2 pl-2 border-l-[3px] rounded-r py-1 pr-2 max-w-sm cursor-pointer transition-colors ${
-																				isOwnMessage
-																					? "border-white/40 bg-white/10 hover:bg-white/20"
-																					: "border-black/20 bg-black/5 hover:bg-black/10"
-																			}`}
+																			className={`mt-1 mb-2 flex items-start gap-2 pl-2 border-l-[3px] rounded-r py-1 pr-2 max-w-sm cursor-pointer transition-colors ${isOwnMessage
+																				? "border-white/40 bg-white/10 hover:bg-white/20"
+																				: "border-black/20 bg-black/5 hover:bg-black/10"
+																				}`}
 																			onClick={(e) => {
 																				e.stopPropagation();
 																				const parentEl = document.getElementById(
@@ -1134,13 +1133,13 @@ export function ChatArea({
 																				>
 																					{message.parent.user
 																						? [
-																								message.parent.user.firstName,
-																								message.parent.user.lastName,
-																							]
-																								.filter(Boolean)
-																								.join(" ") ||
-																							message.parent.user.username ||
-																							message.parent.user.email?.split("@")[0]
+																							message.parent.user.firstName,
+																							message.parent.user.lastName,
+																						]
+																							.filter(Boolean)
+																							.join(" ") ||
+																						message.parent.user.username ||
+																						message.parent.user.email?.split("@")[0]
 																						: "Unknown"}
 																				</p>
 																				{message.parent.content ? (
@@ -1167,11 +1166,10 @@ export function ChatArea({
 																		(isHtmlContent(message.content) ? (
 																			// biome-ignore lint/a11y/noStaticElementInteractions: rich text messages need click handling for mention navigation
 																			<div
-																				className={`mt-1 leading-relaxed text-[15px] prose prose-sm max-w-none [&_p]:my-0 [&_ul]:my-1 [&_ol]:my-1 ${
-																					isOwnMessage
-																						? "[&_a]:text-white [&_a]:underline text-white"
-																						: "[&_a]:text-[#007aff] text-black"
-																				}`}
+																				className={`mt-1 leading-relaxed text-[15px] prose prose-sm max-w-none [&_p]:my-0 [&_ul]:my-1 [&_ol]:my-1 ${isOwnMessage
+																					? "[&_a]:text-white [&_a]:underline text-white"
+																					: "[&_a]:text-[#2d6a4f] text-black"
+																					}`}
 																				onClick={(e) => {
 																					e.stopPropagation();
 																					const target = e.target as HTMLElement;
@@ -1192,7 +1190,7 @@ export function ChatArea({
 																					// only stop propagation if we are clicking an interactive element like a link
 																					if (
 																						(e.target as HTMLElement).tagName.toLowerCase() ===
-																							"a" ||
+																						"a" ||
 																						(e.target as HTMLElement).closest("a")
 																					) {
 																						e.stopPropagation();
@@ -1204,28 +1202,28 @@ export function ChatArea({
 																					__html:
 																						typeof DOMPurify.sanitize === "function"
 																							? DOMPurify.sanitize(message.content, {
-																									ALLOWED_TAGS: [
-																										"p",
-																										"br",
-																										"strong",
-																										"em",
-																										"u",
-																										"s",
-																										"a",
-																										"ul",
-																										"ol",
-																										"li",
-																										"span",
-																									],
-																									ALLOWED_ATTR: [
-																										"href",
-																										"target",
-																										"rel",
-																										"style",
-																										"class",
-																										"data-mention",
-																									],
-																								})
+																								ALLOWED_TAGS: [
+																									"p",
+																									"br",
+																									"strong",
+																									"em",
+																									"u",
+																									"s",
+																									"a",
+																									"ul",
+																									"ol",
+																									"li",
+																									"span",
+																								],
+																								ALLOWED_ATTR: [
+																									"href",
+																									"target",
+																									"rel",
+																									"style",
+																									"class",
+																									"data-mention",
+																								],
+																							})
 																							: "",
 																				}}
 																			/>
@@ -1262,11 +1260,10 @@ export function ChatArea({
 																					href={message.file_url}
 																					target="_blank"
 																					rel="noreferrer"
-																					className={`flex items-center gap-3 p-3 rounded-lg border max-w-sm transition-colors ${
-																						isOwnMessage
-																							? "bg-white/10 border-white/20 hover:bg-white/20 text-white"
-																							: "bg-black/5 border-black/10 hover:bg-black/10 text-black"
-																					}`}
+																					className={`flex items-center gap-3 p-3 rounded-lg border max-w-sm transition-colors ${isOwnMessage
+																						? "bg-white/10 border-white/20 hover:bg-white/20 text-white"
+																						: "bg-black/5 border-black/10 hover:bg-black/10 text-black"
+																						}`}
 																				>
 																					<div
 																						className={`w-10 h-10 rounded flex items-center justify-center shrink-0 ${isOwnMessage ? "bg-white/20" : "bg-black/10"}`}
@@ -1308,7 +1305,7 @@ export function ChatArea({
 																<button
 																	type="button"
 																	onClick={() => setReplyTo(message)}
-																	className="p-1.5 rounded-full hover:bg-[#f2f2f7]/80 text-[#8e8e93] hover:text-[#007aff] transition-colors focus:outline-none"
+																	className="p-1.5 rounded-full hover:bg-[#f2f2f7]/80 text-[#8e8e93] hover:text-[#2d6a4f] transition-colors focus:outline-none"
 																	title="Reply"
 																>
 																	<Reply className="w-[15px] h-[15px]" strokeWidth={2} />
@@ -1475,7 +1472,7 @@ export function ChatArea({
 												e.preventDefault();
 												cmd();
 											}}
-											className={`w-7 h-7 flex items-center justify-center rounded-full transition-colors ${active ? "bg-[#007aff] text-white" : "text-[#8e8e93] hover:bg-[#f2f2f7] hover:text-[#000]"}`}
+											className={`w-7 h-7 flex items-center justify-center rounded-full transition-colors ${active ? "bg-[#2d6a4f] text-white" : "text-[#8e8e93] hover:bg-[#f2f2f7] hover:text-[#000]"}`}
 											title={label}
 										>
 											<Icon className="w-4 h-4" />
@@ -1500,9 +1497,9 @@ export function ChatArea({
 									<div className="flex items-center gap-3 p-2 m-2 rounded-xl border border-[#e5e5ea] bg-[#f9f9f9] w-max pr-8 relative group">
 										<div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center shadow-sm">
 											{attachment.type.startsWith("image/") ? (
-												<ImageIcon className="w-[18px] h-[18px] text-[#007aff]" />
+												<ImageIcon className="w-[18px] h-[18px] text-[#2d6a4f]" />
 											) : (
-												<FileIcon className="w-[18px] h-[18px] text-[#007aff]" />
+												<FileIcon className="w-[18px] h-[18px] text-[#2d6a4f]" />
 											)}
 										</div>
 										<div className="flex flex-col">
@@ -1559,7 +1556,7 @@ export function ChatArea({
 																	e.preventDefault();
 																	insertMention(member);
 																}}
-																className={`w-full flex items-center gap-3 px-2 py-1.5 text-left rounded-lg transition-colors ${i === mentionIndex ? "bg-[#007aff] text-white" : "text-black hover:bg-[#f2f2f7]"}`}
+																className={`w-full flex items-center gap-3 px-2 py-1.5 text-left rounded-lg transition-colors ${i === mentionIndex ? "bg-[#2d6a4f] text-white" : "text-black hover:bg-[#f2f2f7]"}`}
 															>
 																<div
 																	className={`w-[26px] h-[26px] rounded-full flex items-center justify-center text-[10px] font-medium shrink-0 ${i === mentionIndex ? "bg-white/20 text-white" : "bg-[#e5e5ea] text-[#8e8e93]"}`}
@@ -1610,7 +1607,7 @@ export function ChatArea({
 											<button
 												type="button"
 												onClick={() => setShowEmoji((prev) => !prev)}
-												className={`w-[28px] h-[28px] rounded-full flex items-center justify-center transition-colors focus:outline-none ${showEmoji ? "text-[#007aff]" : "text-[#8e8e93] hover:text-[#000]"}`}
+												className={`w-[28px] h-[28px] rounded-full flex items-center justify-center transition-colors focus:outline-none ${showEmoji ? "text-[#2d6a4f]" : "text-[#8e8e93] hover:text-[#000]"}`}
 											>
 												<Smile className="w-[18px] h-[18px]" strokeWidth={1.5} />
 											</button>
@@ -1626,7 +1623,7 @@ export function ChatArea({
 											<button
 												type="button"
 												onClick={handleSendMessage}
-												className="w-[28px] h-[28px] rounded-full bg-[#007aff] hover:bg-[#0062cc] text-white flex items-center justify-center shadow-sm transition-transform active:scale-95 focus:outline-none ml-[2px]"
+												className="w-[28px] h-[28px] rounded-full bg-[#2d6a4f] hover:bg-[#1a3d2b] text-white flex items-center justify-center shadow-sm transition-transform active:scale-95 focus:outline-none ml-[2px]"
 											>
 												{/* Simple up-arrow style for sending */}
 												<svg
@@ -1644,7 +1641,7 @@ export function ChatArea({
 												</svg>
 											</button>
 										) : isUploading ? (
-											<div className="w-[28px] h-[28px] rounded-full bg-[#007aff]/70 text-white flex items-center justify-center ml-[2px]">
+											<div className="w-[28px] h-[28px] rounded-full bg-[#2d6a4f]/70 text-white flex items-center justify-center ml-[2px]">
 												<Loader2 className="w-3.5 h-3.5 animate-spin" />
 											</div>
 										) : null}

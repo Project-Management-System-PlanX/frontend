@@ -118,13 +118,13 @@ export function TimelineView({
 										key={idx}
 										className={cn(
 											"w-[140px] border-r border-white/10 flex flex-col items-center justify-center gap-0.5 relative shrink-0",
-											isToday && "bg-blue-600/[0.05]",
+											isToday && "bg-green-600/[0.05]",
 										)}
 									>
 										<span
 											className={cn(
 												"text-[10px] font-black uppercase tracking-widest",
-												isToday ? "text-blue-400" : "text-white/20",
+												isToday ? "text-green-400" : "text-white/20",
 											)}
 										>
 											{format(day, "eee")}
@@ -132,12 +132,12 @@ export function TimelineView({
 										<span
 											className={cn(
 												"text-[12px] font-black",
-												isToday ? "text-blue-400" : "text-white/40",
+												isToday ? "text-green-400" : "text-white/40",
 											)}
 										>
 											{format(day, "d")}
 										</span>
-										{isToday && <div className="absolute top-0 left-0 right-0 h-0.5 bg-blue-500" />}
+										{isToday && <div className="absolute top-0 left-0 right-0 h-0.5 bg-green-500" />}
 									</div>
 								);
 							})}
@@ -180,7 +180,7 @@ export function TimelineView({
 															{task.title}
 														</span>
 														<div className="flex items-center justify-between mt-auto">
-															<div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+															<div className="w-1.5 h-1.5 rounded-full bg-green-500" />
 														</div>
 													</div>
 												))}
